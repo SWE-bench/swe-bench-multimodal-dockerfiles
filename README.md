@@ -17,7 +17,7 @@ sb-dockerfile-gen-multimodal SWE-bench/SWE-bench_Multimodal --instance_ids some_
 
 ## Output
 
-Generated Dockerfiles are written to `src/dockerfiles/<instance_id>/Dockerfile`.
+Generated Dockerfiles are written to `src/dockerfiles/<instance_id>.Dockerfile`.
 
 ## Install
 
