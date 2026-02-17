@@ -1,0 +1,39 @@
+#!/bin/bash
+set -uxo pipefail
+cd /testbed
+git config --global --add safe.directory /testbed
+cd /testbed
+echo "No test files to reset"
+git apply --verbose --reject - <<'EOF_4145ccb5c12e'
+diff --git a/test/new/adjacent_lists.html b/test/new/adjacent_lists.html
+new file mode 100644
+index 0000000000..b4cd8f5086
+--- /dev/null
++++ b/test/new/adjacent_lists.html
+@@ -0,0 +1,9 @@
++<ul>
++<li>This should be</li>
++<li>An unordered list</li>
++</ul>
++
++<ol>
++<li>This should be</li>
++<li>An unordered list</li>
++</ol>
+diff --git a/test/new/adjacent_lists.md b/test/new/adjacent_lists.md
+new file mode 100644
+index 0000000000..3fd460b3d7
+--- /dev/null
++++ b/test/new/adjacent_lists.md
+@@ -0,0 +1,5 @@
++* This should be
++* An unordered list
++
++1. This should be
++2. An unordered list
+
+EOF_4145ccb5c12e
+: '>>>>> Start Test Output'
+./node_modules/.bin/jasmine --no-color --config=jasmine.json
+: '>>>>> End Test Output'
+echo "No test files to reset"

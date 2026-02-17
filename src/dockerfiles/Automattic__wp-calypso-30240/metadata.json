@@ -1,0 +1,22 @@
+{
+  "instance_id": "Automattic__wp-calypso-30240",
+  "repo": "Automattic/wp-calypso",
+  "version": "10.14.0",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "<SiteInformation /> - should render",
+    "<SiteVerticalsSuggestionSearch /> - should render"
+  ],
+  "PASS_TO_PASS": [
+    "<SiteVerticalsSuggestionSearch /> - should pass an exact non-user vertical match to the `onChange` prop",
+    "<SiteVerticalsSuggestionSearch /> - sortSearchResults() - should not sort when no `startsWith` suggestions",
+    "<SiteVerticalsSuggestionSearch /> - sortSearchResults() - should return sorted results with `startsWith` matches at the start and exact match at the end",
+    "<SiteVerticalsSuggestionSearch /> - sortSearchResults() - should omit non-matchess",
+    "<SiteInformation /> - should call `updateStep()` from `handleInputChange()`",
+    "<SiteInformation /> - should call `submitStep()` from `handleSubmit()`",
+    "<SiteVerticalsSuggestionSearch /> - should cancel debounced invocations when the search value is falsey or has fewer chars than `props.charsToTriggerSearch`",
+    "<SiteInformation /> - should update field attributes based on the informationFields array values",
+    "<SiteVerticalsSuggestionSearch /> - should trigger search after > 1 characters and call `onChange` prop"
+  ]
+}

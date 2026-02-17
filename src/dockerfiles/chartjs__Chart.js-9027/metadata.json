@@ -1,0 +1,11 @@
+{
+  "instance_id": "chartjs__Chart.js-9027",
+  "repo": "chartjs/Chart.js",
+  "version": "3.2",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Linear Scale should not throw errors when chart size is negative "
+  ],
+  "PASS_TO_PASS": []
+}

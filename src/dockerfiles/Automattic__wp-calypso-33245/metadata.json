@@ -1,0 +1,26 @@
+{
+  "instance_id": "Automattic__wp-calypso-33245",
+  "repo": "Automattic/wp-calypso",
+  "version": "10.15.2",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "HappinessSupport - should render translated help content"
+  ],
+  "PASS_TO_PASS": [
+    "HappinessSupport - should render a support button with link to SUPPORT_ROOT if it is not for JetPack",
+    "HappinessSupport - Contact button - should be rendered with link to JETPACK_CONTACT_SUPPORT if it is for JetPack",
+    "HappinessSupport - Contact button - should render translated content",
+    "HappinessSupport - Contact button - should be rendered unless LiveChat button shows up",
+    "HappinessSupport - should render translated heading content",
+    "HappinessSupport - LiveChat button - should be rendered only when showLiveChatButton prop is true and LiveChat is available",
+    "HappinessSupport - should render a support button with link to JETPACK_SUPPORT if it is for JetPack",
+    "HappinessSupport - should have is-placeholder className only if it is a placeholder",
+    "HappinessSupport - LiveChat button - should render translated content",
+    "HappinessSupport - LiveChat button - should not fire tracks event when no event name is passed even if clicked",
+    "HappinessSupport - Contact button - should be rendered with link to CALYPSO_CONTACT if it is not for JetPack",
+    "HappinessSupport - should render a <HappychatConnection /> when showLiveChat prop is true",
+    "HappinessSupport - should render a translated support button",
+    "HappinessSupport - LiveChat button - should fire tracks event with given event name when clicked"
+  ]
+}

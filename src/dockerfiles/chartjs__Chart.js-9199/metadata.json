@@ -1,0 +1,12 @@
+{
+  "instance_id": "chartjs__Chart.js-9199",
+  "repo": "chartjs/Chart.js",
+  "version": "3.3",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Legend block tests auto /base/test/fixtures/plugin.legend/label-textAlign/rtl-right.js ",
+    "Legend block tests auto /base/test/fixtures/plugin.legend/label-textAlign/rtl-left.js "
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,11 @@
+{
+  "instance_id": "chartjs__Chart.js-9613",
+  "repo": "chartjs/Chart.js",
+  "version": "3.5",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Chart.plugins config.options.plugins should filter event callbacks by plugin events array "
+  ],
+  "PASS_TO_PASS": []
+}

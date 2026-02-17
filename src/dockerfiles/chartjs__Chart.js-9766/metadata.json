@@ -1,0 +1,11 @@
+{
+  "instance_id": "chartjs__Chart.js-9766",
+  "repo": "chartjs/Chart.js",
+  "version": "3.5",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Chart.controllers.line auto /base/test/fixtures/controller.line/stacking/bounds-data.js "
+  ],
+  "PASS_TO_PASS": []
+}

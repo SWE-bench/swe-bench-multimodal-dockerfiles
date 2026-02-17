@@ -1,0 +1,27 @@
+{
+  "instance_id": "Automattic__wp-calypso-21648",
+  "repo": "Automattic/wp-calypso",
+  "version": "8.9.3",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "reducer - should not use default value for settings with no value or default if option is disabled",
+    "actions - #emailSettingsSubmitSettings() - should dispatch an success action",
+    "reducer - should use default value for settings with no value or default if option is enabled"
+  ],
+  "PASS_TO_PASS": [
+    "reducer - should update setting with new value.",
+    "reducer - should store data from the action",
+    "actions - #fetchEmailSettings() - should dispatch an request action",
+    "actions - #fetchEmailSettings() - should dispatch a success action with settings information when request completes",
+    "actions - #emailSettingsInvalidValue() - should dispatch a action that will inform that settings are not valid",
+    "reducer - should decode entities in woocommerce_email_from_name",
+    "actions - #fetchEmailSettings() - should not dispatch if settings are already fetched for this site",
+    "reducer - should use default value from setting for settings with default and no value.",
+    "actions - #emailSettingsSaveSettings() - should dispatch a action that will trigger saving settings",
+    "actions - #fetchEmailSettings() - should not dispatch if settings are already loading for this site",
+    "actions - #emailSettingChange() - should dispatch a action with changed setting",
+    "reducer - should mark the email settings tree as \"loading\"",
+    "actions - #emailSettingsSubmitSettings() - should dispatch an request action"
+  ]
+}

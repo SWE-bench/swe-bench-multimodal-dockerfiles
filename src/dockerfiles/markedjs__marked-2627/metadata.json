@@ -1,0 +1,12 @@
+{
+  "instance_id": "markedjs__marked-2627",
+  "repo": "markedjs/marked",
+  "version": "4.1",
+  "log_parser": "parse_log_marked",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Lexer inline inlineTokens escaped punctuation inside emphasis",
+    "New escape_within_emphasis should pass"
+  ],
+  "PASS_TO_PASS": []
+}

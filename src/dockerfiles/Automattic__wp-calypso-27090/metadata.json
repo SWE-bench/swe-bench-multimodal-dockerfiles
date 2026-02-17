@@ -1,0 +1,20 @@
+{
+  "instance_id": "Automattic__wp-calypso-27090",
+  "repo": "Automattic/wp-calypso",
+  "version": "10.9.0",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "selectors - #getRecentViewsForPost() - should default to null",
+    "reducer - #items() - should default to an empty object",
+    "reducer - #items() - should override previous recent post views",
+    "onSuccess - should return a receiveRecentPostViews action with the data",
+    "fetch - should dispatch an http request",
+    "reducer - #items() - should index recent post views by ID for each site",
+    "reducer - #items() - should accumulate recent post views",
+    "selectors - #getRecentViewsForPost() - should return recent views for a post by site and id",
+    "actions - #receiveRecentPostViews - should create an action for requesting recent post views",
+    "actions - #receiveRecentPostViews() - should create an action for receiving recent post views"
+  ],
+  "PASS_TO_PASS": []
+}

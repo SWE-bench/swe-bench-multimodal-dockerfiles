@@ -1,0 +1,12 @@
+{
+  "instance_id": "chartjs__Chart.js-8710",
+  "repo": "chartjs/Chart.js",
+  "version": "3.0",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Linear Scale Should correctly use the locale setting when getting a label ",
+    "Logarithmic Scale tests should correctly use the locale when generating the label "
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,18 @@
+{
+  "instance_id": "Automattic__wp-calypso-35531",
+  "repo": "Automattic/wp-calypso",
+  "version": "10.15.2",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "PlanStorage basic tests - should not render for contributors"
+  ],
+  "PASS_TO_PASS": [
+    "PlanStorage basic tests - should not render for jetpack sites",
+    "PlanStorage basic tests - should not render when site plan slug is empty",
+    "PlanStorage basic tests - should render a PlanStorageBar",
+    "PlanStorage basic tests - should not blow up and have class .plan-storage",
+    "PlanStorage basic tests - should not render when storage is unlimited",
+    "PlanStorage basic tests - should render when storage is limited"
+  ]
+}

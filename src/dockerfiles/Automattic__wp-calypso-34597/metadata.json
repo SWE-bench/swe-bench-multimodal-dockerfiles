@@ -1,0 +1,41 @@
+{
+  "instance_id": "Automattic__wp-calypso-34597",
+  "repo": "Automattic/wp-calypso",
+  "version": "10.15.2",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "UpgradeToPremiumNudgePure basic tests - hide when user cannot upgrade"
+  ],
+  "PASS_TO_PASS": [
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_business_monthly",
+    "UpgradeNudge - wrapper - should display with default props",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_premium_monthly",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans free_plan",
+    "UpgradeNudge - wrapper - should not display without a site",
+    "UpgradeToPremiumNudgePure basic tests - should not blow up",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans ecommerce-bundle-2y",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_free",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans blogger-bundle",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_personal_monthly",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans business-bundle-2y",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans ecommerce-bundle",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_personal",
+    "UpgradeNudge - wrapper - with feature prop - should display when plan doesn't have feature",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans value_bundle",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans personal-bundle-2y",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans personal-bundle",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans value_bundle-2y",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans blogger-bundle-2y",
+    "UpgradeNudge - wrapper - with jetpack prop - should not display when non-jetpack feature for jetpack sites",
+    "UpgradeNudge - wrapper - should not display when user can't manage site",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans business-bundle-monthly",
+    "UpgradeNudge - wrapper - should not display for paid plans without feature prop (blogger)",
+    "UpgradeNudge - wrapper - should not display for paid plans without feature prop (personal)",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_premium",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans jetpack_business",
+    "UpgradeToPremiumNudgePure.render() - Should pass 2-years wp.com premium plan for 2-years plans business-bundle",
+    "UpgradeNudge - wrapper - with jetpack prop - should not display a jetpack feature for non-jetpack sites",
+    "UpgradeNudge - wrapper - with feature prop - should not display when plan has feature"
+  ]
+}

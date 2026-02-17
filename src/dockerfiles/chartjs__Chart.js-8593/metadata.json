@@ -1,0 +1,14 @@
+{
+  "instance_id": "chartjs__Chart.js-8593",
+  "repo": "chartjs/Chart.js",
+  "version": "3.0",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Test the radial linear scale Should have the correct default config ",
+    "Test the radial linear scale should correctly get angles for all points ",
+    "Test the radial linear scale should correctly get the correct label alignment for all points ",
+    "Chart.controllers.polarArea should update elements with start angle from options "
+  ],
+  "PASS_TO_PASS": []
+}

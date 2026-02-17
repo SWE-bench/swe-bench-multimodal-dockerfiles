@@ -1,0 +1,15 @@
+{
+  "instance_id": "chartjs__Chart.js-9764",
+  "repo": "chartjs/Chart.js",
+  "version": "3.5",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Chart.controllers.bubble auto /base/test/fixtures/controller.bubble/padding.js ",
+    "Chart.controllers.bubble auto /base/test/fixtures/controller.bubble/clip.js ",
+    "Chart.controllers.bubble auto /base/test/fixtures/controller.bubble/point-style.json ",
+    "Chart.controllers.bubble auto /base/test/fixtures/controller.bubble/radius-data.js ",
+    "Core.scale auto /base/test/fixtures/core.scale/border-behind-elements.js "
+  ],
+  "PASS_TO_PASS": []
+}

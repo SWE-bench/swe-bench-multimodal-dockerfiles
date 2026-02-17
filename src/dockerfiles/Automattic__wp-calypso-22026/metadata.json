@@ -1,0 +1,25 @@
+{
+  "instance_id": "Automattic__wp-calypso-22026",
+  "repo": "Automattic/wp-calypso",
+  "version": "8.9.3",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "selectors - getShipToCountrySetting - should get the setting from state.",
+    "selectors - getShipToCountrySetting - should get the siteId from the UI tree if not provided."
+  ],
+  "PASS_TO_PASS": [
+    "selectors - #areSettingsGeneralLoading - should be false when woocommerce state is not available.",
+    "selectors - #areSettingsGeneralLoaded - should be false when woocommerce state is not available.",
+    "selectors - #areSettingsGeneralLoaded - should be false when settings are loaded only for a different site.",
+    "selectors - #areSettingsGeneralLoading - should be false when settings are loaded only for a different site.",
+    "selectors - #areSettingsGeneralLoading - should be false when settings are loaded.",
+    "selectors - #areSettingsGeneralLoaded - should be true when settings are loaded.",
+    "selectors - #getPaymentCurrencySettings - should get the currency settings from the state.",
+    "selectors - #areSettingsGeneralLoading - should be true when settings are currently being fetched.",
+    "selectors - #areSettingsGeneralLoading - should get the siteId from the UI tree if not provided.",
+    "selectors - #areSettingsGeneralLoaded - should be false when settings are currently being fetched.",
+    "selectors - #areSettingsGeneralLoaded - should get the siteId from the UI tree if not provided.",
+    "selectors - #getPaymentCurrencySettings - should get the siteId from the UI tree if not provided."
+  ]
+}

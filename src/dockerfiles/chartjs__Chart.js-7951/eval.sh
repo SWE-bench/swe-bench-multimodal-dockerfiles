@@ -1,0 +1,133 @@
+#!/bin/bash
+set -uxo pipefail
+cd /testbed
+git config --global --add safe.directory /testbed
+cd /testbed
+git checkout 6dbb7e74462d5b7dedf2124a622a3e678964dd83 test/fixtures/controller.bar/horizontal-borders.png test/specs/helpers.options.tests.js
+mkdir -p test/fixtures/controller.bar
+curl -o test/fixtures/controller.bar/border-radius.png https://raw.githubusercontent.com/chartjs/Chart.js/0201cc341087557af5a57fedf08b00477d724783/test/fixtures/controller.bar/border-radius.png
+chmod 777 test/fixtures/controller.bar/border-radius.png
+mkdir -p test/fixtures/controller.bar
+curl -o test/fixtures/controller.bar/horizontal-borders.png https://raw.githubusercontent.com/chartjs/Chart.js/0201cc341087557af5a57fedf08b00477d724783/test/fixtures/controller.bar/horizontal-borders.png
+chmod 777 test/fixtures/controller.bar/horizontal-borders.png
+git apply --verbose --reject - <<'EOF_1d423c2bb53a'
+diff --git a/test/fixtures/controller.bar/border-radius.js b/test/fixtures/controller.bar/border-radius.js
+new file mode 100644
+index 00000000000..67c579ff09a
+--- /dev/null
++++ b/test/fixtures/controller.bar/border-radius.js
+@@ -0,0 +1,45 @@
++module.exports = {
++	threshold: 0.01,
++	config: {
++		type: 'bar',
++		data: {
++			labels: [0, 1, 2, 3, 4, 5],
++			datasets: [
++				{
++					// option in dataset
++					data: [0, 5, 10, null, -10, -5],
++					borderWidth: 2,
++					borderRadius: 5
++				},
++				{
++					// option in element (fallback)
++					data: [0, 5, 10, null, -10, -5],
++					borderSkipped: false,
++					borderRadius: Number.MAX_VALUE
++				}
++			]
++		},
++		options: {
++			legend: false,
++			title: false,
++			indexAxis: 'y',
++			elements: {
++				bar: {
++					backgroundColor: '#AAAAAA80',
++					borderColor: '#80808080',
++					borderWidth: {bottom: 6, left: 15, top: 6, right: 15}
++				}
++			},
++			scales: {
++				x: {display: false},
++				y: {display: false}
++			}
++		}
++	},
++	options: {
++		canvas: {
++			height: 256,
++			width: 512
++		}
++	}
++};
+diff --git a/test/fixtures/controller.bar/border-radius.png b/test/fixtures/controller.bar/border-radius.png
+new file mode 100644
+index 00000000000..68e7c0dd291
+Binary files /dev/null and b/test/fixtures/controller.bar/border-radius.png differ
+diff --git a/test/fixtures/controller.bar/horizontal-borders.png b/test/fixtures/controller.bar/horizontal-borders.png
+index 1cd6913acfc..73adeead561 100644
+Binary files a/test/fixtures/controller.bar/horizontal-borders.png and b/test/fixtures/controller.bar/horizontal-borders.png differ
+diff --git a/test/specs/helpers.options.tests.js b/test/specs/helpers.options.tests.js
+index f742b1bf548..6bad385c122 100644
+--- a/test/specs/helpers.options.tests.js
++++ b/test/specs/helpers.options.tests.js
+@@ -1,4 +1,4 @@
+-const {toLineHeight, toPadding, toFont, resolve} = Chart.helpers; // from '../../src/helpers/helpers.options';
++const {toLineHeight, toPadding, toFont, resolve, toTRBLCorners} = Chart.helpers; // from '../../src/helpers/helpers.options';
+ 
+ describe('Chart.helpers.options', function() {
+ 	describe('toLineHeight', function() {
+@@ -23,6 +23,43 @@ describe('Chart.helpers.options', function() {
+ 		});
+ 	});
+ 
++	describe('toTRBLCorners', function() {
++		it('should support number values', function() {
++			expect(toTRBLCorners(4)).toEqual(
++				{topLeft: 4, topRight: 4, bottomLeft: 4, bottomRight: 4});
++			expect(toTRBLCorners(4.5)).toEqual(
++				{topLeft: 4.5, topRight: 4.5, bottomLeft: 4.5, bottomRight: 4.5});
++		});
++		it('should support string values', function() {
++			expect(toTRBLCorners('4')).toEqual(
++				{topLeft: 4, topRight: 4, bottomLeft: 4, bottomRight: 4});
++			expect(toTRBLCorners('4.5')).toEqual(
++				{topLeft: 4.5, topRight: 4.5, bottomLeft: 4.5, bottomRight: 4.5});
++		});
++		it('should support object values', function() {
++			expect(toTRBLCorners({topLeft: 1, topRight: 2, bottomLeft: 3, bottomRight: 4})).toEqual(
++				{topLeft: 1, topRight: 2, bottomLeft: 3, bottomRight: 4});
++			expect(toTRBLCorners({topLeft: 1.5, topRight: 2.5, bottomLeft: 3.5, bottomRight: 4.5})).toEqual(
++				{topLeft: 1.5, topRight: 2.5, bottomLeft: 3.5, bottomRight: 4.5});
++			expect(toTRBLCorners({topLeft: '1', topRight: '2', bottomLeft: '3', bottomRight: '4'})).toEqual(
++				{topLeft: 1, topRight: 2, bottomLeft: 3, bottomRight: 4});
++		});
++		it('should fallback to 0 for invalid values', function() {
++			expect(toTRBLCorners({topLeft: 'foo', topRight: 'foo', bottomLeft: 'foo', bottomRight: 'foo'})).toEqual(
++				{topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0});
++			expect(toTRBLCorners({topLeft: null, topRight: null, bottomLeft: null, bottomRight: null})).toEqual(
++				{topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0});
++			expect(toTRBLCorners({})).toEqual(
++				{topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0});
++			expect(toTRBLCorners('foo')).toEqual(
++				{topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0});
++			expect(toTRBLCorners(null)).toEqual(
++				{topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0});
++			expect(toTRBLCorners(undefined)).toEqual(
++				{topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0});
++		});
++	});
++
+ 	describe('toPadding', function() {
+ 		it ('should support number values', function() {
+ 			expect(toPadding(4)).toEqual(
+
+EOF_1d423c2bb53a
+: '>>>>> Start Test Output'
+npm install
+npm run build
+xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99" su chromeuser -c "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start ./karma.conf.js --single-run --coverage --grep --auto-watch false"
+: '>>>>> End Test Output'
+git checkout 6dbb7e74462d5b7dedf2124a622a3e678964dd83 test/fixtures/controller.bar/horizontal-borders.png test/specs/helpers.options.tests.js

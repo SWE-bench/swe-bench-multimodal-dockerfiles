@@ -1,0 +1,27 @@
+{
+  "instance_id": "chartjs__Chart.js-9399",
+  "repo": "chartjs/Chart.js",
+  "version": "3.4",
+  "log_parser": "parse_log_chart_js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/right.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderRadius/border-radius.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/horizontal-borders.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderWidth/indexable.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/bar-base-value.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderWidth/value.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/value-x.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderWidth/object.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/mid-x.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/value-y.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/left.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/bottom.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/top.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/baseLine/mid-y.js ",
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.js "
+  ],
+  "PASS_TO_PASS": []
+}

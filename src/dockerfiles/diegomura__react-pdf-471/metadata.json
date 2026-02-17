@@ -1,0 +1,43 @@
+{
+  "instance_id": "diegomura__react-pdf-471",
+  "repo": "diegomura/react-pdf",
+  "version": "1.2",
+  "log_parser": "parse_log_react_pdf",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "tests/flattenStyles.test.js"
+  ],
+  "PASS_TO_PASS": [
+    "tests/base.test.js",
+    "tests/flexboxAttributes.test.js",
+    "tests/transform.test.js",
+    "tests/url.test.js",
+    "tests/background.test.js",
+    "tests/attributedString.test.js",
+    "tests/propsEqual.test.js",
+    "tests/stylesExpansion.test.js",
+    "tests/font.test.js",
+    "tests/cache.test.js",
+    "tests/mediaQueries.test.js",
+    "tests/text.test.js",
+    "tests/view.test.js",
+    "tests/nodeApi.test.js",
+    "tests/document.test.js",
+    "tests/objectFit.test.js",
+    "tests/matchPercent.test.js",
+    "tests/jpeg.test.js",
+    "tests/note.test.js",
+    "tests/png.test.js",
+    "tests/link.test.js",
+    "tests/pageSize.test.js",
+    "tests/styleShorthands.test.js",
+    "tests/page.test.js",
+    "tests/elements.test.js",
+    "tests/unitsConversion.test.js",
+    "tests/pdf.test.js",
+    "tests/domApi.test.js",
+    "tests/layout.test.js",
+    "tests/borders.test.js",
+    "tests/node.test.js"
+  ]
+}

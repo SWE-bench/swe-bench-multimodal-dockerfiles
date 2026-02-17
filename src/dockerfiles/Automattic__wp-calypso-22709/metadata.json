@@ -1,0 +1,14 @@
+{
+  "instance_id": "Automattic__wp-calypso-22709",
+  "repo": "Automattic/wp-calypso",
+  "version": "8.9.4",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "getJetpackOnboardingPendingSteps() - should return pending status for the contact form step"
+  ],
+  "PASS_TO_PASS": [
+    "getJetpackOnboardingPendingSteps() - should return pending status for the stats step",
+    "getJetpackOnboardingPendingSteps() - should return pending status for the woocommerce step"
+  ]
+}

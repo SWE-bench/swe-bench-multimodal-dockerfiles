@@ -1,0 +1,11 @@
+{
+  "instance_id": "processing__p5.js-4561",
+  "repo": "processing/p5.js",
+  "version": "1.0",
+  "log_parser": "parse_log_p5js",
+  "eval_type": "fail_only",
+  "FAIL_TO_PASS": [
+    "Error Helpers:friendly error logger:\"before each\" hook for \"basic\""
+  ],
+  "PASS_TO_PASS": []
+}

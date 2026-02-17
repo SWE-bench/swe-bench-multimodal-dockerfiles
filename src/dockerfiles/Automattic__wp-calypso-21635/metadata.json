@@ -1,0 +1,11 @@
+{
+  "instance_id": "Automattic__wp-calypso-21635",
+  "repo": "Automattic/wp-calypso",
+  "version": "8.9.3",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "Ebanx payment processing methods - isValidCPF - should return true for valid CPF (Brazilian tax identification number)"
+  ],
+  "PASS_TO_PASS": []
+}

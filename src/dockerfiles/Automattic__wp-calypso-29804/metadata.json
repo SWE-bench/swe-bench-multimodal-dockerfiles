@@ -1,0 +1,28 @@
+{
+  "instance_id": "Automattic__wp-calypso-29804",
+  "repo": "Automattic/wp-calypso",
+  "version": "10.14.0",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "VideoAudioPosts should use proper description - for premium plan value_bundle-2y",
+    "VideoAudioPosts should use proper description - for premium plan value_bundle"
+  ],
+  "PASS_TO_PASS": [
+    "VideoAudioPosts basic tests - should not blow up and have proper CSS class",
+    "VideoAudioPosts should use proper description - for ecommerce plan ecommerce-bundle",
+    "VideoAudioPosts should use proper description - for business plan business-bundle",
+    "VideoAudioPosts should use proper description - for plans jetpack_premium_monthly",
+    "VideoAudioPosts should use proper description - for plans personal-bundle",
+    "VideoAudioPosts should use proper description - for business plan business-bundle-2y",
+    "VideoAudioPosts should use proper description - for plans jetpack_personal_monthly",
+    "VideoAudioPosts should use proper description - for plans jetpack_business",
+    "VideoAudioPosts should use proper description - for plans personal-bundle-2y",
+    "VideoAudioPosts should use proper description - for plans jetpack_premium",
+    "VideoAudioPosts should use proper description - for plans jetpack_personal",
+    "VideoAudioPosts should use proper description - for plans jetpack_business_monthly",
+    "VideoAudioPosts should use proper description - for plans jetpack_free",
+    "VideoAudioPosts should use proper description - for ecommerce plan ecommerce-bundle-2y",
+    "VideoAudioPosts should use proper description - for plans free_plan"
+  ]
+}

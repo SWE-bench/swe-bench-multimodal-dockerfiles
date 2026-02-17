@@ -1,0 +1,23 @@
+{
+  "instance_id": "Automattic__wp-calypso-22242",
+  "repo": "Automattic/wp-calypso",
+  "version": "8.9.3",
+  "log_parser": "parse_log_calypso",
+  "eval_type": "pass_and_fail",
+  "FAIL_TO_PASS": [
+    "JetpackConnectMain - cleanUrl - should prepare entered urls for network access"
+  ],
+  "PASS_TO_PASS": [
+    "JetpackConnectMain - goToPluginInstall - should fire redirect",
+    "JetpackConnectMain - makeSafeRedirectionFunction - should protect against multiple calls",
+    "JetpackConnectMain - goToPlans - should fire redirect",
+    "JetpackConnectMain - goToPlans - should redirect to a site slug",
+    "JetpackConnectMain - goToRemoteAuth - should fire redirect",
+    "JetpackConnectMain - goToRemoteAuth - should dispatch analytics",
+    "JetpackConnectMain - goToPluginActivation - should fire redirect",
+    "JetpackConnectMain - makeSafeRedirectionFunction - should make a function that can calls the wrappe function",
+    "JetpackConnectMain - goToPluginActivation - should dispatch analytics",
+    "JetpackConnectMain - goToPlans - should dispatch analytics",
+    "JetpackConnectMain - goToPluginInstall - should dispatch analytics"
+  ]
+}
