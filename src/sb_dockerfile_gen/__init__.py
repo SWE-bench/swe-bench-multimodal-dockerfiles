@@ -1,9 +1,13 @@
+import json
+import re
 from argparse import ArgumentParser
 from pathlib import Path
 
 from sb_dockerfile_gen.constants import (
     CONTAINER_WORKDIR,
+    END_TEST_OUTPUT,
     MAP_REPO_VERSION_TO_SPECS_JS,
+    START_TEST_OUTPUT,
 )
 from sb_dockerfile_gen.utils import (
     git_clone_timesafe,
@@ -176,6 +180,56 @@ def _get_dockerfile(instance) -> str:
         dockerfile += f"\n{repo_script}\n"
     dockerfile += f"\nWORKDIR {CONTAINER_WORKDIR}\n"
     return dockerfile
+
+
+# ── Eval script generation ─────────────────────────────────────────────
+
+
+def _get_eval_script(instance: dict) -> str:
+    """Generate the eval.sh script for a multimodal instance."""
+    repo = instance["repo"]
+    version = instance.get("version")
+    base_commit = instance["base_commit"]
+    test_patch = instance.get("test_patch", "")
+    specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
+
+    test_cmd = specs["test_cmd"]
+    if isinstance(test_cmd, list):
+        test_command = " && ".join(test_cmd)
+    else:
+        test_command = test_cmd
+
+    eval_commands = [
+        "#!/bin/bash",
+        "set -uxo pipefail",
+        f"cd {CONTAINER_WORKDIR}",
+        f"git config --global --add safe.directory {CONTAINER_WORKDIR}",
+        "source $NVM_DIR/nvm.sh",
+        "git status",
+        "git show",
+        f"git -c core.fileMode=false diff {base_commit}",
+    ]
+
+    if test_patch:
+        test_files = re.findall(r"diff --git a/.* b/(.*)", test_patch)
+        reset_tests_command = f"git checkout {base_commit} {' '.join(test_files)}"
+
+        HEREDOC_DELIMITER = "EOF_114329324912"
+        apply_test_patch_command = (
+            f"git apply -v - <<'{HEREDOC_DELIMITER}'\n{test_patch}\n{HEREDOC_DELIMITER}"
+        )
+        eval_commands += [reset_tests_command, apply_test_patch_command]
+
+    eval_commands += [
+        f": '{START_TEST_OUTPUT}'",
+        test_command,
+        f": '{END_TEST_OUTPUT}'",
+    ]
+
+    if test_patch:
+        eval_commands.append(reset_tests_command)
+
+    return "\n".join(eval_commands) + "\n"
 
 
 # ── CLI ────────────────────────────────────────────────────────────────

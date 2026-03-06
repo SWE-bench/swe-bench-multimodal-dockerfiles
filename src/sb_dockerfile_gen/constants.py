@@ -1,6 +1,9 @@
 """
 Constants for the multimodal (JavaScript) dockerfile generator.
-Includes inlined data specs from swebench/data_specs/javascript.py.
+
+Dev split repos: calypso, chart.js, marked, p5.js, react-pdf
+Test split repos: lighthouse, carbon, openlayers, highlight.js, alibaba-fusion/next,
+                  bpmn-js, prism, quarto-cli, prettier, grommet, eslint, scratch-gui
 """
 
 CONTAINER_WORKDIR = "/testbed"
@@ -11,27 +14,35 @@ START_TEST_OUTPUT = ">>>>> Start Test Output"
 END_TEST_OUTPUT = ">>>>> End Test Output"
 
 FAIL_ONLY_REPOS = {
+    # Dev split
     "chartjs/Chart.js",
     "processing/p5.js",
     "markedjs/marked",
 }
 
 MAP_REPO_TO_PARSER_NAME = {
+    # Dev split repos
     "Automattic/wp-calypso": "parse_log_calypso",
     "chartjs/Chart.js": "parse_log_chart_js",
     "markedjs/marked": "parse_log_marked",
     "processing/p5.js": "parse_log_p5js",
     "diegomura/react-pdf": "parse_log_react_pdf",
-    "babel/babel": "parse_log_jest",
-    "vuejs/core": "parse_log_vitest",
-    "facebook/docusaurus": "parse_log_jest",
-    "immutable-js/immutable-js": "parse_log_immutable_js",
-    "mrdoob/three.js": "parse_log_tap",
-    "preactjs/preact": "parse_log_karma",
-    "axios/axios": "parse_log_tap",
+    # Test split repos
+    "GoogleChrome/lighthouse": "parse_log_tap",
+    "carbon-design-system/carbon": "parse_log_jest",
+    "openlayers/openlayers": "parse_log_karma",
+    "highlightjs/highlight.js": "parse_log_tap",
+    "alibaba-fusion/next": "parse_log_karma",
+    "bpmn-io/bpmn-js": "parse_log_karma",
+    "PrismJS/prism": "parse_log_tap",
+    "quarto-dev/quarto-cli": "parse_log_tap",
+    "prettier/prettier": "parse_log_jest",
+    "grommet/grommet": "parse_log_jest",
+    "eslint/eslint": "parse_log_tap",
+    "scratchfoundation/scratch-gui": "parse_log_jest",
 }
 
-# --- Inlined from swebench/data_specs/javascript.py ---
+# --- Common constants ---
 
 TEST_XVFB_PREFIX = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
 XVFB_DEPS = [
@@ -62,6 +73,10 @@ X11_DEPS = [
     "libgtk-3-0",
     "x11-utils",
 ]
+
+# ============================================================
+# Dev split repos (versioned specs)
+# ============================================================
 
 SPECS_CALYPSO = {
     **{
@@ -270,330 +285,164 @@ for v in ["1.0", "1.1", "1.2"]:
     SPECS_REACT_PDF[v]["install"] = ["npm install", "npm install cheerio@1.0.0-rc.3"]
     SPECS_REACT_PDF[v]["test_cmd"] = "./node_modules/.bin/jest --no-color"
 
+# ============================================================
+# Test split repos (all keyed by "" since version is empty)
+# ============================================================
 
-JEST_JSON_JQ_TRANSFORM = """jq -r '.testResults[].assertionResults[] | "[" + (.status | ascii_upcase) + "] " + ((.ancestorTitles | join(" > ")) + (if .ancestorTitles | length > 0 then " > " else "" end) + .title)'"""
+# --- Jest-based repos (no browser deps) ---
 
-SPECS_BABEL = {
-    "14532": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": ["yarn jest babel-generator --verbose"],
-        "install": ["make bootstrap"],
-        "build": ["make build"],
-    },
-    "13928": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": ['yarn jest babel-parser -t "arrow" --verbose'],
-        "install": ["make bootstrap"],
-        "build": ["make build"],
-    },
-    "15649": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": ["yarn jest packages/babel-traverse/test/scope.js --verbose"],
-        "install": ["make bootstrap"],
-        "build": ["make build"],
-    },
-    "15445": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": [
-            'yarn jest packages/babel-generator/test/index.js -t "generation " --verbose'
-        ],
-        "install": ["make bootstrap"],
-        "build": ["make build"],
-    },
-    "16130": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": ["yarn jest babel-helpers --verbose"],
-        "install": ["make bootstrap"],
-        "build": ["make build"],
-    },
-}
-
-SPECS_VUEJS = {
-    "11899": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": [
-            "pnpm run test packages/compiler-sfc/__tests__/compileStyle.spec.ts --no-watch --reporter=verbose"
-        ],
-        "install": ["pnpm i"],
-        "build": ["pnpm run build compiler-sfc"],
-    },
-    "11870": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": [
-            "pnpm run test packages/runtime-core/__tests__/helpers/renderList.spec.ts --no-watch --reporter=verbose"
-        ],
-        "install": ["pnpm i"],
-    },
-    "11739": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": [
-            'pnpm run test packages/runtime-core/__tests__/hydration.spec.ts --no-watch --reporter=verbose -t "mismatch handling"'
-        ],
-        "install": ["pnpm i"],
-    },
-    "11915": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": [
-            'pnpm run test packages/compiler-core/__tests__/parse.spec.ts --no-watch --reporter=verbose -t "Element"'
-        ],
-        "install": ["pnpm i"],
-    },
-    "11589": {
-        "docker_specs": {"node_version": "20"},
-        "test_cmd": [
-            "pnpm run test packages/runtime-core/__tests__/apiWatch.spec.ts --no-watch --reporter=verbose"
-        ],
-        "install": ["pnpm i"],
-    },
-}
-
-SPECS_DOCUSAURUS = {
-    "10309": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["yarn install"],
-        "test_cmd": [
-            "yarn test packages/docusaurus-plugin-content-docs/src/client/__tests__/docsClientUtils.test.ts --verbose"
-        ],
-    },
-    "10130": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["yarn install"],
-        "test_cmd": [
-            "yarn test packages/docusaurus/src/server/__tests__/brokenLinks.test.ts --verbose"
-        ],
-    },
-    "9897": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["yarn install"],
-        "test_cmd": [
-            "yarn test packages/docusaurus-utils/src/__tests__/markdownUtils.test.ts --verbose"
-        ],
-    },
-    "9183": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["yarn install"],
-        "test_cmd": [
-            "yarn test packages/docusaurus-theme-classic/src/__tests__/options.test.ts --verbose"
-        ],
-    },
-    "8927": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["yarn install"],
-        "test_cmd": [
-            "yarn test packages/docusaurus-utils/src/__tests__/markdownLinks.test.ts --verbose"
-        ],
-    },
-}
-
-SPECS_IMMUTABLEJS = {
-    "2006": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "build": ["npm run build"],
-        "test_cmd": ["npx jest __tests__/Range.ts --verbose"],
-    },
-    "2005": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "build": ["npm run build"],
-        "test_cmd": [
-            f"npx jest __tests__/OrderedMap.ts __tests__/OrderedSet.ts --silent --json | {JEST_JSON_JQ_TRANSFORM}"
-        ],
-    },
-}
-
-SPECS_THREEJS = {
-    "27395": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install --ignore-scripts"],
-        "test_cmd": ["npx qunit test/unit/src/math/Sphere.tests.js"],
-    },
-    "26589": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install --ignore-scripts"],
-        "test_cmd": [
-            "npx qunit test/unit/src/objects/Line.tests.js test/unit/src/objects/Mesh.tests.js test/unit/src/objects/Points.tests.js"
-        ],
-    },
-    "25687": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install --ignore-scripts"],
-        "test_cmd": [
-            'npx qunit test/unit/src/core/Object3D.tests.js -f "/json|clone|copy/i"'
-        ],
-    },
-}
-
-SPECS_PREACT = {
-    "4152": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/components.test.js"'
-        ],
-    },
-    "4316": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/events.test.js"'
-        ],
-    },
-    "4245": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="hooks/test/browser/useId.test.js"'
-        ],
-    },
-    "4182": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="hooks/test/browser/errorBoundary.test.js"'
-        ],
-    },
-    "4436": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/refs.test.js"'
-        ],
-    },
-    "3763": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/lifecycles/componentDidMount.test.js"'
-        ],
-    },
-    "3739": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="hooks/test/browser/useState.test.js"',
-        ],
-    },
-    "3689": {
+SPECS_GROMMET = {
+    "": {
+        "install": ["npm i -g yarn", "yarn install"],
+        "test_cmd": ["npx jest --runInBand --no-color --verbose"],
         "docker_specs": {"node_version": "18"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="hooks/test/browser/errorBoundary.test.js"',
-        ],
-    },
-    "3567": {
-        "docker_specs": {"node_version": "18"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="hooks/test/browser/useEffect.test.js"',
-        ],
-    },
-    "3562": {
-        "docker_specs": {"node_version": "18"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="compat/test/browser/render.test.js"',
-        ],
-    },
-    "3454": {
-        "docker_specs": {"node_version": "18"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/svg.test.js"',
-        ],
-    },
-    "3345": {
-        "docker_specs": {"node_version": "18"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="hooks/test/browser/useEffect.test.js"',
-        ],
-    },
-    "3062": {
-        "docker_specs": {"node_version": "16"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/render.test.js"',
-        ],
-    },
-    "3010": {
-        "docker_specs": {"node_version": "16"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/render.test.js"',
-        ],
-    },
-    "2927": {
-        "docker_specs": {"node_version": "16"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/render.test.js"',
-        ],
-    },
-    "2896": {
-        "docker_specs": {"node_version": "16"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="compat/test/browser/memo.test.js"',
-        ],
-    },
-    "2757": {
-        "docker_specs": {"node_version": "16"},
-        "install": ["npm install"],
-        "test_cmd": [
-            'COVERAGE=false BABEL_NO_MODULES=true npx karma start karma.conf.js --single-run --grep="test/browser/render.test.js"',
-        ],
     },
 }
 
-SPECS_AXIOS = {
-    "5892": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": ["npx mocha test/unit/adapters/http.js -R tap -g 'compression'"],
-    },
-    "5316": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "build": ["npm install"],
-        "test_cmd": ["npx mocha test/unit/adapters/http.js -R tap -g 'FormData'"],
-    },
-    "4738": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": [
-            "timeout 10s npx mocha -R tap test/unit/adapters/http.js -g 'timeout'"
-        ],
-    },
-    "4731": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": ["npx mocha -R tap test/unit/adapters/http.js -g 'body length'"],
-    },
-    "6539": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": ["npx mocha -R tap test/unit/regression/SNYK-JS-AXIOS-7361793.js"],
-    },
-    "5085": {
-        "docker_specs": {"node_version": "20"},
-        "install": ["npm install"],
-        "test_cmd": ["npx mocha -R tap test/unit/regression/bugs.js"],
+SPECS_PRETTIER = {
+    "": {
+        "install": ["npm i -g yarn", "yarn install"],
+        "test_cmd": ["npx jest --no-color --verbose"],
+        "docker_specs": {"node_version": "18"},
     },
 }
 
+SPECS_SCRATCH_GUI = {
+    "": {
+        "install": ["npm install", "npm install cheerio@1.0.0-rc.12"],
+        "test_cmd": ["npx jest test/unit --no-color --verbose"],
+        "docker_specs": {"node_version": "16"},
+    },
+}
+
+SPECS_CARBON = {
+    "": {
+        "install": [
+            "npm i -g yarn cross-env",
+            "yarn install --network-timeout 300000",
+        ],
+        "test_cmd": ["cross-env BABEL_ENV=test npx jest --no-color --verbose"],
+        "docker_specs": {"node_version": "18"},
+    },
+}
+
+# --- Mocha-based repos (output forced to TAP for parsing) ---
+
+SPECS_LIGHTHOUSE = {
+    "": {
+        "install": ["npm i -g yarn", "yarn install --frozen-lockfile || yarn install"],
+        "test_cmd": ["yarn unit"],
+        "docker_specs": {"node_version": "18"},
+    },
+}
+
+SPECS_HIGHLIGHT_JS = {
+    "": {
+        "install": ["npm install"],
+        "build": ["node ./tools/build.js -t node"],
+        "test_cmd": ["npx mocha test --no-color -R tap"],
+        "docker_specs": {"node_version": "18"},
+    },
+}
+
+SPECS_PRISM = {
+    "": {
+        "install": ["npm install"],
+        "test_cmd": ["npx mocha tests/run.js --no-color -R tap"],
+        "docker_specs": {"node_version": "18"},
+    },
+}
+
+SPECS_ESLINT = {
+    "": {
+        "install": ["npm install --legacy-peer-deps"],
+        "test_cmd": ["npx mocha tests/lib/ --reporter tap --recursive"],
+        "docker_specs": {"node_version": "18"},
+    },
+}
+
+# --- Karma/browser-based repos (need Chrome + xvfb) ---
+
+SPECS_OPENLAYERS = {
+    "": {
+        "apt-pkgs": XVFB_DEPS,
+        "install": [
+            "npm install",
+            """sed -i '/process.env.CHROME_BIN/d' test/browser/karma.config.cjs""",
+        ],
+        "test_cmd": [
+            f'NODE_OPTIONS=--openssl-legacy-provider {TEST_XVFB_PREFIX} su chromeuser -c "CHROME_BIN=/usr/bin/google-chrome npm run karma -- --single-run --log-level error"',
+        ],
+        "docker_specs": {
+            "node_version": "18",
+            "run_args": {"cap_add": ["SYS_ADMIN"]},
+        },
+    },
+}
+
+SPECS_BPMN_JS = {
+    "": {
+        "apt-pkgs": XVFB_DEPS,
+        "install": ["npm install"],
+        "test_cmd": [
+            f'NODE_OPTIONS=--openssl-legacy-provider {TEST_XVFB_PREFIX} su chromeuser -c "npx karma start test/config/karma.unit.js --single-run"',
+        ],
+        "docker_specs": {
+            "node_version": "18",
+            "run_args": {"cap_add": ["SYS_ADMIN"]},
+        },
+    },
+}
+
+SPECS_ALIBABA_NEXT = {
+    "": {
+        "apt-pkgs": XVFB_DEPS + ["libsass-dev"],
+        "install": ["npm install", "npm install cheerio@1.0.0-rc.3"],
+        "test_cmd": [
+            f'TRAVIS=true {TEST_XVFB_PREFIX} su chromeuser -c "node --max_old_space_size=8192 ./scripts/test/index.js"',
+        ],
+        "docker_specs": {
+            "node_version": "8.17.0",
+            "run_args": {"cap_add": ["SYS_ADMIN"]},
+        },
+    },
+}
+
+# --- Deno-based repos ---
+
+SPECS_QUARTO = {
+    "": {
+        "apt-pkgs": ["unzip", "pipenv"],
+        "install": [
+            "bash configure.sh",
+        ],
+        "test_cmd": ["cd tests && QUARTO_TESTS_FORCE_NO_PIPENV=1 GITHUB_ACTION=1 bash run-tests.sh"],
+        "docker_specs": {"node_version": "18"},
+    },
+}
+
+# ============================================================
+# Aggregate map
+# ============================================================
 
 MAP_REPO_VERSION_TO_SPECS_JS = {
+    # Dev split
     "Automattic/wp-calypso": SPECS_CALYPSO,
     "chartjs/Chart.js": SPECS_CHART_JS,
     "markedjs/marked": SPECS_MARKED,
     "processing/p5.js": SPECS_P5_JS,
     "diegomura/react-pdf": SPECS_REACT_PDF,
-    "babel/babel": SPECS_BABEL,
-    "vuejs/core": SPECS_VUEJS,
-    "facebook/docusaurus": SPECS_DOCUSAURUS,
-    "immutable-js/immutable-js": SPECS_IMMUTABLEJS,
-    "mrdoob/three.js": SPECS_THREEJS,
-    "preactjs/preact": SPECS_PREACT,
-    "axios/axios": SPECS_AXIOS,
+    # Test split
+    "GoogleChrome/lighthouse": SPECS_LIGHTHOUSE,
+    "carbon-design-system/carbon": SPECS_CARBON,
+    "openlayers/openlayers": SPECS_OPENLAYERS,
+    "highlightjs/highlight.js": SPECS_HIGHLIGHT_JS,
+    "alibaba-fusion/next": SPECS_ALIBABA_NEXT,
+    "bpmn-io/bpmn-js": SPECS_BPMN_JS,
+    "PrismJS/prism": SPECS_PRISM,
+    "quarto-dev/quarto-cli": SPECS_QUARTO,
+    "prettier/prettier": SPECS_PRETTIER,
+    "grommet/grommet": SPECS_GROMMET,
+    "eslint/eslint": SPECS_ESLINT,
+    "scratchfoundation/scratch-gui": SPECS_SCRATCH_GUI,
 }
