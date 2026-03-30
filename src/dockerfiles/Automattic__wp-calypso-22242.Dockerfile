@@ -90,7 +90,7 @@ python2 -V
 EOF_f4fd4a31eaa9
 
 
-RUN <<EOF_cc0b0707645d
+RUN <<EOF_28e42fdd75c6
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin  --single-branch https://github.com/Automattic/wp-calypso /testbed
@@ -98,11 +98,12 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard 30b6c1b8d322efcd61485fd28f57364640d831c6
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 30b6c1b8d322efcd61485fd28f57364640d831c6)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 30b6c1b8d322efcd61485fd28f57364640d831c6)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
@@ -110,7 +111,8 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_cc0b0707645d
+npm install cheerio@1.0.0-rc.2 --no-save
+EOF_28e42fdd75c6
 
 
 WORKDIR /testbed
