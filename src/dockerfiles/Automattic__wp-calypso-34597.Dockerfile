@@ -90,7 +90,7 @@ python2 -V
 EOF_16a722167964
 
 
-RUN <<EOF_adaf21911dcd
+RUN <<EOF_8888be98fd03
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin  --single-branch https://github.com/Automattic/wp-calypso /testbed
@@ -98,19 +98,25 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard 6324c6d30d4ece27eeb00faa3e7cc0aa1f817f83
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 6324c6d30d4ece27eeb00faa3e7cc0aa1f817f83)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 6324c6d30d4ece27eeb00faa3e7cc0aa1f817f83)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install --unsafe-perm
-EOF_adaf21911dcd
+node -e "['package.json','npm-shrinkwrap.json'].forEach(function(f){var fs=require('fs');if(!fs.existsSync(f))return;var d=JSON.parse(fs.readFileSync(f));if(d.dependencies)delete d.dependencies['color-studio'];if(d.devDependencies)delete d.devDependencies['color-studio'];fs.writeFileSync(f,JSON.stringify(d,null,2))})"
+npm install --unsafe-perm --ignore-scripts
+npm install @automattic/color-studio@1.0.6 --no-save && cp -r node_modules/@automattic/color-studio node_modules/color-studio
+npm install cheerio@1.0.0-rc.2 --no-save
+npm rebuild node-sass
+npm run build-packages
+EOF_8888be98fd03
 
 
 WORKDIR /testbed
