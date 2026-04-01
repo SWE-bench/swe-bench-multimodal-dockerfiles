@@ -248,7 +248,7 @@ def _get_test_cmds_next(instance: dict) -> list:
     SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
     return list(set([
-        f'timeout 2m bash -c \'{SET_PUPPETEER} {XVFB} '
+        f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
         f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
         for test_path in _get_test_paths(instance)
     ]))

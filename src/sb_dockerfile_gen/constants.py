@@ -940,6 +940,11 @@ for v in [
 for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['apt-pkgs'].extend(["libsass-dev", "sassc"])
     SPECS_NEXT[v]['docker_specs']['node_version'] = '8.17.0'
+    # Pin React/enzyme to era-appropriate versions (Dec 2018).
+    # Latest versions have behavior changes that break async state tests.
+    SPECS_NEXT[v]['install'].extend([
+        "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
+    ])
 
 SPECS_CYPRESS = {
     **{k: {
