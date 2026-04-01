@@ -182,6 +182,174 @@ def _get_dockerfile(instance) -> str:
     return dockerfile
 
 
+# ── Per-instance test command generators ──────────────────────────────
+# Ported from SWE-bench/private test_spec/javascript.py.
+# JS test frameworks often need specific test paths/patterns rather than
+# running the entire suite.
+
+try:
+    from unidiff import PatchSet
+except ImportError:
+    PatchSet = None
+
+
+def _get_test_paths(instance: dict) -> list[str]:
+    """Extract test file paths from test_patch."""
+    test_patch = instance.get("test_patch", "")
+    if not test_patch:
+        return []
+    if PatchSet is not None:
+        return [x.path for x in PatchSet(test_patch)]
+    return re.findall(r"diff --git a/.* b/(.*)", test_patch)
+
+
+def _get_test_cmds_prism(instance: dict) -> list:
+    test_cmd = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance["version"]]["test_cmd"]
+    directives = []
+    for test_path in _get_test_paths(instance):
+        if test_path.startswith("tests/languages"):
+            directives.append(test_cmd + f" --language {test_path.split('/')[2]}")
+        elif test_path == "tests/core/greedy.js":
+            directives.append("./node_modules/.bin/mocha tests/core/**/*.js --reporter json")
+        elif test_path == "test.html":
+            continue
+    return sorted(list(set(directives)))
+
+
+def _get_test_cmds_openlayers(instance: dict) -> list:
+    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
+    SSL_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
+    cmds = []
+    for test_path in _get_test_paths(instance):
+        test_type = test_path.split('/')[1] if '/' in test_path else ""
+        if test_type == "browser":
+            if instance.get("version") in ['6.9', '6.12', '6.14', '7.0', '7.1', '7.2', '7.3', '7.5']:
+                cmds.append(f'su chromeuser -c "npm run test-browser"')
+            else:
+                cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-browser"')
+        elif test_type == "rendering":
+            cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-rendering"')
+        elif test_type == "spec":
+            cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
+        elif test_type == "node":
+            cmds.append("npm run test-node")
+        else:
+            cmds.append("npm run test")
+        if test_type in ['spec', 'rendering', 'browser'] and instance.get('version') in [
+            '6.1', '6.2', '6.3', '6.4', '6.5', '6.5.1', '6.6',
+            '4.3', '4.4', '4.5', '4.6', '5.1', '5.2', '5.3'
+        ]:
+            cmds[-1] = f"{SSL_LEGACY} {cmds[-1]}"
+    return list(set(cmds))
+
+
+def _get_test_cmds_next(instance: dict) -> list:
+    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
+    return list(set([
+        f'timeout 2m bash -c \'{SET_PUPPETEER} {XVFB} '
+        f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
+        for test_path in _get_test_paths(instance)
+    ]))
+
+
+def _get_test_cmds_carbon(instance: dict) -> list:
+    cmds = []
+    for test_path in _get_test_paths(instance):
+        if re.search(r"__snapshots__/(.*).js.snap$", test_path):
+            test_path = "/".join(test_path.split("/")[:-2])
+        if "__tests__" in test_path:
+            test_path = test_path.split("__tests__")[0]
+        cmds.append(f"yarn test {test_path}")
+    return list(set(cmds))
+
+
+def _get_test_cmds_scratch_gui(instance: dict) -> list:
+    test_prefix = MAP_REPO_VERSION_TO_SPECS_JS[instance['repo']][instance['version']]["test_cmd"]
+    cmds = []
+    for test_path in _get_test_paths(instance):
+        if "__snapshots__" in test_path:
+            test_path = test_path.split("__snapshots__")[0]
+        cmds.append(f"{test_prefix} {test_path}")
+    return list(set(cmds))
+
+
+def _get_test_cmds_lighthouse(instance: dict) -> list:
+    cmds = []
+    SUBDIRS = ["report", "cli", "report", "treemap", "viewer"]
+    LH_PREFIX = "lighthouse-"
+    for test_path in _get_test_paths(instance):
+        if any(test_path.endswith(ext) for ext in [".html", ".json", ".md", ".txt"]) or "smokehouse" in test_path:
+            continue
+        parent_folder = test_path.split("/")[0]
+        if instance.get("version") in ['9.5', '10.0', '10.2']:
+            if parent_folder == "flow-report":
+                cmds.append("yarn unit-flow")
+            elif parent_folder in SUBDIRS + [LH_PREFIX + x for x in SUBDIRS]:
+                if parent_folder.startswith(LH_PREFIX):
+                    parent_folder = parent_folder[len(LH_PREFIX):]
+                cmds.append(f"yarn unit-{parent_folder} {test_path}")
+            else:
+                cmds.append(f"yarn mocha {test_path}")
+        elif '3.0' <= str(instance.get("version", "")) <= '8.6':
+            cmds.append(f"yarn jest --no-colors {test_path}")
+        else:
+            cmds.append(f"./node_modules/.bin/mocha --reporter json {test_path}")
+    return list(set(cmds))
+
+
+def _get_test_cmds_prettier(instance: dict) -> list:
+    cmds = []
+    for test_path in _get_test_paths(instance):
+        if "__snapshots__" in test_path:
+            test_path = test_path.split("__snapshots__")[0]
+        if test_path.endswith(".md"):
+            test_path = "/".join(test_path.split("/")[:-1])
+        cmds.append(f"yarn test {test_path}")
+    return list(set(cmds))
+
+
+def _get_test_cmds_react_pdf(instance: dict) -> list:
+    test_prefix = MAP_REPO_VERSION_TO_SPECS_JS[instance['repo']][instance['version']]["test_cmd"]
+    cmds = []
+    for test_path in _get_test_paths(instance):
+        if test_path.endswith(".png"):
+            continue
+        elif test_path.startswith("packages/"):
+            test_path = "/".join(test_path.split("/")[:2])
+            cmds.append(f"{test_prefix} {test_path}")
+        elif test_path.startswith("tests/"):
+            cmds.append(test_prefix)
+    return list(set(cmds))
+
+
+_MAP_REPO_TO_TEST_CMDS = {
+    "alibaba-fusion/next": _get_test_cmds_next,
+    "carbon-design-system/carbon": _get_test_cmds_carbon,
+    "GoogleChrome/lighthouse": _get_test_cmds_lighthouse,
+    "openlayers/openlayers": _get_test_cmds_openlayers,
+    "prettier/prettier": _get_test_cmds_prettier,
+    "PrismJS/prism": _get_test_cmds_prism,
+    "scratchfoundation/scratch-gui": _get_test_cmds_scratch_gui,
+    "diegomura/react-pdf": _get_test_cmds_react_pdf,
+}
+
+
+def _get_test_commands(instance: dict, specs: dict) -> str:
+    """Get test command(s) for an instance. Uses per-repo handler if available."""
+    repo = instance["repo"]
+    if repo in _MAP_REPO_TO_TEST_CMDS and instance.get("test_patch"):
+        cmds = _MAP_REPO_TO_TEST_CMDS[repo](instance)
+        if cmds:
+            return " && ".join(cmds)
+    # Fallback to static test_cmd from specs
+    test_cmd = specs["test_cmd"]
+    if isinstance(test_cmd, list):
+        return " && ".join(test_cmd)
+    return test_cmd
+
+
 # ── Eval script generation ─────────────────────────────────────────────
 
 
@@ -193,11 +361,7 @@ def _get_eval_script(instance: dict) -> str:
     test_patch = instance.get("test_patch", "")
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
 
-    test_cmd = specs["test_cmd"]
-    if isinstance(test_cmd, list):
-        test_command = " && ".join(test_cmd)
-    else:
-        test_command = test_cmd
+    test_command = _get_test_commands(instance, specs)
 
     eval_commands = [
         "#!/bin/bash",
