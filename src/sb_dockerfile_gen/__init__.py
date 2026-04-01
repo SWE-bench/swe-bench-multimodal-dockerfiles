@@ -306,6 +306,9 @@ def _get_test_cmds_prettier(instance: dict) -> list:
             test_path = test_path.split("__snapshots__")[0]
         if test_path.endswith(".md"):
             test_path = "/".join(test_path.split("/")[:-1])
+        # Test fixtures (.ts, .css, etc.) aren't specs — target the directory
+        if not test_path.endswith(".js") and not test_path.endswith("/"):
+            test_path = "/".join(test_path.split("/")[:-1])
         cmds.append(f"yarn test {test_path}")
     return list(set(cmds))
 
