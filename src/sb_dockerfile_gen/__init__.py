@@ -331,7 +331,8 @@ _MAP_REPO_TO_TEST_CMDS = {
     "openlayers/openlayers": _get_test_cmds_openlayers,
     "prettier/prettier": _get_test_cmds_prettier,
     "PrismJS/prism": _get_test_cmds_prism,
-    "scratchfoundation/scratch-gui": _get_test_cmds_scratch_gui,
+    # scratch-gui: static test_cmd runs all jest tests, works fine.
+    # Per-instance cmd is too narrow (misses F2P tests not in test_patch).
     "diegomura/react-pdf": _get_test_cmds_react_pdf,
 }
 
@@ -376,7 +377,25 @@ def _get_eval_script(instance: dict) -> str:
 
     if test_patch:
         test_files = re.findall(r"diff --git a/.* b/(.*)", test_patch)
-        reset_tests_command = f"git checkout {base_commit} {' '.join(test_files)}"
+        # Separate existing files (can git checkout) from new files (need rm)
+        new_file_markers = set()
+        lines = test_patch.split("\n")
+        for i, line in enumerate(lines):
+            if "new file mode" in line:
+                for j in range(max(0, i - 2), i):
+                    m = re.match(r"diff --git a/.* b/(.*)", lines[j])
+                    if m:
+                        new_file_markers.add(m.group(1))
+                        break
+        existing_files = [f for f in test_files if f not in new_file_markers]
+        new_files = [f for f in test_files if f in new_file_markers]
+
+        reset_parts = []
+        if existing_files:
+            reset_parts.append(f"git checkout {base_commit} {' '.join(existing_files)}")
+        if new_files:
+            reset_parts.append(f"rm -f {' '.join(new_files)}")
+        reset_tests_command = " && ".join(reset_parts) if reset_parts else "true"
 
         HEREDOC_DELIMITER = "EOF_114329324912"
         apply_test_patch_command = (
