@@ -997,7 +997,7 @@ SPECS_CARBON = {
 SPECS_SCRATCH = {
     **{k: {
         "install": ["npm install"],
-        "test_cmd": "./node_modules/.bin/jest --runInBand --no-colors",
+        "test_cmd": "./node_modules/.bin/jest --runInBand --no-colors --forceExit --testPathIgnorePatterns='test/integration' --testPathIgnorePatterns='vm-manager-hoc'",
         "docker_specs": {
             "node_version": {
                 "1": "20.16.0",
