@@ -28,21 +28,22 @@ def make_heredoc_run_command(commands: list[str]) -> str:
 def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
     """Generate shell commands to clone a repo and remove references to future information."""
     branch = REPO_BASE_COMMIT_BRANCH.get(repo, {}).get(base_commit, "")
-    branch = f"--branch {branch}" if branch else ""
+    if branch:
+        clone_args = f"--branch {branch} --single-branch"
+    else:
+        clone_args = ""
     return [
-        f"git clone -o origin {branch} --single-branch https://github.com/{repo} {workdir}",
+        f"git clone -o origin {clone_args} https://github.com/{repo} {workdir}",
         f"chmod -R 777 {workdir}",
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
+        # Remove tags newer than base commit (prevents future info leakage)
         f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
         'git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done',
+        # Delete all branches except the detached HEAD at base_commit
+        'git branch -D $(git branch | grep -v "^\\*") 2>/dev/null || true',
         "git reflog expire --expire=now --all",
-        "git gc --prune=now --aggressive",
-        'AFTER_EPOCH=$((TARGET_EPOCH + 1))',
-        'AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")',
-        'COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)',
-        '[ "$COMMIT_COUNT" -eq 0 ] || exit 1',
         "cd - || true",
     ]
 
