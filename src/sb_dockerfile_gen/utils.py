@@ -29,11 +29,13 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
     """Generate shell commands to clone a repo and remove references to future information."""
     branch = REPO_BASE_COMMIT_BRANCH.get(repo, {}).get(base_commit, "")
     if branch:
-        clone_args = f"--branch {branch} --single-branch"
+        clone_cmd = f"git clone -o origin --branch {branch} --single-branch https://github.com/{repo} {workdir}"
     else:
-        clone_args = ""
+        # Treeless clone: fetches all commits but downloads blobs on demand.
+        # Much faster than full clone, and unlike --single-branch it includes all branches.
+        clone_cmd = f"git clone -o origin --filter=blob:none https://github.com/{repo} {workdir}"
     return [
-        f"git clone -o origin {clone_args} https://github.com/{repo} {workdir}",
+        clone_cmd,
         f"chmod -R 777 {workdir}",
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
