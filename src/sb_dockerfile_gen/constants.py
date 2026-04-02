@@ -1084,12 +1084,14 @@ SPECS_PRETTIER = {
         '2.6', '2.9', '3.0', '3.3', '3.4'
     ]}
 }
-# v2.2 adds meriyah parser — needs to be installed as a dependency
+# v2.2 gold patch adds meriyah parser — pre-install the dep so it's available
+# when the gold patch adds it to package.json. Use npm install --no-save to avoid
+# modifying package.json (the gold patch does that).
 SPECS_PRETTIER['2.2'] = {
     "install": [
         "npm i -g yarn",
         "yarn",
-        "yarn add meriyah@3.1.2",
+        "npm install meriyah@3.1.2 --no-save",
     ],
     "test_cmd": "yarn test",
     "docker_specs": {
