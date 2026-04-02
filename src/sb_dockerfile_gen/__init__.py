@@ -261,6 +261,15 @@ def _get_test_cmds_carbon(instance: dict) -> list:
             test_path = "/".join(test_path.split("/")[:-2])
         if "__tests__" in test_path:
             test_path = test_path.split("__tests__")[0]
+        # For paths under packages/*/src/components/*/next/ or packages/cra-template/,
+        # Jest won't match the specific file. Target the component directory instead.
+        if "/next/" in test_path and "/components/" in test_path:
+            test_path = test_path.split("/next/")[0]
+        if "cra-template/template/" in test_path:
+            test_path = "packages/cra-template"
+        # e2e test files (.e2e.js) are not matched by Jest — target the component directory
+        if test_path.endswith(".e2e.js"):
+            test_path = "/".join(test_path.split("/")[:-1])
         cmds.append(f"yarn test {test_path}")
     return list(set(cmds))
 
@@ -282,6 +291,12 @@ def _get_test_cmds_lighthouse(instance: dict) -> list:
     for test_path in _get_test_paths(instance):
         if any(test_path.endswith(ext) for ext in [".html", ".json", ".md", ".txt"]) or "smokehouse" in test_path:
             continue
+        # Skip snapshot files — target the directory instead
+        if "__snapshots__" in test_path:
+            test_path = test_path.split("__snapshots__")[0].rstrip("/")
+        # Skip non-test helper files (e.g. fake-driver.js) — target the directory
+        if not test_path.endswith("-test.js") and not test_path.endswith("-test.ts") and test_path.endswith(".js"):
+            test_path = "/".join(test_path.split("/")[:-1])
         parent_folder = test_path.split("/")[0]
         if instance.get("version") in ['9.5', '10.0', '10.2']:
             if parent_folder == "flow-report":
@@ -347,11 +362,13 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
     if repo in _MAP_REPO_TO_TEST_CMDS and instance.get("test_patch"):
         cmds = _MAP_REPO_TO_TEST_CMDS[repo](instance)
         if cmds:
-            return " && ".join(cmds)
+            # Use ; instead of && so all test commands run even if one fails.
+            # We need output from ALL tests for correct F2P/P2P grading.
+            return " ; ".join(cmds)
     # Fallback to static test_cmd from specs
     test_cmd = specs["test_cmd"]
     if isinstance(test_cmd, list):
-        return " && ".join(test_cmd)
+        return " ; ".join(test_cmd)
     return test_cmd
 
 

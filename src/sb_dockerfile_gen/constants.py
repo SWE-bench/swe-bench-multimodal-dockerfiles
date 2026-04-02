@@ -937,6 +937,15 @@ for v in [
         'npm i sass@1.36.0 --save-exact',
         'npm show cheerio',
     ])
+# v1.21: Gold patch adds lodash.clonedeep dependency to tree component
+SPECS_NEXT['1.21']['install'].append("npm install lodash.clonedeep@4.5.0 --save-exact")
+# v1.22-1.24 (Node 14): pin puppeteer (v22+ requires Node 18) and highlight.js
+# (latest uses \p{XID_Start} regex which requires Node 15+)
+for v in ['1.22', '1.23', '1.24']:
+    SPECS_NEXT[v]['install'].extend([
+        "npm install puppeteer@19.11.1 --save-exact",
+        "npm install highlight.js@10.7.3 --save-exact",
+    ])
 for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['apt-pkgs'].extend(["libsass-dev", "sassc"])
     SPECS_NEXT[v]['docker_specs']['node_version'] = '8.17.0'
@@ -1071,9 +1080,21 @@ SPECS_PRETTIER = {
         }
     } for k in [
         '0.0', '0.11', '0.13', '0.15', '0.16', '0.20', '1.11',
-        '1.4', '1.5', '1.6', '1.7', '1.8', '2.1', '2.2', '2.3',
+        '1.4', '1.5', '1.6', '1.7', '1.8', '2.1', '2.3',
         '2.6', '2.9', '3.0', '3.3', '3.4'
     ]}
+}
+# v2.2 adds meriyah parser — needs to be installed as a dependency
+SPECS_PRETTIER['2.2'] = {
+    "install": [
+        "npm i -g yarn",
+        "yarn",
+        "yarn add meriyah@3.1.2",
+    ],
+    "test_cmd": "yarn test",
+    "docker_specs": {
+        "node_version": "20.16.0",
+    }
 }
 
 PIP_INSTALLS_QUARTOCLI = [
