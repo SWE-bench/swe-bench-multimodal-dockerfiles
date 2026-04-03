@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,27 +88,33 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_199c03d08b0a
+RUN <<EOF_e31a2a53deb7
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/markedjs/marked /testbed
+git clone -o origin https://github.com/markedjs/marked /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ffcca4128a98557e1202323146361e11e851537d
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci ffcca4128a98557e1202323146361e11e851537d)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct ffcca4128a98557e1202323146361e11e851537d)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_199c03d08b0a
+EOF_e31a2a53deb7
+
+
+RUN <<EOF_c758ececb269
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/117394732-a582c080-af31-11eb-919b-c15cf5f16069.png' 'https://user-images.githubusercontent.com/11593903/117394732-a582c080-af31-11eb-919b-c15cf5f16069.png' || true
+EOF_c758ececb269
 
 
 WORKDIR /testbed

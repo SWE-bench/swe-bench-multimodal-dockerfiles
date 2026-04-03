@@ -61,14 +61,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 12.22.12
+ENV NODE_VERSION 16.19.1
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_602599b66b13
+RUN <<EOF_b2e3089cc86f
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=12.22.12
+export NODE_VERSION=16.19.1
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -78,38 +78,36 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v12.22.12/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v12.22.12/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v16.19.1/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v16.19.1/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_602599b66b13
+EOF_b2e3089cc86f
 
 
-RUN <<EOF_cd20b9fedaaa
+RUN <<EOF_90c4f8d63a31
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/PrismJS/prism /testbed
+git clone -o origin https://github.com/carbon-design-system/carbon /testbed
 chmod -R 777 /testbed
 cd /testbed
-git reset --hard 0d4b6cb64e72a172fc64423c04aed4ac8b59cd0b
+git reset --hard a549989a82c01bcec84521cc23faaa699bd43f08
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 0d4b6cb64e72a172fc64423c04aed4ac8b59cd0b)
+TARGET_EPOCH=$(git show -s --format=%ct a549989a82c01bcec84521cc23faaa699bd43f08)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm ci
-npm run build
-EOF_cd20b9fedaaa
+npm i -g yarn
+yarn install
+yarn build
+npm install nwsapi@2.2.7 --force --no-save 2>/dev/null || true
+EOF_90c4f8d63a31
 
 
 WORKDIR /testbed

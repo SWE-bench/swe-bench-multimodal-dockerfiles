@@ -61,14 +61,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 12.22.12
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_b5947e90ba10
+RUN <<EOF_602599b66b13
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=18
+export NODE_VERSION=12.22.12
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -78,36 +78,35 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v12.22.12/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v12.22.12/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_b5947e90ba10
+EOF_602599b66b13
 
 
-RUN <<EOF_9c5aa07b10e8
+RUN <<EOF_8c4e701dfae7
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/scratchfoundation/scratch-gui /testbed
+git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 1a2c3bd0b752b9069896728b37dee2babd505679
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 1a2c3bd0b752b9069896728b37dee2babd505679)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 1a2c3bd0b752b9069896728b37dee2babd505679)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_9c5aa07b10e8
+npm install cheerio@1.0.0-rc.3
+npm show cheerio
+EOF_8c4e701dfae7
 
 
 WORKDIR /testbed

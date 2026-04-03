@@ -87,15 +87,15 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_cd20b9fedaaa
+RUN <<EOF_c262dc074848
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/PrismJS/prism /testbed
+git clone -o origin  --single-branch https://github.com/scratchfoundation/scratch-gui /testbed
 chmod -R 777 /testbed
 cd /testbed
-git reset --hard 0d4b6cb64e72a172fc64423c04aed4ac8b59cd0b
+git reset --hard efeb3a80ab5d99bd14f01c2b5fc9ed0107d93fe3
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 0d4b6cb64e72a172fc64423c04aed4ac8b59cd0b)
+TARGET_EPOCH=$(git show -s --format=%ct efeb3a80ab5d99bd14f01c2b5fc9ed0107d93fe3)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
@@ -107,9 +107,10 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm ci
-npm run build
-EOF_cd20b9fedaaa
+npm install
+npm install cheerio@1.0.0-rc.3
+npm show cheerio
+EOF_c262dc074848
 
 
 WORKDIR /testbed

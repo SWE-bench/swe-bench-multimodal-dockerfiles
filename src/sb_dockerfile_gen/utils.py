@@ -31,9 +31,9 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
     if branch:
         clone_cmd = f"git clone -o origin --branch {branch} --single-branch https://github.com/{repo} {workdir}"
     else:
-        # Treeless clone: fetches all commits but downloads blobs on demand.
-        # Much faster than full clone, and unlike --single-branch it includes all branches.
-        clone_cmd = f"git clone -o origin --filter=blob:none https://github.com/{repo} {workdir}"
+        # Full clone (all branches). Fast for most repos (< 2 min).
+        # --single-branch was faster but fails when base_commit is on a non-default branch.
+        clone_cmd = f"git clone -o origin https://github.com/{repo} {workdir}"
     return [
         clone_cmd,
         f"chmod -R 777 {workdir}",

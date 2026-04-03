@@ -61,14 +61,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 16.20.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_b5947e90ba10
+RUN <<EOF_34e7d255ba3f
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=18
+export NODE_VERSION=16.20.2
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -78,16 +78,16 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v16.20.2/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v16.20.2/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_b5947e90ba10
+EOF_34e7d255ba3f
 
 
-RUN <<EOF_b16bfe8a468e
+RUN <<EOF_5b0b46d17091
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin  --single-branch https://github.com/GoogleChrome/lighthouse /testbed
@@ -107,8 +107,10 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
-yarn install --frozen-lockfile || yarn install
-EOF_b16bfe8a468e
+yarn
+yarn install-all
+yarn build-all
+EOF_5b0b46d17091
 
 
 WORKDIR /testbed

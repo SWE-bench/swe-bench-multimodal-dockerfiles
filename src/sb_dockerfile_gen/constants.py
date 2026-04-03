@@ -63,6 +63,43 @@ X11_DEPS = [
     "x11-utils",
 ]
 
+# Chrome 146 has breaking changes for older tests (floating-point precision,
+# disconnect timeouts, MessagePort errors, rendering differences).
+# Use Chromium snapshots for era-appropriate versions.
+# Snapshots are at: https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev}/chrome-linux.zip
+# Wrap the binary in a shell script that adds --no-sandbox (needed in Docker).
+def _chromium_snapshot_install(revision: str) -> list[str]:
+    """Install a specific Chromium snapshot revision, replacing system Chrome."""
+    return [
+        # libxtst6 is needed by old Chromium but not pulled by the APT Chrome package
+        "apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*",
+        f"wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{revision}/chrome-linux.zip",
+        "unzip -q chrome-linux.zip -d /opt/",
+        "rm chrome-linux.zip",
+        # Replace symlinks with a wrapper script that adds --no-sandbox
+        # (Chromium snapshots don't include the SUID sandbox helper)
+        "rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+        'printf \'#!/bin/bash\\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\\n\' > /usr/bin/google-chrome',
+        "chmod +x /usr/bin/google-chrome",
+        "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+    ]
+
+# Revision → approximate Chrome version mapping:
+#   599821 → Chrome ~72 (Oct 2018) — for v1.11-v1.15
+#   793478 → Chrome ~85 (Aug 2020) — for v1.21
+# Chrome for Testing 120 — for v1.27 and openlayers v7.4
+_CHROMIUM_72_INSTALL = _chromium_snapshot_install("599821")
+_CHROMIUM_85_INSTALL = _chromium_snapshot_install("793478")
+_CHROME_120_INSTALL = [
+    "wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip",
+    "unzip -q chrome-linux64.zip -d /opt/",
+    "rm chrome-linux64.zip",
+    "rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+    'printf \'#!/bin/bash\\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\\n\' > /usr/bin/google-chrome',
+    "chmod +x /usr/bin/google-chrome",
+    "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+]
+
 SPECS_CALYPSO = {
     **{
         k: {
@@ -843,6 +880,8 @@ for v in [
     SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/browser/karma.config.cjs"))
 for v in ['6.0', '6.1', '6.2', '6.3', '6.4', '6.5']:
     SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
+# OL v7.4: rendering tests use Puppeteer's bundled Chromium 115 (downloaded at eval time).
+# No system Chrome override needed — Puppeteer.launch() uses its own browser.
 
 SPECS_EMOTION = {
     **{k: {
@@ -954,6 +993,18 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['install'].extend([
         "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
     ])
+# Pin era-appropriate Chromium for versions with Chrome-sensitive tests
+for v in ['1.11', '1.14', '1.15']:
+    SPECS_NEXT[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_NEXT[v]['install']
+SPECS_NEXT['1.21']['install'] = _CHROMIUM_85_INSTALL + SPECS_NEXT['1.21']['install']
+SPECS_NEXT['1.27']['install'] = _CHROME_120_INSTALL + SPECS_NEXT['1.27']['install']
+# v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
+# the actual Electron binary must be installed separately.
+# Install to chromeuser's cache dir (tests run as chromeuser via su).
+SPECS_NEXT['1.27']['install'].append(
+    "CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && "
+    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress"
+)
 
 SPECS_CYPRESS = {
     **{k: {
@@ -1007,6 +1058,24 @@ SPECS_CARBON = {
         '18.14', '18.15', '18.16', '18.17', '20.9', '20.11', '20.12', '20.14'
     ]}
 }
+# Fix carbon P2P accessibility test failures:
+# 1. nwsapi 2.2.0 doesn't support :scope>* selector — upgrade to 2.2.7
+#    Use node to directly replace the module to avoid corrupting yarn 3 lockfiles.
+# 2. accessibility-checker fetches "latest" rules from able.ibm.com which are
+#    stricter than when tests were written — pin to a known-good archive
+for v in SPECS_CARBON:
+    SPECS_CARBON[v]['install'].append(
+        "wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && "
+        "tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && "
+        "rm nwsapi-2.2.7.tgz"
+    )
+_CARBON_ACHECKER_RULES = {
+    '16.15': '12March2022',
+    '20.12': '12March2022',
+    '20.14': '12March2022',
+}
+for v, archive in _CARBON_ACHECKER_RULES.items():
+    SPECS_CARBON[v]['install'].append(f"echo 'ruleArchive: {archive}' > .achecker.yml")
 
 SPECS_SCRATCH = {
     **{k: {
@@ -1029,6 +1098,12 @@ for v in ['1', '2', '3', '4']:
         "npm install cheerio@1.0.0-rc.3",
         "npm show cheerio"
     ])
+# v8: AudioContext.resume() throws in web-audio-test-api mock because the default
+# state is states[0] = "disabled". Swap array so "enabled" is default.
+SPECS_SCRATCH['8']['install'].append(
+    "sed -i 's/states: .\"disabled\", \"enabled\"./states: [\"enabled\", \"disabled\"]/' "
+    "node_modules/web-audio-test-api/lib/utils/api.js"
+)
 
 SPECS_LIGHTHOUSE = {
     **{k: {
@@ -1084,14 +1159,15 @@ SPECS_PRETTIER = {
         '2.6', '2.9', '3.0', '3.3', '3.4'
     ]}
 }
-# v2.2 gold patch adds meriyah parser — pre-install the dep so it's available
-# when the gold patch adds it to package.json. Use npm install --no-save to avoid
-# modifying package.json (the gold patch does that).
+# v2.2 gold patch adds meriyah parser — pre-install via yarn add so the dep
+# is in yarn's dependency graph and survives subsequent yarn operations.
+# Restore package.json/yarn.lock afterwards (gold patch will re-add meriyah).
 SPECS_PRETTIER['2.2'] = {
     "install": [
         "npm i -g yarn",
         "yarn",
-        "npm install meriyah@3.1.2 --no-save",
+        "yarn add meriyah@3.1.2",
+        "git checkout -- package.json yarn.lock 2>/dev/null || true",
     ],
     "test_cmd": "yarn test",
     "docker_specs": {
