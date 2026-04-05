@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,22 +91,18 @@ python2 -V
 EOF_4d2410c5ce08
 
 
-RUN <<EOF_9a52257ccb5d
+RUN <<EOF_6dbb90082c11
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/alibaba-fusion/next /testbed
+git clone -o origin https://github.com/alibaba-fusion/next /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard c09ddc15a6790afcc96c9a76141ea83cfb30be45
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct c09ddc15a6790afcc96c9a76141ea83cfb30be45)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -115,7 +112,17 @@ npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
-EOF_9a52257ccb5d
+npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
+EOF_6dbb90082c11
+
+
+RUN <<EOF_4a42ee78ba59
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/cmAlhkZujhu0.png' 'https://fusion-image.oss-cn-beijing.aliyuncs.com/images/cmAlhkZujhu0.png' || true
+EOF_4a42ee78ba59
 
 
 WORKDIR /testbed

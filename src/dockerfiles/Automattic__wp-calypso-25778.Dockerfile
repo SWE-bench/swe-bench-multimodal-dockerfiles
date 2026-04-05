@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,27 +91,33 @@ python2 -V
 EOF_79e9dae22681
 
 
-RUN <<EOF_1a97ce95df45
+RUN <<EOF_785ee2c4e114
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/Automattic/wp-calypso /testbed
+git clone -o origin https://github.com/Automattic/wp-calypso /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 54d626a276373d45ffddd2cf4f7099733c8e43de
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 54d626a276373d45ffddd2cf4f7099733c8e43de)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 54d626a276373d45ffddd2cf4f7099733c8e43de)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_1a97ce95df45
+EOF_785ee2c4e114
+
+
+RUN <<EOF_f69fa59b702e
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/40953053-23bd94ba-68d2-11e8-854c-eef25826e32f.png' 'https://user-images.githubusercontent.com/17325/40953053-23bd94ba-68d2-11e8-854c-eef25826e32f.png' || true
+EOF_f69fa59b702e
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,28 +88,34 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_612e88716e4b
+RUN <<EOF_1e946ad1c17f
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/highlightjs/highlight.js /testbed
+git clone -o origin https://github.com/highlightjs/highlight.js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 04f3904c9dd7e9fd338ad916044564d0f8fb13d2
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 04f3904c9dd7e9fd338ad916044564d0f8fb13d2)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 04f3904c9dd7e9fd338ad916044564d0f8fb13d2)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_612e88716e4b
+EOF_1e946ad1c17f
+
+
+RUN <<EOF_729911b30c51
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/99536268-8347b700-2980-11eb-8eb9-f81b471890f5.png' 'https://user-images.githubusercontent.com/2285037/99536268-8347b700-2980-11eb-8eb9-f81b471890f5.png' || true
+EOF_729911b30c51
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,22 +88,18 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_c262dc074848
+RUN <<EOF_ad295f62f101
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/scratchfoundation/scratch-gui /testbed
+git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard efeb3a80ab5d99bd14f01c2b5fc9ed0107d93fe3
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct efeb3a80ab5d99bd14f01c2b5fc9ed0107d93fe3)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -110,7 +107,7 @@ source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
-EOF_c262dc074848
+EOF_ad295f62f101
 
 
 WORKDIR /testbed

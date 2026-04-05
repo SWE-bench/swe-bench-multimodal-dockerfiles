@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,29 +91,36 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_97dfbc50af32
+RUN <<EOF_76b7efe424e3
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 3004f5707fc73365f7f50af13fa60c2599ef66b4
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 3004f5707fc73365f7f50af13fa60c2599ef66b4)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_97dfbc50af32
+EOF_76b7efe424e3
+
+
+RUN <<EOF_10af907395d1
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/131180120-202b13a4-5cad-4508-83d2-86b21f78eaff.png' 'https://user-images.githubusercontent.com/43833528/131180120-202b13a4-5cad-4508-83d2-86b21f78eaff.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/131180163-d67c73f5-00fa-4dbd-b559-623c8b786b92.png' 'https://user-images.githubusercontent.com/43833528/131180163-d67c73f5-00fa-4dbd-b559-623c8b786b92.png' || true
+EOF_10af907395d1
 
 
 WORKDIR /testbed

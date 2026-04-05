@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -65,11 +66,11 @@ ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_c3c55706e4d6
+RUN <<EOF_55f960f4ac15
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -87,30 +88,82 @@ source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_c3c55706e4d6
+EOF_55f960f4ac15
 
 
-RUN <<EOF_a232079cb1ea
+RUN <<EOF_b176c568b10b
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/chartjs/Chart.js /testbed
+git clone -o origin https://github.com/chartjs/Chart.js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 8e68481ec4e29599660332f58967f439fb2ef17c
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 8e68481ec4e29599660332f58967f439fb2ef17c)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 8e68481ec4e29599660332f58967f439fb2ef17c)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_a232079cb1ea
+EOF_b176c568b10b
+
+
+RUN <<EOF_50abd9e8048c
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-base-value.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-base-value.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-base-value.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-flex-offset.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-flex-offset.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-flex-offset.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-flex.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-flex.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-flex.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-offset.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-offset.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-offset.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-reverse.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-reverse.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-reverse.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-stacked.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/bar-thickness-stacked.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-stacked.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/bottom.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/bottom.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/bottom.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/left.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/left.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/left.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/mid-x.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/mid-x.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/mid-x.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/mid-y.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/mid-y.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/mid-y.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/right.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/right.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/right.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/top.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/top.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/top.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/value-x.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/value-x.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/value-x.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/value-y.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/baseLine/value-y.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/value-y.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderRadius/border-radius.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderSkipped/middle.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderSkipped/middle.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderSkipped/middle.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderWidth/indexable.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderWidth/indexable.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderWidth/indexable.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderWidth/object.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderWidth/object.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderWidth/object.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderWidth/value.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/borderWidth/value.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderWidth/value.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/horizontal-borders.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/horizontal-borders.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/horizontal-borders.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/minBarLength/vertical.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/minBarLength/vertical.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/minBarLength/vertical.png' || true
+EOF_50abd9e8048c
 
 
 WORKDIR /testbed

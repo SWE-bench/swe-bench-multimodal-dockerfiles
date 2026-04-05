@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -105,6 +106,15 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 EOF_306c94e44f7a
+
+
+RUN <<EOF_00a9dbb9f70d
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/201333134-d400f316-8fa1-4de2-a48a-d10d1a7938bf.gif' 'https://user-images.githubusercontent.com/58601/201333134-d400f316-8fa1-4de2-a48a-d10d1a7938bf.gif' || true
+EOF_00a9dbb9f70d
 
 
 WORKDIR /testbed

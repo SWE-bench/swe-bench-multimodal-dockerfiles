@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -61,17 +62,17 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 18.17.1
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_a59f7e934332
+RUN <<EOF_01667795d52d
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y unzip pipenv
+apt-get install -y libffi-dev zip unzip python3 python3-pip python3.10-distutils r-base-core poppler-utils libxml2-utils
 rm -rf /var/lib/apt/lists/*
-export NODE_VERSION=18
+export NODE_VERSION=18.17.1
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -81,36 +82,72 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v18.17.1/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v18.17.1/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_a59f7e934332
+EOF_01667795d52d
 
 
-RUN <<EOF_76b371c48f7e
+RUN <<EOF_7138618405da
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/quarto-dev/quarto-cli /testbed
+git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 8eb707e4ea8157fb38b49ff9ef8a253a90553bec
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 8eb707e4ea8157fb38b49ff9ef8a253a90553bec)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 8eb707e4ea8157fb38b49ff9ef8a253a90553bec)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-bash configure.sh
-EOF_76b371c48f7e
+wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz
+tar zxvf julia-1.9.3-linux-x86_64.tar.gz
+mv julia-1.9.3/ /opt/
+ln -s /opt/julia-1.9.3/bin/julia /usr/local/bin/julia
+ls .
+[ -f configure.sh ] || ./configure-linux.sh
+[ -f configure-linux.sh ] || ./configure.sh
+cd tests
+./configure-test-env.sh || true
+cd ..
+pip3 install --user pipenv
+pip3 install nbformat
+pip3 install nbclient
+pip3 install pandocfilters
+pip3 install shiny
+pip3 install pyyaml
+pip3 install setuptools
+pip3 install numpy
+pip3 install seaborn
+pip3 install matplotlib
+pip3 install bokeh
+pip3 install bokeh_sampledata
+pip3 install ipyleaflet
+pip3 install pandas
+pip3 install itables
+pip3 install pexpect
+pip3 install ptyprocess
+pip3 install appnope
+pip3 install ipykernel
+EOF_7138618405da
+
+
+RUN <<EOF_8e6920f0812d
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/179666034-32e7a95a-0ded-43d3-ab48-ab774c997685.png' 'https://user-images.githubusercontent.com/5965649/179666034-32e7a95a-0ded-43d3-ab48-ab774c997685.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/179666049-38678eee-0236-4d82-bb84-49d11cde82e3.png' 'https://user-images.githubusercontent.com/5965649/179666049-38678eee-0236-4d82-bb84-49d11cde82e3.png' || true
+EOF_8e6920f0812d
 
 
 WORKDIR /testbed

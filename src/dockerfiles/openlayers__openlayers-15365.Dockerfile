@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -108,6 +109,17 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 EOF_3e872ac66ea7
+
+
+RUN <<EOF_2e4abc3e2b22
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-opacity-layergroup-rendermode-vector/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-opacity-layergroup-rendermode-vector/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/5d9e8cb04ed6e314af07a0983b841a9528d071e8/test/rendering/cases/layer-vectortile-opacity-layergroup-rendermode-vector/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-opacity-layergroup/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-opacity-layergroup/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/5d9e8cb04ed6e314af07a0983b841a9528d071e8/test/rendering/cases/layer-vectortile-opacity-layergroup/expected.png' || true
+EOF_2e4abc3e2b22
 
 
 WORKDIR /testbed

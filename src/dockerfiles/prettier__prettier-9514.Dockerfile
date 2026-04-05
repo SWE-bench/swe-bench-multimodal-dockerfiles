@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -108,6 +109,15 @@ yarn
 yarn add meriyah@3.1.2
 git checkout -- package.json yarn.lock 2>/dev/null || true
 EOF_7263802d8f39
+
+
+RUN <<EOF_aade16199343
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/34730253-b0f1d8f6-f513-11e7-9815-7d9f7bac2fa3.png' 'https://user-images.githubusercontent.com/704302/34730253-b0f1d8f6-f513-11e7-9815-7d9f7bac2fa3.png' || true
+EOF_aade16199343
 
 
 WORKDIR /testbed

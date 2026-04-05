@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,29 +91,42 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_4bd4dc9b9cbb
+RUN <<EOF_2ec991b9d4e0
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 706955dfd99294e1edfe9b95652dd8492674f20a
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 706955dfd99294e1edfe9b95652dd8492674f20a)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_4bd4dc9b9cbb
+EOF_2ec991b9d4e0
+
+
+RUN <<EOF_d1d8a531f708
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/icon-sprite/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/icon-sprite/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/df493725c6489c1112ec8ad48287f42c1f265bec/test/rendering/cases/icon-sprite/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/data/sprites/gis_symbols.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/data/sprites/gis_symbols.png' 'https://raw.githubusercontent.com/openlayers/openlayers/df493725c6489c1112ec8ad48287f42c1f265bec/test/rendering/data/sprites/gis_symbols.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/131383210-f7507bb7-fa16-49f1-a4a6-2f6ac518f351.png' 'https://user-images.githubusercontent.com/88471/131383210-f7507bb7-fa16-49f1-a4a6-2f6ac518f351.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/131382965-8143c6dc-71a6-4cae-9ebf-6ff6139b35ab.png' 'https://user-images.githubusercontent.com/88471/131382965-8143c6dc-71a6-4cae-9ebf-6ff6139b35ab.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/131383037-0df9d621-1687-4867-959d-f0a7c6d8e8e7.png' 'https://user-images.githubusercontent.com/88471/131383037-0df9d621-1687-4867-959d-f0a7c6d8e8e7.png' || true
+EOF_d1d8a531f708
 
 
 WORKDIR /testbed

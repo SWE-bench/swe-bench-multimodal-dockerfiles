@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,7 +88,7 @@ python2 -V
 EOF_b2e3089cc86f
 
 
-RUN <<EOF_90c4f8d63a31
+RUN <<EOF_c6fbfc2cde32
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/carbon-design-system/carbon /testbed
@@ -106,8 +107,8 @@ source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
 yarn build
-npm install nwsapi@2.2.7 --force --no-save 2>/dev/null || true
-EOF_90c4f8d63a31
+wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
+EOF_c6fbfc2cde32
 
 
 WORKDIR /testbed

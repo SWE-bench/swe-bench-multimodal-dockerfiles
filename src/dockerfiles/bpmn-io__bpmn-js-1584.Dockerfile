@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,10 +88,10 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_e5bd9a2de4ca
+RUN <<EOF_66e503970aa6
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin --filter=blob:none https://github.com/bpmn-io/bpmn-js /testbed
+git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 7baefd7bc33b2c0e2caf61322e7e950d10f737fe
@@ -104,7 +105,16 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_e5bd9a2de4ca
+EOF_66e503970aa6
+
+
+RUN <<EOF_5b4f8931c02f
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/147228024-18c202f6-9b3f-4128-8469-1ce583273a3c.gif' 'https://user-images.githubusercontent.com/15230555/147228024-18c202f6-9b3f-4128-8469-1ce583273a3c.gif' || true
+EOF_5b4f8931c02f
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,27 +88,35 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_f1d3157391c0
+RUN <<EOF_c1a7c44ba7e7
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/bpmn-io/bpmn-js /testbed
+git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 23505a47830db4207b59044bf5383ba8f0323464
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 23505a47830db4207b59044bf5383ba8f0323464)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 23505a47830db4207b59044bf5383ba8f0323464)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_f1d3157391c0
+EOF_c1a7c44ba7e7
+
+
+RUN <<EOF_e4ae7ed6dcd0
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/59101607-cac3ba00-8929-11e9-93bd-487418827d06.gif' 'https://user-images.githubusercontent.com/58601/59101607-cac3ba00-8929-11e9-93bd-487418827d06.gif' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/59101749-47569880-892a-11e9-99ab-c624f3f09797.gif' 'https://user-images.githubusercontent.com/58601/59101749-47569880-892a-11e9-99ab-c624f3f09797.gif' || true
+EOF_e4ae7ed6dcd0
 
 
 WORKDIR /testbed

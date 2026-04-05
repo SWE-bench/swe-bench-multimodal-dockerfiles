@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,29 +91,34 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_385cb5747d5b
+RUN <<EOF_bf4039985470
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard f7605f538acfcea63a8dfcb6403106135d19234b
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct f7605f538acfcea63a8dfcb6403106135d19234b)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_385cb5747d5b
+EOF_bf4039985470
+
+
+RUN <<EOF_65335e830b55
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-invisible-group/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-invisible-group/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/b8c04ee7c57d4db2a31fe1aaac7a987079c0dfc9/test/rendering/cases/webgl-invisible-group/expected.png' || true
+EOF_65335e830b55
 
 
 WORKDIR /testbed

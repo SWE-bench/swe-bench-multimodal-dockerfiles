@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -108,6 +109,15 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 EOF_ac58affafd8b
+
+
+RUN <<EOF_69a7adc50a79
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/vector-id/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/vector-id/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/1313916226a7bf40109d06dee33914cb1b9ff37d/test/rendering/cases/vector-id/expected.png' || true
+EOF_69a7adc50a79
 
 
 WORKDIR /testbed

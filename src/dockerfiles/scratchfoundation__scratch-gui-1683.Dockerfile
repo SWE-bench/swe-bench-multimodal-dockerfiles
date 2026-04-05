@@ -88,15 +88,15 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_1308b2a0a97a
+RUN <<EOF_72cd9328e65a
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/prettier/prettier /testbed
+git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
 chmod -R 777 /testbed
 cd /testbed
-git reset --hard 9106e7ea1353a2f7c03026f939d540206620f66f
+git reset --hard 268f42300a9b1eb16acf9e59f11e54085a6b2a82
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 9106e7ea1353a2f7c03026f939d540206620f66f)
+TARGET_EPOCH=$(git show -s --format=%ct 268f42300a9b1eb16acf9e59f11e54085a6b2a82)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
 git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
@@ -104,18 +104,10 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
-yarn
-EOF_1308b2a0a97a
-
-
-RUN <<EOF_2e77cb5bbe68
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/149655786-0ca0c50e-30ac-4811-bbbb-9948f89f6cb3.png' 'https://user-images.githubusercontent.com/30108880/149655786-0ca0c50e-30ac-4811-bbbb-9948f89f6cb3.png' || true
-EOF_2e77cb5bbe68
+npm install
+npm install cheerio@1.0.0-rc.3
+npm show cheerio
+EOF_72cd9328e65a
 
 
 WORKDIR /testbed

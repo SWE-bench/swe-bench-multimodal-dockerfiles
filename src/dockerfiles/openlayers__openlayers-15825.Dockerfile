@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,28 +91,35 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_953580415c42
+RUN <<EOF_ff6ebd51163b
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 78a22e75102a452ed15aadaf194ad931e93a0205
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 78a22e75102a452ed15aadaf194ad931e93a0205)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_953580415c42
+EOF_ff6ebd51163b
+
+
+RUN <<EOF_236842a7eaf3
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/reproj-tile-no-wrap/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/reproj-tile-no-wrap/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/4601a818c1538b801537755c4d80aa41b382af63/test/rendering/cases/reproj-tile-no-wrap/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-reproj-no-wrap/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-reproj-no-wrap/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/4601a818c1538b801537755c4d80aa41b382af63/test/rendering/cases/webgl-reproj-no-wrap/expected.png' || true
+EOF_236842a7eaf3
 
 
 WORKDIR /testbed

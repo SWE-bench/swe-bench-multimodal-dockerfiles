@@ -1200,8 +1200,8 @@ SPECS_QUARTOCLI = {
     None : {
         "apt-pkgs": ["libffi-dev", "zip", "unzip", "python3", "python3-pip", "python3.10-distutils", "r-base-core",
                      "poppler-utils", "libxml2-utils"],
-        "install": INSTALL_JULIA + ["ls .", 
-                    "[ -f configure.sh ] || ./configure-linux.sh", 
+        "install": INSTALL_JULIA + ["ls .",
+                    "[ -f configure.sh ] || ./configure-linux.sh",
                     "[ -f configure-linux.sh ] || ./configure.sh",
                     "cd tests", "./configure-test-env.sh || true", "cd ..",
                     ] + PIP_INSTALLS_QUARTOCLI,

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,28 +91,38 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_7dd2da9d8340
+RUN <<EOF_db5f9248af27
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 07227868571f35585d664cf185311b94405b85c1
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 07227868571f35585d664cf185311b94405b85c1)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 07227868571f35585d664cf185311b94405b85c1)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_7dd2da9d8340
+EOF_db5f9248af27
+
+
+RUN <<EOF_9a65936a0051
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/image-stretched-disable-smoothing/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/image-stretched-disable-smoothing/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/269b3c49eeeaf68ccc958ef3d39e27fc0ca2af24/test/rendering/cases/image-stretched-disable-smoothing/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/reproj-image-stretched-disable-smoothing/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/reproj-image-stretched-disable-smoothing/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/269b3c49eeeaf68ccc958ef3d39e27fc0ca2af24/test/rendering/cases/reproj-image-stretched-disable-smoothing/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/reproj-image/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/reproj-image/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/269b3c49eeeaf68ccc958ef3d39e27fc0ca2af24/test/rendering/cases/reproj-image/expected.png' || true
+EOF_9a65936a0051
 
 
 WORKDIR /testbed

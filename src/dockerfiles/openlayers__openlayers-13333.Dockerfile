@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,29 +91,44 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_7401d5931af4
+RUN <<EOF_478abe1ef252
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 459cd51ae2ae7fded1f1ede5215248f9537f4e7c
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 459cd51ae2ae7fded1f1ede5215248f9537f4e7c)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_7401d5931af4
+EOF_478abe1ef252
+
+
+RUN <<EOF_f536c24ff2cb
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-layer-extent/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-layer-extent/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/adbbc051590fe50b3c6d90618b0708c5902344f4/test/rendering/cases/webgl-layer-extent/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-source-extent/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-source-extent/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/adbbc051590fe50b3c6d90618b0708c5902344f4/test/rendering/cases/webgl-source-extent/expected.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/150269611-5ce2b3c1-6875-4d28-9496-5757e2845eb6.png' 'https://user-images.githubusercontent.com/33643503/150269611-5ce2b3c1-6875-4d28-9496-5757e2845eb6.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/150269629-0c04c806-af7c-4c83-9f7b-3056fa3dc7c8.jpg' 'https://user-images.githubusercontent.com/33643503/150269629-0c04c806-af7c-4c83-9f7b-3056fa3dc7c8.jpg' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/150269637-aa61aeb8-6ebe-4446-9005-ee107ed76abc.jpg' 'https://user-images.githubusercontent.com/33643503/150269637-aa61aeb8-6ebe-4446-9005-ee107ed76abc.jpg' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/150269952-528df1c0-6e4c-469f-9ba6-f3e7ff62c66e.jpg' 'https://user-images.githubusercontent.com/33643503/150269952-528df1c0-6e4c-469f-9ba6-f3e7ff62c66e.jpg' || true
+EOF_f536c24ff2cb
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,21 +91,18 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_ea0b56f83e0d
+RUN <<EOF_6a8ffb267154
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/processing/p5.js /testbed
+git clone -o origin https://github.com/processing/p5.js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ce831a839b6ab8792adc31cdf1942ea89d69e29b
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci ce831a839b6ab8792adc31cdf1942ea89d69e29b)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct ce831a839b6ab8792adc31cdf1942ea89d69e29b)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -112,7 +110,24 @@ source $NVM_DIR/nvm.sh
 npm install
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js
 ./node_modules/.bin/grunt yui
-EOF_ea0b56f83e0d
+EOF_6a8ffb267154
+
+
+RUN <<EOF_5bc1b5f6b6f0
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/206325019-7879028e-85f1-4de3-81bb-896e06fd53ab.png' 'https://user-images.githubusercontent.com/5315059/206325019-7879028e-85f1-4de3-81bb-896e06fd53ab.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/206325076-3630d492-55fd-41b5-b999-6d6e2a1bc872.png' 'https://user-images.githubusercontent.com/5315059/206325076-3630d492-55fd-41b5-b999-6d6e2a1bc872.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/206326621-b6ea1410-b8be-4e13-bd81-39f537731c4d.png' 'https://user-images.githubusercontent.com/5315059/206326621-b6ea1410-b8be-4e13-bd81-39f537731c4d.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/206327415-76c55a18-f26d-4581-b353-95bc185168fd.png' 'https://user-images.githubusercontent.com/5315059/206327415-76c55a18-f26d-4581-b353-95bc185168fd.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/206326541-988089d8-e985-497f-998c-580979f71cb0.png' 'https://user-images.githubusercontent.com/5315059/206326541-988089d8-e985-497f-998c-580979f71cb0.png' || true
+EOF_5bc1b5f6b6f0
 
 
 WORKDIR /testbed

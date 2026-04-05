@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,28 +91,40 @@ python2 -V
 EOF_9dbe435fcb39
 
 
-RUN <<EOF_42747240e08a
+RUN <<EOF_a697976333e0
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/diegomura/react-pdf /testbed
+git clone -o origin https://github.com/diegomura/react-pdf /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard f508d4e9938e80e888deb2dc8cada6d84e116427
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci f508d4e9938e80e888deb2dc8cada6d84e116427)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct f508d4e9938e80e888deb2dc8cada6d84e116427)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
-EOF_42747240e08a
+EOF_a697976333e0
+
+
+RUN <<EOF_12d553d8b67a
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/49249306-b037e380-f3d0-11e8-96cd-29eee986683b.png' 'https://user-images.githubusercontent.com/4199296/49249306-b037e380-f3d0-11e8-96cd-29eee986683b.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/49249354-c5ad0d80-f3d0-11e8-8e2d-393dee2530e1.png' 'https://user-images.githubusercontent.com/4199296/49249354-c5ad0d80-f3d0-11e8-8e2d-393dee2530e1.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/49249430-f42ae880-f3d0-11e8-9272-cefd5bca1b0d.png' 'https://user-images.githubusercontent.com/4199296/49249430-f42ae880-f3d0-11e8-9272-cefd5bca1b0d.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/49249444-fb51f680-f3d0-11e8-8f24-49d22bc27962.png' 'https://user-images.githubusercontent.com/4199296/49249444-fb51f680-f3d0-11e8-8f24-49d22bc27962.png' || true
+EOF_12d553d8b67a
 
 
 WORKDIR /testbed

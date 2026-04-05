@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -65,11 +66,11 @@ ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_c3c55706e4d6
+RUN <<EOF_55f960f4ac15
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -87,30 +88,38 @@ source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_c3c55706e4d6
+EOF_55f960f4ac15
 
 
-RUN <<EOF_1f87b30963f2
+RUN <<EOF_a010b46b7134
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/chartjs/Chart.js /testbed
+git clone -o origin https://github.com/chartjs/Chart.js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ba84cc5c2aaf500739b202702fac24da74ede50d
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci ba84cc5c2aaf500739b202702fac24da74ede50d)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct ba84cc5c2aaf500739b202702fac24da74ede50d)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_1f87b30963f2
+EOF_a010b46b7134
+
+
+RUN <<EOF_b16ea70bc2b1
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/core.scale/x-axis-position-dynamic-margin.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/core.scale/x-axis-position-dynamic-margin.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2f88e1b010c40c86aa93c67f91cb8b1c7f260195/test/fixtures/core.scale/x-axis-position-dynamic-margin.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/core.scale/x-axis-position-dynamic.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/core.scale/x-axis-position-dynamic.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/2f88e1b010c40c86aa93c67f91cb8b1c7f260195/test/fixtures/core.scale/x-axis-position-dynamic.png' || true
+EOF_b16ea70bc2b1
 
 
 WORKDIR /testbed

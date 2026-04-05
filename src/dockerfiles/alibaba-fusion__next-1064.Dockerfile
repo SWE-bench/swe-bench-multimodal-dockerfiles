@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -113,6 +114,15 @@ npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
 EOF_e17d637bcccb
+
+
+RUN <<EOF_a57cb9a890f1
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/63851563-00c48780-c9c9-11e9-9006-074098cdc711.png' 'https://user-images.githubusercontent.com/10049465/63851563-00c48780-c9c9-11e9-9006-074098cdc711.png' || true
+EOF_a57cb9a890f1
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,7 +88,7 @@ python2 -V
 EOF_995e847fbbdd
 
 
-RUN <<EOF_a155d3936245
+RUN <<EOF_6cd0148c4035
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/carbon-design-system/carbon /testbed
@@ -106,7 +107,19 @@ source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
 yarn build
-EOF_a155d3936245
+wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
+EOF_6cd0148c4035
+
+
+RUN <<EOF_cedea1f0d9ca
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/113624836-20547500-962e-11eb-8757-95ccae07dd6e.jpg' 'https://user-images.githubusercontent.com/15144993/113624836-20547500-962e-11eb-8757-95ccae07dd6e.jpg' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/113626817-9d80e980-9630-11eb-802f-5e7103df42f9.jpg' 'https://user-images.githubusercontent.com/15144993/113626817-9d80e980-9630-11eb-802f-5e7103df42f9.jpg' || true
+EOF_cedea1f0d9ca
 
 
 WORKDIR /testbed

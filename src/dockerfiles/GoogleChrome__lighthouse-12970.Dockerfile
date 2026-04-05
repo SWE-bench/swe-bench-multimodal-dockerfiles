@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -61,14 +62,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 16.20.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_b5947e90ba10
+RUN <<EOF_34e7d255ba3f
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=18
+export NODE_VERSION=16.20.2
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -78,37 +79,44 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v16.20.2/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v16.20.2/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_b5947e90ba10
+EOF_34e7d255ba3f
 
 
-RUN <<EOF_c15f5ed9e136
+RUN <<EOF_d611d34f9dc5
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/GoogleChrome/lighthouse /testbed
+git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 47c2bc5d96d87f121a0ada42ddf60090f98a6339
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 47c2bc5d96d87f121a0ada42ddf60090f98a6339)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 47c2bc5d96d87f121a0ada42ddf60090f98a6339)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
-yarn install --frozen-lockfile || yarn install
-EOF_c15f5ed9e136
+yarn
+yarn build-all
+EOF_d611d34f9dc5
+
+
+RUN <<EOF_f3800e0c20da
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/129445134-3bb7aa81-4507-4110-a505-8fcaa2ad36d4.png' 'https://user-images.githubusercontent.com/1780212/129445134-3bb7aa81-4507-4110-a505-8fcaa2ad36d4.png' || true
+EOF_f3800e0c20da
 
 
 WORKDIR /testbed

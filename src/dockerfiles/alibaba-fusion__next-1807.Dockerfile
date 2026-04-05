@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,21 +91,18 @@ python2 -V
 EOF_4d2410c5ce08
 
 
-RUN <<EOF_cfc0cec95e5d
+RUN <<EOF_5c2898796268
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/alibaba-fusion/next /testbed
+git clone -o origin https://github.com/alibaba-fusion/next /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 981599d93b435a133683501b37a41a67dec5c4fa
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 981599d93b435a133683501b37a41a67dec5c4fa)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 981599d93b435a133683501b37a41a67dec5c4fa)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -114,7 +112,21 @@ npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
-EOF_cfc0cec95e5d
+npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
+EOF_5c2898796268
+
+
+RUN <<EOF_89b18f2fdfa8
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/80445414-c8ee5500-8946-11ea-8f56-bf3bab1380cb.png' 'https://user-images.githubusercontent.com/10049465/80445414-c8ee5500-8946-11ea-8f56-bf3bab1380cb.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/80445508-1074e100-8947-11ea-98de-ffcef3672549.png' 'https://user-images.githubusercontent.com/10049465/80445508-1074e100-8947-11ea-98de-ffcef3672549.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/80496704-282a8480-899c-11ea-8478-1edeb730b72b.png' 'https://user-images.githubusercontent.com/10049465/80496704-282a8480-899c-11ea-8478-1edeb730b72b.png' || true
+EOF_89b18f2fdfa8
 
 
 WORKDIR /testbed

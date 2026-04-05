@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -136,6 +137,17 @@ pip3 install ptyprocess
 pip3 install appnope
 pip3 install ipykernel
 EOF_631be21412b4
+
+
+RUN <<EOF_4a2f9efaf574
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/170842313-a1c7d279-0d9a-487c-9b26-de99e50ce9b9.png' 'https://user-images.githubusercontent.com/60116296/170842313-a1c7d279-0d9a-487c-9b26-de99e50ce9b9.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/170842336-e9d80b2a-a142-423b-bc4e-7052179e5a48.png' 'https://user-images.githubusercontent.com/60116296/170842336-e9d80b2a-a142-423b-bc4e-7052179e5a48.png' || true
+EOF_4a2f9efaf574
 
 
 WORKDIR /testbed

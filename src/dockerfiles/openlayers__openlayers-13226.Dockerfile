@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,29 +91,34 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_e8803663ee35
+RUN <<EOF_e465e6950193
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 1f761d943fe2c92a63d38d5e305fa2c11fe3ff48
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 1f761d943fe2c92a63d38d5e305fa2c11fe3ff48)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_e8803663ee35
+EOF_e465e6950193
+
+
+RUN <<EOF_115ba7ab4ea0
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-tile-no-wrap/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-tile-no-wrap/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/647a0d8ece9b8885172ef3d37686636a193cb881/test/rendering/cases/webgl-tile-no-wrap/expected.png' || true
+EOF_115ba7ab4ea0
 
 
 WORKDIR /testbed

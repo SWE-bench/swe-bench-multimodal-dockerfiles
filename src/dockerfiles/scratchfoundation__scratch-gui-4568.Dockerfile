@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -107,6 +108,15 @@ npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
 EOF_8c4e701dfae7
+
+
+RUN <<EOF_c8362b786d94
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/39999407-0caa8e36-5757-11e8-9ab8-713a2eb06eee.png' 'https://user-images.githubusercontent.com/654102/39999407-0caa8e36-5757-11e8-9ab8-713a2eb06eee.png' || true
+EOF_c8362b786d94
 
 
 WORKDIR /testbed

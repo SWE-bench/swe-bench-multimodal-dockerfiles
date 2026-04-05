@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -61,14 +62,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 14.17.6
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_b5947e90ba10
+RUN <<EOF_995e847fbbdd
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=18
+export NODE_VERSION=14.17.6
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -78,37 +79,47 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v14.17.6/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v14.17.6/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_b5947e90ba10
+EOF_995e847fbbdd
 
 
-RUN <<EOF_a7fa4d7dca59
+RUN <<EOF_24632b635f9f
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/carbon-design-system/carbon /testbed
+git clone -o origin https://github.com/carbon-design-system/carbon /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 1c1c751ee6cb3d1d80b929483fb78324eb9eb5d6
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 1c1c751ee6cb3d1d80b929483fb78324eb9eb5d6)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 1c1c751ee6cb3d1d80b929483fb78324eb9eb5d6)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn cross-env
-yarn install --network-timeout 300000
-EOF_a7fa4d7dca59
+npm i -g yarn
+yarn install
+yarn build
+wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
+EOF_24632b635f9f
+
+
+RUN <<EOF_a0c03f546734
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/125116536-c65bc380-e0e4-11eb-8d13-ba777a911d5e.png' 'https://user-images.githubusercontent.com/15086604/125116536-c65bc380-e0e4-11eb-8d13-ba777a911d5e.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/125116832-2f433b80-e0e5-11eb-8f1c-3a6d23353f67.png' 'https://user-images.githubusercontent.com/15086604/125116832-2f433b80-e0e5-11eb-8f1c-3a6d23353f67.png' || true
+EOF_a0c03f546734
 
 
 WORKDIR /testbed

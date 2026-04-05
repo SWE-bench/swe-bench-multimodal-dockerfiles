@@ -124,4 +124,15 @@ npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1
 EOF_8830395acdbc
 
 
+RUN <<EOF_6aae9de61ef6
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/h05B2DWt9lcM.png' 'https://fusion-image.oss-cn-beijing.aliyuncs.com/images/h05B2DWt9lcM.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/CsKWoBXNQvgb.png' 'https://fusion-image.oss-cn-beijing.aliyuncs.com/images/CsKWoBXNQvgb.png' || true
+EOF_6aae9de61ef6
+
+
 WORKDIR /testbed

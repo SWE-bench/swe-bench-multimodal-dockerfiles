@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,28 +91,36 @@ python2 -V
 EOF_a32284fbdcc9
 
 
-RUN <<EOF_6281a7322479
+RUN <<EOF_0349781138e9
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/diegomura/react-pdf /testbed
+git clone -o origin https://github.com/diegomura/react-pdf /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 7acd39fa1b60d2379e48584964d8c4643aa473be
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 7acd39fa1b60d2379e48584964d8c4643aa473be)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 7acd39fa1b60d2379e48584964d8c4643aa473be)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
-EOF_6281a7322479
+EOF_0349781138e9
+
+
+RUN <<EOF_ec97711334a2
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/132485670-9c9653b2-e563-438d-b73b-461cc16ed88b.png' 'https://user-images.githubusercontent.com/1511512/132485670-9c9653b2-e563-438d-b73b-461cc16ed88b.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/132486410-efc68c57-bc52-4ce3-80b5-c2a67a3e058d.png' 'https://user-images.githubusercontent.com/1511512/132486410-efc68c57-bc52-4ce3-80b5-c2a67a3e058d.png' || true
+EOF_ec97711334a2
 
 
 WORKDIR /testbed

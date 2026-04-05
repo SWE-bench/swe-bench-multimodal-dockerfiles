@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,29 +91,36 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_0589645f8471
+RUN <<EOF_5be543f3ac99
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard c742fe965f99639ea79cca2c66a88851611b132f
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct c742fe965f99639ea79cca2c66a88851611b132f)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_0589645f8471
+EOF_5be543f3ac99
+
+
+RUN <<EOF_91f599f5c3c4
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/cog-rgb-auto/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/cog-rgb-auto/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/bd3b1bb4345012b1852dfb747abbd4e23a95dad1/test/rendering/cases/cog-rgb-auto/expected.png' || true
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/cog-rgb-no-auto/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/cog-rgb-no-auto/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/bd3b1bb4345012b1852dfb747abbd4e23a95dad1/test/rendering/cases/cog-rgb-no-auto/expected.png' || true
+EOF_91f599f5c3c4
 
 
 WORKDIR /testbed

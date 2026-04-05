@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,28 +88,35 @@ python2 -V
 EOF_9d96e99a759a
 
 
-RUN <<EOF_8066b1d05bd8
+RUN <<EOF_ff34fbd40a0f
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/PrismJS/prism /testbed
+git clone -o origin https://github.com/PrismJS/prism /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 7bcec58460c7d635841058fc9722a13b9790016a
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 7bcec58460c7d635841058fc9722a13b9790016a)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_8066b1d05bd8
+EOF_ff34fbd40a0f
+
+
+RUN <<EOF_c256e8d590d3
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/52901770-94f7aa00-3242-11e9-9f2d-b09b0dac1ad2.png' 'https://user-images.githubusercontent.com/1713447/52901770-94f7aa00-3242-11e9-9f2d-b09b0dac1ad2.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/52901757-772a4500-3242-11e9-87cf-f4b7c5f423b6.png' 'https://user-images.githubusercontent.com/1713447/52901757-772a4500-3242-11e9-87cf-f4b7c5f423b6.png' || true
+EOF_c256e8d590d3
 
 
 WORKDIR /testbed

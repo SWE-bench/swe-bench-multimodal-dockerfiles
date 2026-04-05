@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -115,6 +116,15 @@ npm show cheerio
 npm install puppeteer@19.11.1 --save-exact
 npm install highlight.js@10.7.3 --save-exact
 EOF_40b2c68975de
+
+
+RUN <<EOF_b5b3170ed166
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/111427975-db75a680-8731-11eb-8313-93960244c95d.png' 'https://user-images.githubusercontent.com/18747423/111427975-db75a680-8731-11eb-8313-93960244c95d.png' || true
+EOF_b5b3170ed166
 
 
 WORKDIR /testbed

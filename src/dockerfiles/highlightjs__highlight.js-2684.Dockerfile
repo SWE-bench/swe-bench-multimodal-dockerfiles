@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,29 +88,36 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_eb7eafbb2f0b
+RUN <<EOF_d75d30731c04
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/highlightjs/highlight.js /testbed
+git clone -o origin https://github.com/highlightjs/highlight.js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard fffde71a792274345cd91d97627a8703602b07ed
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct fffde71a792274345cd91d97627a8703602b07ed)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_eb7eafbb2f0b
+EOF_d75d30731c04
+
+
+RUN <<EOF_3e765d7cf831
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/86131584-1f624600-bae6-11ea-825a-6a6c29a4bb60.png' 'https://user-images.githubusercontent.com/803621/86131584-1f624600-bae6-11ea-825a-6a6c29a4bb60.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/86131817-6c461c80-bae6-11ea-9b11-c3596f540a3d.png' 'https://user-images.githubusercontent.com/803621/86131817-6c461c80-bae6-11ea-9b11-c3596f540a3d.png' || true
+EOF_3e765d7cf831
 
 
 WORKDIR /testbed

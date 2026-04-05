@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -61,14 +62,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_b5947e90ba10
+RUN <<EOF_df8f9cb8cc5e
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=18
+export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -78,36 +79,44 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v21.6.2/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v21.6.2/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_b5947e90ba10
+EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_82ebb8a5fd95
+RUN <<EOF_91113ab0d5ba
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/PrismJS/prism /testbed
+git clone -o origin https://github.com/PrismJS/prism /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard acceb3b56f0e8362a7ef274dbd85b17611df2ec4
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci acceb3b56f0e8362a7ef274dbd85b17611df2ec4)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct acceb3b56f0e8362a7ef274dbd85b17611df2ec4)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_82ebb8a5fd95
+EOF_91113ab0d5ba
+
+
+RUN <<EOF_b948587cf55d
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/57575047-635a3d80-7443-11e9-91ec-335cf7ac33b5.png' 'https://user-images.githubusercontent.com/6709544/57575047-635a3d80-7443-11e9-91ec-335cf7ac33b5.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/57575060-e085b280-7443-11e9-8361-dbc70ce965fd.png' 'https://user-images.githubusercontent.com/6709544/57575060-e085b280-7443-11e9-8361-dbc70ce965fd.png' || true
+EOF_b948587cf55d
 
 
 WORKDIR /testbed

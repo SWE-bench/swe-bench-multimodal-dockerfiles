@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,22 +88,18 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_06ba743897f5
+RUN <<EOF_93b0aad6f4d1
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/carbon-design-system/carbon /testbed
+git clone -o origin https://github.com/carbon-design-system/carbon /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard b49d5871e4baafefff96ea83656bbdc0dd010b2a
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct b49d5871e4baafefff96ea83656bbdc0dd010b2a)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -110,7 +107,19 @@ source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
 yarn build
-EOF_06ba743897f5
+wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
+EOF_93b0aad6f4d1
+
+
+RUN <<EOF_1b8168568657
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/73958460-da9ffd80-48ff-11ea-89b2-0fe93b214c14.png' 'https://user-images.githubusercontent.com/59689747/73958460-da9ffd80-48ff-11ea-89b2-0fe93b214c14.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/73958489-dffd4800-48ff-11ea-8fd2-46285512e03b.png' 'https://user-images.githubusercontent.com/59689747/73958489-dffd4800-48ff-11ea-8fd2-46285512e03b.png' || true
+EOF_1b8168568657
 
 
 WORKDIR /testbed

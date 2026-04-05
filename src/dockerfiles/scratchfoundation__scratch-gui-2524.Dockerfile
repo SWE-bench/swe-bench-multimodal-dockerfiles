@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,10 +88,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_94194d3e334c
+RUN <<EOF_7adf9b88b7ce
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin --filter=blob:none https://github.com/scratchfoundation/scratch-gui /testbed
+git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard d7c9204273d69e65183efce460f489d305aea6da
@@ -106,7 +107,7 @@ source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
-EOF_94194d3e334c
+EOF_7adf9b88b7ce
 
 
 WORKDIR /testbed

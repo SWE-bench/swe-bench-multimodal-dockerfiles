@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,10 +88,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_16620f6c9c8e
+RUN <<EOF_7b83d73b1fc2
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin --filter=blob:none https://github.com/scratchfoundation/scratch-gui /testbed
+git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 5b1670f520138ffbca7ce36e7bc9c6de9390d4f2
@@ -104,7 +105,18 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_16620f6c9c8e
+EOF_7b83d73b1fc2
+
+
+RUN <<EOF_75f2a3a80eb0
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/61958640-a8cae780-affc-11e9-94a6-e8d27b717053.png' 'https://user-images.githubusercontent.com/8245567/61958640-a8cae780-affc-11e9-94a6-e8d27b717053.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/61958597-95b81780-affc-11e9-9ac5-1f8a4f4d465b.gif' 'https://user-images.githubusercontent.com/8245567/61958597-95b81780-affc-11e9-9ac5-1f8a4f4d465b.gif' || true
+EOF_75f2a3a80eb0
 
 
 WORKDIR /testbed

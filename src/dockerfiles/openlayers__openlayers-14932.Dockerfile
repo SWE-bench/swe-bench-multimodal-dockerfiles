@@ -91,7 +91,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_d52e56e21a97
+RUN <<EOF_2950b71f3b6d
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -107,15 +107,17 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip
-unzip -q chrome-linux64.zip -d /opt/
-rm chrome-linux64.zip
-rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
-printf '#!/bin/bash\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
-chmod +x /usr/bin/google-chrome
-cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 npm install
-EOF_d52e56e21a97
+EOF_2950b71f3b6d
+
+
+RUN <<EOF_eb6375ceb86b
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/text-style-linestring-nice/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/text-style-linestring-nice/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/1280ef38d998a97b6563f0cf2ed894b651afc500/test/rendering/cases/text-style-linestring-nice/expected.png' || true
+EOF_eb6375ceb86b
 
 
 WORKDIR /testbed

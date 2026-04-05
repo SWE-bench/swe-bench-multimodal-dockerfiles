@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,28 +88,33 @@ python2 -V
 EOF_727a9afa5b25
 
 
-RUN <<EOF_7e4b5afa4abd
+RUN <<EOF_16b4327427e4
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/PrismJS/prism /testbed
+git clone -o origin https://github.com/PrismJS/prism /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 6fd5c96b90a7724b8b1dbad1c44c0ee70068f4f3
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 6fd5c96b90a7724b8b1dbad1c44c0ee70068f4f3)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_7e4b5afa4abd
+EOF_16b4327427e4
+
+
+RUN <<EOF_c94fd5c5f5b3
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/72411369-53140400-3730-11ea-98b7-d91696a997d5.png' 'https://user-images.githubusercontent.com/8953691/72411369-53140400-3730-11ea-98b7-d91696a997d5.png' || true
+EOF_c94fd5c5f5b3
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,27 +91,35 @@ python2 -V
 EOF_a6ef80639489
 
 
-RUN <<EOF_e5041be3af5a
+RUN <<EOF_a2057e6a5d6a
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/Automattic/wp-calypso /testbed
+git clone -o origin https://github.com/Automattic/wp-calypso /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard e9d12f1585da7f7bd4ee03f47f43bfd7a2247ab8
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci e9d12f1585da7f7bd4ee03f47f43bfd7a2247ab8)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct e9d12f1585da7f7bd4ee03f47f43bfd7a2247ab8)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_e5041be3af5a
+EOF_a2057e6a5d6a
+
+
+RUN <<EOF_a22bc0488578
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/37774589-66c5670e-2dbf-11e8-8248-9d61ac3a6358.png' 'https://user-images.githubusercontent.com/1041600/37774589-66c5670e-2dbf-11e8-8248-9d61ac3a6358.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/37774590-6705676e-2dbf-11e8-9123-82ac9a0c4682.png' 'https://user-images.githubusercontent.com/1041600/37774590-6705676e-2dbf-11e8-9123-82ac9a0c4682.png' || true
+EOF_a22bc0488578
 
 
 WORKDIR /testbed

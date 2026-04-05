@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -68,11 +69,11 @@ ENV PNPM_VERSION 7.9.0
 ENV PNPM_HOME /usr/local/pnpm
 ENV PATH $PNPM_HOME:$PATH
 
-RUN <<EOF_b9e473a0a8c1
+RUN <<EOF_b63450f00529
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -99,31 +100,39 @@ source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
 pnpm -v
-EOF_b9e473a0a8c1
+EOF_b63450f00529
 
 
-RUN <<EOF_2d54994f55ca
+RUN <<EOF_23672a3d0433
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/chartjs/Chart.js /testbed
+git clone -o origin https://github.com/chartjs/Chart.js /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 201ddffa1d0d0bf61a4372ff1386dbcffd606850
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 201ddffa1d0d0bf61a4372ff1386dbcffd606850)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 201ddffa1d0d0bf61a4372ff1386dbcffd606850)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 pnpm install
 pnpm run build
-EOF_2d54994f55ca
+EOF_23672a3d0433
+
+
+RUN <<EOF_86f271121a01
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/d922d221ea46d4b240d0b08691d84cb465dbe9e4/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/236559775-b3c7823e-816b-43cd-b6eb-c44d0ca8dc7b.gif' 'https://user-images.githubusercontent.com/12361341/236559775-b3c7823e-816b-43cd-b6eb-c44d0ca8dc7b.gif' || true
+EOF_86f271121a01
 
 
 WORKDIR /testbed

@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -61,17 +62,17 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 18
+ENV NODE_VERSION 14.11.0
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_38106baaffa1
+RUN <<EOF_2934b9866891
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
-export NODE_VERSION=18
+export NODE_VERSION=14.11.0
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -81,36 +82,49 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v18/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v18/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v14.11.0/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v14.11.0/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_38106baaffa1
+EOF_2934b9866891
 
 
-RUN <<EOF_84038ad1e29d
+RUN <<EOF_cb394fbb7164
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/alibaba-fusion/next /testbed
+git clone -o origin https://github.com/alibaba-fusion/next /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 04abd786b732ffde9ed5a847a2abd00d94aea86c
 git remote remove origin
-TARGET_TIMESTAMP=$(git show -s --format=%ci 04abd786b732ffde9ed5a847a2abd00d94aea86c)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_TIME=$(git show -s --format=%ci "$TAG_COMMIT"); if [[ "$TAG_TIME" > "$TARGET_TIMESTAMP" ]]; then git tag -d "$tag"; fi; done
+TARGET_EPOCH=$(git show -s --format=%ct 04abd786b732ffde9ed5a847a2abd00d94aea86c)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install
-EOF_84038ad1e29d
+sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
+su chromeuser -c 'npm install'
+npm install babel-preset-es2015
+npm install cheerio@1.0.0-rc.3
+npm i sass@1.36.0 --save-exact
+npm show cheerio
+npm install puppeteer@19.11.1 --save-exact
+npm install highlight.js@10.7.3 --save-exact
+EOF_cb394fbb7164
+
+
+RUN <<EOF_bdd038ff1936
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/142096660-ef0cf1b4-19d9-4126-a7de-c094430be0bf.png' 'https://user-images.githubusercontent.com/433481/142096660-ef0cf1b4-19d9-4126-a7de-c094430be0bf.png' || true
+EOF_bdd038ff1936
 
 
 WORKDIR /testbed

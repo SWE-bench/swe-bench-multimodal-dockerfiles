@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -109,6 +110,15 @@ yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
 echo 'ruleArchive: 12March2022' > .achecker.yml
 EOF_f988cb064e4f
+
+
+RUN <<EOF_d45b574dddc8
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/165408756-2a4218e5-9ce3-4b2d-af38-73e3f897b35b.png' 'https://user-images.githubusercontent.com/32556167/165408756-2a4218e5-9ce3-4b2d-af38-73e3f897b35b.png' || true
+EOF_d45b574dddc8
 
 
 WORKDIR /testbed

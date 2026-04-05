@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,22 +88,18 @@ python2 -V
 EOF_995e847fbbdd
 
 
-RUN <<EOF_1d6102c4dbeb
+RUN <<EOF_e3c49cd652ab
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/carbon-design-system/carbon /testbed
+git clone -o origin https://github.com/carbon-design-system/carbon /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ea279f56c2af439ec78cfd54849fb17f9d15b489
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct ea279f56c2af439ec78cfd54849fb17f9d15b489)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -110,7 +107,23 @@ source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
 yarn build
-EOF_1d6102c4dbeb
+wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
+EOF_e3c49cd652ab
+
+
+RUN <<EOF_9d8566322f79
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/140067671-c0680a98-377f-48a8-b930-684d7fcdb1de.png' 'https://user-images.githubusercontent.com/609466/140067671-c0680a98-377f-48a8-b930-684d7fcdb1de.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/140067763-30924eea-2858-47da-8b38-ad0e66752552.png' 'https://user-images.githubusercontent.com/609466/140067763-30924eea-2858-47da-8b38-ad0e66752552.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/140067670-9d47e10f-be2e-4b20-9aae-06a148ff80bd.png' 'https://user-images.githubusercontent.com/609466/140067670-9d47e10f-be2e-4b20-9aae-06a148ff80bd.png' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/140067937-79777164-2c88-47ff-89d0-a7e511314465.png' 'https://user-images.githubusercontent.com/609466/140067937-79777164-2c88-47ff-89d0-a7e511314465.png' || true
+EOF_9d8566322f79
 
 
 WORKDIR /testbed

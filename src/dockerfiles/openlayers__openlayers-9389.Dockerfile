@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -90,28 +91,33 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_a74fb6ffe534
+RUN <<EOF_3a2a8047330c
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/openlayers/openlayers /testbed
+git clone -o origin https://github.com/openlayers/openlayers /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 7c1df60d0646fc6a0e1528ed357fdcfca6f521ce
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 7c1df60d0646fc6a0e1528ed357fdcfca6f521ce)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_a74fb6ffe534
+EOF_3a2a8047330c
+
+
+RUN <<EOF_9a22c9933134
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p $(dirname '/swebench/image_assets/test_patch/rendering/cases/layer-tile-render-listener/expected.png')
+curl -fsSL -o '/swebench/image_assets/test_patch/rendering/cases/layer-tile-render-listener/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/94edf325404ac51504a9038884c9c7d95e2c22a3/rendering/cases/layer-tile-render-listener/expected.png' || true
+EOF_9a22c9933134
 
 
 WORKDIR /testbed

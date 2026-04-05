@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     dbus \
     ffmpeg \
     imagemagick \
+    unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -87,29 +88,36 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_1301a46f68b6
+RUN <<EOF_da5743ba07e1
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin  --single-branch https://github.com/grommet/grommet /testbed
+git clone -o origin https://github.com/grommet/grommet /testbed
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 279b3ec2fa343c4f875a955c35ab9cce5ed063f0
 git remote remove origin
 TARGET_EPOCH=$(git show -s --format=%ct 279b3ec2fa343c4f875a955c35ab9cce5ed063f0)
 git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-AFTER_EPOCH=$((TARGET_EPOCH + 1))
-AFTER_TIMESTAMP=$(date -u -d @"$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
-COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
-[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
-EOF_1301a46f68b6
+EOF_da5743ba07e1
+
+
+RUN <<EOF_0730cfbec244
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/38843188-d0a0325c-41bb-11e8-8357-c686034af89d.jpg' 'https://user-images.githubusercontent.com/6075606/38843188-d0a0325c-41bb-11e8-8357-c686034af89d.jpg' || true
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/38843203-e689b1b0-41bb-11e8-87ca-5b9c727300e8.jpg' 'https://user-images.githubusercontent.com/6075606/38843203-e689b1b0-41bb-11e8-87ca-5b9c727300e8.jpg' || true
+EOF_0730cfbec244
 
 
 WORKDIR /testbed

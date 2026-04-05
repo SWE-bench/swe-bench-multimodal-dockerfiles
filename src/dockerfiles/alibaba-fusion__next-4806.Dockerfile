@@ -91,7 +91,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_79eec0039bb2
+RUN <<EOF_7669242834d6
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -116,8 +116,17 @@ chmod +x /usr/bin/google-chrome
 cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
 su chromeuser -c 'npm install'
-su chromeuser -c 'npx cypress install'
-EOF_79eec0039bb2
+CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress
+EOF_7669242834d6
+
+
+RUN <<EOF_670f5e45bec3
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /swebench/image_assets
+mkdir -p /swebench/image_assets/problem_statement
+curl -fsSL -o '/swebench/image_assets/problem_statement/NeL7Wv9ERrim.png' 'https://fusion-image.oss-cn-beijing.aliyuncs.com/images/NeL7Wv9ERrim.png' || true
+EOF_670f5e45bec3
 
 
 WORKDIR /testbed
