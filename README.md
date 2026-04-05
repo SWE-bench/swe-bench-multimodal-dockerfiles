@@ -1,6 +1,6 @@
 # SWE-bench Dockerfiles (Multimodal)
 
-Dockerfile generator for SWE-bench Multimodal (JavaScript) benchmarks.
+Dockerfile generator for SWE-bench Multimodal benchmark.
 
 ## Usage
 
