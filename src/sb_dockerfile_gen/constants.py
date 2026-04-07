@@ -1014,7 +1014,8 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
 for v in ['1.11', '1.14', '1.15']:
     SPECS_NEXT[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_NEXT[v]['install']
 SPECS_NEXT['1.21']['install'] = _CHROMIUM_85_INSTALL + SPECS_NEXT['1.21']['install']
-SPECS_NEXT['1.27']['install'] = _CHROME_120_INSTALL + SPECS_NEXT['1.27']['install']
+# v1.27 uses system Chrome (146) — Chrome 120 causes browser connection timeouts
+# in Cypress component testing. No pin needed.
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
 # the actual Electron binary must be installed separately.
 # Upgrade Cypress from 13.6.1 to 13.14.2 to fix "Missing browserCriClient in
