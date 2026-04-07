@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -110,13 +111,6 @@ yarn build-all
 EOF_be36c19dbb7d
 
 
-RUN <<EOF_260ce18ddf8f
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/203626047-8d6ae837-7a98-4991-84f4-592e2a274802.png' 'https://user-images.githubusercontent.com/1087646/203626047-8d6ae837-7a98-4991-84f4-592e2a274802.png' || true
-EOF_260ce18ddf8f
-
+COPY src/image_assets/GoogleChrome__lighthouse-14587/ /swebench/image_assets/
 
 WORKDIR /testbed

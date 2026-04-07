@@ -977,7 +977,8 @@ SPECS_NEXT = {
         '1.20', '1.21', '1.22', '1.23', '1.24', '1.25', '1.26', '1.27'
     ]}
 }
-SPECS_NEXT['1.27']['docker_specs']['node_version'] = '21.6.2'
+# Node 18 LTS — Node 21 causes Chrome connection timeouts in Docker with Cypress.
+SPECS_NEXT['1.27']['docker_specs']['node_version'] = '18.20.4'
 for v in ['1.22', '1.23', '1.24', '1.25', '1.26', '1.27']:
     SPECS_NEXT[v]['install'].insert(0, SET_PUPPETEER_PATH.format("scripts/test/karma.js"))
 for v in [
@@ -1016,11 +1017,14 @@ SPECS_NEXT['1.21']['install'] = _CHROMIUM_85_INSTALL + SPECS_NEXT['1.21']['insta
 SPECS_NEXT['1.27']['install'] = _CHROME_120_INSTALL + SPECS_NEXT['1.27']['install']
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
 # the actual Electron binary must be installed separately.
+# Upgrade Cypress from 13.6.1 to 13.14.2 to fix "Missing browserCriClient in
+# connectToNewSpec" — a CRI reconnection bug during spec transitions (PR #29663).
 # Install to chromeuser's cache dir (tests run as chromeuser via su).
-SPECS_NEXT['1.27']['install'].append(
+SPECS_NEXT['1.27']['install'].extend([
+    "npm install cypress@13.14.2 --no-save",
     "CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && "
-    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress"
-)
+    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress",
+])
 # Install karma-json-reporter and patch config for structured output parsing.
 # Must be after npm install (so karma.js and node_modules exist).
 for v in [

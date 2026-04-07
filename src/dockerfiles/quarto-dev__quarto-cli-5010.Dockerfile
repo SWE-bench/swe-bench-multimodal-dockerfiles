@@ -91,7 +91,7 @@ python2 -V
 EOF_01667795d52d
 
 
-RUN <<EOF_881d469d806a
+RUN <<EOF_5b37e2f05dd6
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed
@@ -114,6 +114,7 @@ ln -s /opt/julia-1.9.3/bin/julia /usr/local/bin/julia
 ls .
 [ -f configure.sh ] || ./configure-linux.sh
 [ -f configure-linux.sh ] || ./configure.sh
+quarto install tool tinytex --no-prompt || yes | quarto install tool tinytex || true
 cd tests
 ./configure-test-env.sh || true
 cd ..
@@ -136,16 +137,9 @@ pip3 install pexpect
 pip3 install ptyprocess
 pip3 install appnope
 pip3 install ipykernel
-EOF_881d469d806a
+EOF_5b37e2f05dd6
 
 
-RUN <<EOF_fe059fd826b0
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/koji-steak-1.jpg' 'http://assets.bonappetit.com/photos/57bf31396a6acdf3485df7f9/5:4/w_1028,c_limit/koji-steak-1.jpg' || true
-EOF_fe059fd826b0
-
+COPY src/image_assets/quarto-dev__quarto-cli-5010/ /swebench/image_assets/
 
 WORKDIR /testbed

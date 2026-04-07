@@ -69,6 +69,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -189,46 +190,23 @@ def _strip_binary_diffs(patch_text: str) -> tuple[str, list[str]]:
 
 
 def _make_image_download_script(instance: dict) -> str:
-    """Generate a RUN block to download image_assets into staging dirs at build time."""
+    """Generate a COPY instruction to bring in pre-downloaded image_assets."""
     image_assets = instance.get("image_assets")
     if not image_assets:
         return ""
     if isinstance(image_assets, str):
         image_assets = json.loads(image_assets) if image_assets else {}
 
-    commands = ["mkdir -p /swebench/image_assets"]
-
-    # test_patch images → /swebench/image_assets/test_patch/{repo_relative_path}
-    test_patch_assets = image_assets.get("test_patch", [])
-    if hasattr(test_patch_assets, "tolist"):
-        test_patch_assets = test_patch_assets.tolist()
-    for item in test_patch_assets:
-        if isinstance(item, str):
-            item = json.loads(item)
-        path = item.get("path", "")
-        url = item.get("url", "")
-        if path and url:
-            dest = f"/swebench/image_assets/test_patch/{path}"
-            commands.append(f"mkdir -p $(dirname '{dest}')")
-            commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
-
-    # problem_statement images → /swebench/image_assets/problem_statement/
-    ps_assets = image_assets.get("problem_statement", [])
-    if hasattr(ps_assets, "tolist"):
-        ps_assets = ps_assets.tolist()
-    seen_urls = set()
-    for url in ps_assets:
-        if not isinstance(url, str) or not url or url in seen_urls:
-            continue
-        seen_urls.add(url)
-        fname = url.rstrip("/").split("/")[-1]
-        dest = f"/swebench/image_assets/problem_statement/{fname}"
-        commands.append("mkdir -p /swebench/image_assets/problem_statement")
-        commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
-
-    if len(commands) <= 1:
+    has_assets = (
+        image_assets.get("test_patch")
+        or image_assets.get("problem_statement")
+        or image_assets.get("patch")
+    )
+    if not has_assets:
         return ""
-    return make_heredoc_run_command(commands)
+
+    instance_id = instance["instance_id"]
+    return f"COPY src/image_assets/{instance_id}/ /swebench/image_assets/"
 
 
 def _get_dockerfile(instance) -> str:
@@ -500,9 +478,9 @@ def _get_eval_script(instance: dict) -> str:
         f"cd {CONTAINER_WORKDIR}",
         f"git config --global --add safe.directory {CONTAINER_WORKDIR}",
         "source $NVM_DIR/nvm.sh",
-        "git status",
-        "git show",
-        f"git -c core.fileMode=false diff {base_commit}",
+        "git status > /dev/null 2>&1",
+        "git show > /tmp/git_show.log 2>&1",
+        f"git -c core.fileMode=false diff {base_commit} > /tmp/git_diff.log 2>&1",
     ]
 
     # Carbon: accessibility-checker races on mkdir for engine dir when parallel workers
@@ -560,6 +538,11 @@ def _get_eval_script(instance: dict) -> str:
     # Lighthouse v1.x: gold patch may add new modules that need linking
     if repo == "GoogleChrome/lighthouse" and version and version.startswith("1."):
         eval_commands.append("npm run install-all 2>/dev/null || true")
+    # Lighthouse v9.5/10.0/10.2: Docker image may be missing devDependencies
+    # (e.g. testdouble) if built without PUPPETEER_SKIP_DOWNLOAD=true.
+    # Re-run yarn install as fallback until images are rebuilt with the fix.
+    if repo == "GoogleChrome/lighthouse" and version in ("9.5", "10.0", "10.2"):
+        eval_commands.append("yarn install --frozen-lockfile 2>&1 | tail -3 || true")
 
     # Next v1.27: Cypress/Vite tests run as chromeuser; ensure writable dirs
     if repo == "alibaba-fusion/next" and version == "1.27":

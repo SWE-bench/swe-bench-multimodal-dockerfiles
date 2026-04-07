@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,7 +89,7 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_d282359a633b
+RUN <<EOF_00021270fa3b
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
@@ -104,17 +105,17 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
+wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip
+unzip -q chrome-linux64.zip -d /opt/
+rm chrome-linux64.zip
+rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
+printf '#!/bin/bash\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
+chmod +x /usr/bin/google-chrome
+cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 npm install
-EOF_d282359a633b
+EOF_00021270fa3b
 
 
-RUN <<EOF_f7ee6aa4fb1a
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/210820799-c3751f4d-5b98-4121-9373-2339db0d1e16.png' 'https://user-images.githubusercontent.com/25825387/210820799-c3751f4d-5b98-4121-9373-2339db0d1e16.png' || true
-EOF_f7ee6aa4fb1a
-
+COPY src/image_assets/bpmn-io__bpmn-js-1802/ /swebench/image_assets/
 
 WORKDIR /testbed

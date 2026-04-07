@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,7 +89,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_ef061c80175e
+RUN <<EOF_0631650e888b
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
@@ -104,21 +105,18 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/793478/chrome-linux.zip
+unzip -q chrome-linux.zip -d /opt/
+rm chrome-linux.zip
+rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
+printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
+chmod +x /usr/bin/google-chrome
+cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 npm install
-EOF_ef061c80175e
+EOF_0631650e888b
 
 
-RUN <<EOF_7e4efffac78b
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/77805963-a0dbaf80-7083-11ea-98f3-ba5183a2af78.gif' 'https://user-images.githubusercontent.com/58601/77805963-a0dbaf80-7083-11ea-98f3-ba5183a2af78.gif' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/76790330-67f72d00-679d-11ea-9423-83ff91f27e43.png' 'https://user-images.githubusercontent.com/4389464/76790330-67f72d00-679d-11ea-9423-83ff91f27e43.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/76790539-ccb28780-679d-11ea-9bc9-59a6ca0d0263.png' 'https://user-images.githubusercontent.com/4389464/76790539-ccb28780-679d-11ea-9bc9-59a6ca0d0263.png' || true
-EOF_7e4efffac78b
-
+COPY src/image_assets/bpmn-io__bpmn-js-1299/ /swebench/image_assets/
 
 WORKDIR /testbed

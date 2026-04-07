@@ -91,7 +91,7 @@ python2 -V
 EOF_01667795d52d
 
 
-RUN <<EOF_3cc0b4d302ba
+RUN <<EOF_fbcd7a16a878
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed
@@ -114,6 +114,7 @@ ln -s /opt/julia-1.9.3/bin/julia /usr/local/bin/julia
 ls .
 [ -f configure.sh ] || ./configure-linux.sh
 [ -f configure-linux.sh ] || ./configure.sh
+quarto install tool tinytex --no-prompt || yes | quarto install tool tinytex || true
 cd tests
 ./configure-test-env.sh || true
 cd ..
@@ -136,22 +137,9 @@ pip3 install pexpect
 pip3 install ptyprocess
 pip3 install appnope
 pip3 install ipykernel
-EOF_3cc0b4d302ba
+EOF_fbcd7a16a878
 
 
-RUN <<EOF_f2063516317b
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/Example.jpg' 'https://upload.wikimedia.org/wikipedia/en/a/a9/Example.jpg' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/168455225-72cb6644-9d69-4e15-9da4-3a183e19c6ff.png' 'https://user-images.githubusercontent.com/6520659/168455225-72cb6644-9d69-4e15-9da4-3a183e19c6ff.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/168455229-318f2868-3573-4f42-a30b-70a7a8bb4275.png' 'https://user-images.githubusercontent.com/6520659/168455229-318f2868-3573-4f42-a30b-70a7a8bb4275.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/168455233-1579b08c-b80e-47f2-98e8-57936043d0aa.png' 'https://user-images.githubusercontent.com/6520659/168455233-1579b08c-b80e-47f2-98e8-57936043d0aa.png' || true
-EOF_f2063516317b
-
+COPY src/image_assets/quarto-dev__quarto-cli-896/ /swebench/image_assets/
 
 WORKDIR /testbed
