@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,7 +92,7 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_34bcbc9afaa6
+RUN <<EOF_a39f7f7a8d32
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -115,16 +116,9 @@ npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install puppeteer@19.11.1 --save-exact
 npm install highlight.js@10.7.3 --save-exact
-EOF_34bcbc9afaa6
-
-
-RUN <<EOF_49f416664923
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/sqRqVjI664kt.png' 'https://fusion-image.oss-cn-beijing.aliyuncs.com/images/sqRqVjI664kt.png' || true
-EOF_49f416664923
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_a39f7f7a8d32
 
 
 WORKDIR /testbed

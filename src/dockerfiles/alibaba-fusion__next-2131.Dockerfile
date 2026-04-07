@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,7 +92,7 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_45ebe9c2ec13
+RUN <<EOF_aeafdbfdcc40
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -121,20 +122,9 @@ npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install lodash.clonedeep@4.5.0 --save-exact
-EOF_45ebe9c2ec13
-
-
-RUN <<EOF_749110aa418d
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/89390340-23aefe00-d739-11ea-990a-051a6be3bcb4.png' 'https://user-images.githubusercontent.com/10049465/89390340-23aefe00-d739-11ea-990a-051a6be3bcb4.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/89390354-29a4df00-d739-11ea-9949-de74bb1d038c.png' 'https://user-images.githubusercontent.com/10049465/89390354-29a4df00-d739-11ea-9949-de74bb1d038c.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/89393372-4e9b5100-d73d-11ea-9df8-42b40e00108d.png' 'https://user-images.githubusercontent.com/10049465/89393372-4e9b5100-d73d-11ea-9df8-42b40e00108d.png' || true
-EOF_749110aa418d
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_aeafdbfdcc40
 
 
 WORKDIR /testbed

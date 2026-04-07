@@ -36,7 +36,6 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         clone_cmd = f"git clone -o origin https://github.com/{repo} {workdir}"
     return [
         clone_cmd,
-        f"chmod -R 777 {workdir}",
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
@@ -47,6 +46,8 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         'git branch -D $(git branch | grep -v "^\\*") 2>/dev/null || true',
         "git reflog expire --expire=now --all",
         "cd - || true",
+        # chmod after git reset so permissions aren't reverted by git
+        f"chmod -R 777 {workdir}",
     ]
 
 

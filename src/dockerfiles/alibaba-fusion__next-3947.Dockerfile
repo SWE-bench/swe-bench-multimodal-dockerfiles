@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,7 +92,7 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_aa7ec9f1ce37
+RUN <<EOF_b2e807cc0aa3
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -113,16 +114,9 @@ npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
-EOF_aa7ec9f1ce37
-
-
-RUN <<EOF_faba4e0161a7
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/172311781-e49205bc-a0f6-413e-922f-a23fba68f44f.png' 'https://user-images.githubusercontent.com/3183822/172311781-e49205bc-a0f6-413e-922f-a23fba68f44f.png' || true
-EOF_faba4e0161a7
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_b2e807cc0aa3
 
 
 WORKDIR /testbed

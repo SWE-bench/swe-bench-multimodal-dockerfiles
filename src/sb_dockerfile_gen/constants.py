@@ -628,6 +628,11 @@ SPECS_AXIOS = {
 SET_OPENSSL_TO_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
 SET_PUPPETEER_ENV_VAR = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
 SET_PUPPETEER_PATH = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|\" {}"
+# Switch Karma from 'spec' to 'json' reporter for structured test output.
+# The config file has an explicit plugins array so we must register the plugin.
+# The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).
+SETUP_KARMA_JSON_REPORTER = "sed -i \"s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/\" {0} && " \
+    "sed -i \"s/reporters: \\['spec', 'coverage'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
 INSTALL_JULIA = [
     "wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz",
     "tar zxvf julia-1.9.3-linux-x86_64.tar.gz",
@@ -850,6 +855,15 @@ for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', 
 # Set OpenSSL to legacy provider for certain versions
 for v in ['3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
+# Pin era-appropriate Chrome versions for bpmn-js.
+# Chrome 146 (system default) breaks label rendering, coordinate precision,
+# and BpmnUpdater.updateSemanticParent in older tests.
+for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
+    SPECS_BPMN_JS[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_BPMN_JS[v]['install']
+for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
+    SPECS_BPMN_JS[v]['install'] = _CHROMIUM_85_INSTALL + SPECS_BPMN_JS[v]['install']
+for v in ['11.1', '11.3', '13.2', '14.0', '15.2']:
+    SPECS_BPMN_JS[v]['install'] = _CHROME_120_INSTALL + SPECS_BPMN_JS[v]['install']
 
 SPECS_OPENLAYERS = {
     **{k: {
@@ -993,7 +1007,9 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['install'].extend([
         "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
     ])
-# Pin era-appropriate Chromium for versions with Chrome-sensitive tests
+# Pin era-appropriate Chromium for versions with known Chrome-sensitive tests.
+# Only pin versions that have confirmed Chrome-version failures.
+# v1.16-v1.20, v1.22-v1.24, v1.25-v1.26 work fine with system Chrome (146).
 for v in ['1.11', '1.14', '1.15']:
     SPECS_NEXT[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_NEXT[v]['install']
 SPECS_NEXT['1.21']['install'] = _CHROMIUM_85_INSTALL + SPECS_NEXT['1.21']['install']
@@ -1005,6 +1021,16 @@ SPECS_NEXT['1.27']['install'].append(
     "CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && "
     "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress"
 )
+# Install karma-json-reporter and patch config for structured output parsing.
+# Must be after npm install (so karma.js and node_modules exist).
+for v in [
+    '1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19',
+    '1.20', '1.21', '1.22', '1.23', '1.24', '1.25', '1.26'
+]:
+    SPECS_NEXT[v]['install'].extend([
+        "npm install karma-json-reporter@1.2.1 --no-save",
+        SETUP_KARMA_JSON_REPORTER.format("scripts/test/karma.js"),
+    ])
 
 SPECS_CYPRESS = {
     **{k: {
@@ -1203,6 +1229,7 @@ SPECS_QUARTOCLI = {
         "install": INSTALL_JULIA + ["ls .",
                     "[ -f configure.sh ] || ./configure-linux.sh",
                     "[ -f configure-linux.sh ] || ./configure.sh",
+                    "quarto install tool tinytex --no-prompt || yes | quarto install tool tinytex || true",
                     "cd tests", "./configure-test-env.sh || true", "cd ..",
                     ] + PIP_INSTALLS_QUARTOCLI,
         "test_cmd": [ # test generates files that add future test cases -- run tests fairly

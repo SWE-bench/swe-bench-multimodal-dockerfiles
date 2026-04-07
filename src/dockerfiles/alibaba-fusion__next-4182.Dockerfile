@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,7 +92,7 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_e4a3a80a3f9a
+RUN <<EOF_aa5c26d1d1d5
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -109,16 +110,9 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
 su chromeuser -c 'npm install'
-EOF_e4a3a80a3f9a
-
-
-RUN <<EOF_2054acdbeb4c
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/178670197-39e8aa2c-5905-465c-b29b-6810768bac7c.png' 'https://user-images.githubusercontent.com/109202769/178670197-39e8aa2c-5905-465c-b29b-6810768bac7c.png' || true
-EOF_2054acdbeb4c
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_aa5c26d1d1d5
 
 
 WORKDIR /testbed

@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -62,17 +63,17 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 21.6.2
+ENV NODE_VERSION 18.20.4
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_55f960f4ac15
+RUN <<EOF_82959bcf9028
 #!/bin/bash
 set -euxo pipefail
 apt-get update
 apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
-export NODE_VERSION=21.6.2
+export NODE_VERSION=18.20.4
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -82,20 +83,19 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v21.6.2/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v21.6.2/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v18.20.4/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v18.20.4/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_55f960f4ac15
+EOF_82959bcf9028
 
 
-RUN <<EOF_b788b8def624
+RUN <<EOF_30fc3e9232ab
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 56f9fa2b426e4212cb43f6d7f78d51c6c17becc8
 git remote remove origin
@@ -104,6 +104,7 @@ git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOC
 git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
@@ -117,16 +118,7 @@ cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
 su chromeuser -c 'npm install'
 CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress
-EOF_b788b8def624
-
-
-RUN <<EOF_4136b558d71e
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/150507771-ef2a6b87-ecff-421d-8b6c-273e0bf02b5e.png' 'https://user-images.githubusercontent.com/9381522/150507771-ef2a6b87-ecff-421d-8b6c-273e0bf02b5e.png' || true
-EOF_4136b558d71e
+EOF_30fc3e9232ab
 
 
 WORKDIR /testbed
