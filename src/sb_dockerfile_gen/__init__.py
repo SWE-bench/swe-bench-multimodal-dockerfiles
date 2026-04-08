@@ -186,7 +186,10 @@ def _strip_binary_diffs(patch_text: str) -> tuple[str, list[str]]:
         if not skip_until_next_diff:
             cleaned.append(line)
 
-    return "\n".join(cleaned), binary_files
+    result = "\n".join(cleaned)
+    if result and not result.endswith("\n"):
+        result += "\n"
+    return result, binary_files
 
 
 def _make_image_download_script(instance: dict) -> str:

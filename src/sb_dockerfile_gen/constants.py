@@ -639,6 +639,47 @@ INSTALL_JULIA = [
     "mv julia-1.9.3/ /opt/",
     "ln -s /opt/julia-1.9.3/bin/julia /usr/local/bin/julia",
 ]
+# Install TinyTeX directly (older quarto versions lack 'quarto install tool tinytex').
+# Uses the default TinyTeX-1 bundle (~125 packages), then adds packages needed by the
+# test suite's PDF renders (tufte, koma-script, tcolorbox, etc.).
+INSTALL_TINYTEX = [
+    "wget -qO- 'https://yihui.org/tinytex/install-bin-unix.sh' | sh",
+    # Install the full set of TeX packages needed by quarto's test suite PDF renders.
+    # This list matches quarto's own TinyTeX installer output (~320 packages).
+    "export PATH=$HOME/.TinyTeX/bin/x86_64-linux:$PATH && "
+    "tlmgr install "
+    "a4wide achemso adjustbox ae algorithmicx algorithms apacite appendix "
+    "awesomebox babel-english babel-french bbm-macros beamer biblatex biber "
+    "breakurl caption carlisle catoptions ccicons changepage charter chemgreek "
+    "cite cleveref collectbox colorprofiles colortbl comment count1to courier "
+    "crop csquotes currfile datetime dblfloatfix doclicense draftwatermark "
+    "eepic endfloat endnotes enumitem environ epsf epstopdf-pkg eso-pic esvect "
+    "etex-pkg eurosym everysel everyshi expex extsizes fancyhdr fancyvrb "
+    "filemod float floatflt floatrow fmtcount fontawesome5 fontaxes fontspec "
+    "footmisc forarray fp fpl framed gincltex grfext grffile hardwrap hyperxmp "
+    "hyphen-english hyphen-french hyphenat ifmtarg jknapltx kastrup koma-script "
+    "langsci lastpage latex-lab latexindent lettrine libertine lineno lipsum "
+    "listings logreq ltxkeys ly1 lualatex-math makecell makecmds makeindex "
+    "marginnote marvosym mathalpha mathpazo mathspec mathtools mdframed memoir "
+    "metalogo mhchem microtype minifp mnras morefloats moreverb multirow "
+    "multitoc mweights natbib ncntrsbk needspace newfloat newtx ntgclass "
+    "oberdiek palatino paralist parskip pbox pdfcol pdflscape "
+    "pdfmanagement-testphase pdfpages pdfsync pgf picinpar placeins polyglossia "
+    "prelim2e preprint preview psfrag ragged2e realscripts revtex4-1 roboto "
+    "rsfs sauerj sectsty selnolig seqsplit setspace sidecap sidenotes siunitx "
+    "soul srcltx standalone stix stmaryrd sttools subfig subfigure svn-prov "
+    "tabto-ltx tabu tcolorbox tex-gyre texcount textcase thmtools "
+    "threeparttable threeparttablex thumbpdf tikzfill tipa titlesec totcount "
+    "totpages translator trimspaces tufte-latex ucs ulem units upquote urlbst "
+    "varwidth vmargin vruler wallpaper wrapfig xargs xifthen xltxtra xpatch "
+    "xstring xwatermark xypic zapfchan",
+]
+# Install R packages needed by knitr engine for rendering .qmd documents with {r} blocks.
+# cmake is required to compile the 'fs' R package (dependency of rmarkdown).
+INSTALL_R_PACKAGES = [
+    "R -e \"install.packages(c('rmarkdown', 'knitr', 'jsonlite'), "
+    "repos='https://cloud.r-project.org', quiet=TRUE)\"",
+]
 
 SPECS_HIGHLIGHTJS = {k: {
     "install": [
@@ -885,6 +926,15 @@ SPECS_OPENLAYERS = {
         '8.1', '9.0', '9.1'
     ]},
 }
+# v6.4: Heatmap/WebGL tests need Mesa's llvmpipe software rasterizer in headless Chrome.
+# Also patch Karma config to use a custom Chrome launcher with SwiftShader-based WebGL
+# (Chrome can't create a WebGL context in Docker without explicit --use-angle flags).
+SPECS_OPENLAYERS['6.4']["apt-pkgs"] = XVFB_DEPS + ["libgl1-mesa-dri", "libegl1-mesa"]
+SPECS_OPENLAYERS['6.4']["install"].append(
+    "sed -i \"s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/"
+    "customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },"
+    "\\n    browsers: ['ChromeWebGL']/\" test/karma.config.js"
+)
 # Replace puppeteer executable path
 # NOTE: 6.5.1 was an artificially introduced version for karma.config.[js -> cjs]
 for v in [
@@ -1228,13 +1278,13 @@ PIP_INSTALLS_QUARTOCLI = [
     "pip3 install ipykernel",
 ]
 SPECS_QUARTOCLI = {
-    None : {
+    '' : {
         "apt-pkgs": ["libffi-dev", "zip", "unzip", "python3", "python3-pip", "python3.10-distutils", "r-base-core",
-                     "poppler-utils", "libxml2-utils"],
+                     "poppler-utils", "libxml2-utils", "cmake"],
         "install": INSTALL_JULIA + ["ls .",
                     "[ -f configure.sh ] || ./configure-linux.sh",
                     "[ -f configure-linux.sh ] || ./configure.sh",
-                    "quarto install tool tinytex --no-prompt || yes | quarto install tool tinytex || true",
+                    ] + INSTALL_TINYTEX + INSTALL_R_PACKAGES + [
                     "cd tests", "./configure-test-env.sh || true", "cd ..",
                     ] + PIP_INSTALLS_QUARTOCLI,
         "test_cmd": [ # test generates files that add future test cases -- run tests fairly
