@@ -643,7 +643,8 @@ INSTALL_JULIA = [
 # Uses the default TinyTeX-1 bundle (~125 packages), then adds packages needed by the
 # test suite's PDF renders (tufte, koma-script, tcolorbox, etc.).
 INSTALL_TINYTEX = [
-    "wget -qO- 'https://yihui.org/tinytex/install-bin-unix.sh' | sh",
+    "wget -qO- 'https://yihui.org/tinytex/install-bin-unix.sh' | sh && "
+    "ln -sf $HOME/.TinyTeX/bin/x86_64-linux/* /usr/local/bin/",
     # Install the full set of TeX packages needed by quarto's test suite PDF renders.
     # This list matches quarto's own TinyTeX installer output (~320 packages).
     "export PATH=$HOME/.TinyTeX/bin/x86_64-linux:$PATH && "
@@ -1281,12 +1282,18 @@ SPECS_QUARTOCLI = {
     '' : {
         "apt-pkgs": ["libffi-dev", "zip", "unzip", "python3", "python3-pip", "python3.10-distutils", "r-base-core",
                      "poppler-utils", "libxml2-utils", "cmake"],
-        "install": INSTALL_JULIA + ["ls .",
+        # pre_install runs in its own Docker layer BEFORE git clone, so it's
+        # cached and shared across all 24 quarto instances (~7 min saved per image).
+        "pre_install": INSTALL_JULIA + INSTALL_TINYTEX + INSTALL_R_PACKAGES + PIP_INSTALLS_QUARTOCLI,
+        # install runs AFTER git clone (per-instance layer).
+        "install": ["ls .",
                     "[ -f configure.sh ] || ./configure-linux.sh",
                     "[ -f configure-linux.sh ] || ./configure.sh",
-                    ] + INSTALL_TINYTEX + INSTALL_R_PACKAGES + [
-                    "cd tests", "./configure-test-env.sh || true", "cd ..",
-                    ] + PIP_INSTALLS_QUARTOCLI,
+                    "cd tests",
+                    "sed -i 's/quarto install.*tinytex/true/' configure-test-env.sh 2>/dev/null || true",
+                    "./configure-test-env.sh || true",
+                    "cd ..",
+                    ],
         "test_cmd": [ # test generates files that add future test cases -- run tests fairly
             "cp -r tests/ tests_tmp/", 
             "cd tests", 

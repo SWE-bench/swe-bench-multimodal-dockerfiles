@@ -138,6 +138,20 @@ def make_env_script_list(instance, specs):
     return make_heredoc_run_command(commands)
 
 
+def make_pre_install_script(specs):
+    """Generate a RUN block for pre_install commands (cached across instances).
+
+    Commands in specs["pre_install"] run in their own Docker layer before
+    git clone, so they are shared across all instances of the same repo/version.
+    Use this for expensive, repo-independent installs (TinyTeX, R packages, etc.).
+    """
+    pre_install = specs.get("pre_install")
+    if not pre_install:
+        return ""
+    commands = list(pre_install) if isinstance(pre_install, list) else [pre_install]
+    return make_heredoc_run_command(commands)
+
+
 def make_repo_script_list(specs, repo, base_commit):
     commands = [
         *git_clone_timesafe(repo, base_commit, CONTAINER_WORKDIR),
@@ -231,6 +245,9 @@ def _get_dockerfile(instance) -> str:
     env_script = make_env_script_list(instance, specs)
     if env_script:
         dockerfile += f"\n{env_script}\n"
+    pre_install_script = make_pre_install_script(specs)
+    if pre_install_script:
+        dockerfile += f"\n{pre_install_script}\n"
     repo_script = make_repo_script_list(specs, repo, base_commit)
     if repo_script:
         dockerfile += f"\n{repo_script}\n"
