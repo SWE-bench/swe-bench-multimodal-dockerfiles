@@ -89,22 +89,9 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_394003ddd63e
+RUN <<EOF_6e3b4f5ca0fb
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
-chmod -R 777 /testbed
-cd /testbed
-git reset --hard 23505a47830db4207b59044bf5383ba8f0323464
-git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 23505a47830db4207b59044bf5383ba8f0323464)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
-git reflog expire --expire=now --all
-cd - || true
-cd /testbed
-git clean -fdxq
-source $NVM_DIR/nvm.sh
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
 wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/599821/chrome-linux.zip
 unzip -q chrome-linux.zip -d /opt/
@@ -113,10 +100,29 @@ rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
 printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
 chmod +x /usr/bin/google-chrome
 cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+EOF_6e3b4f5ca0fb
+
+
+RUN <<EOF_f8742f8743ee
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
+cd /testbed
+git reset --hard 23505a47830db4207b59044bf5383ba8f0323464
+git remote remove origin
+TARGET_EPOCH=$(git show -s --format=%ct 23505a47830db4207b59044bf5383ba8f0323464)
+git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
+git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git reflog expire --expire=now --all
+cd - || true
+chmod -R 777 /testbed
+cd /testbed
+git clean -fdxq
+source $NVM_DIR/nvm.sh
 npm install
-EOF_394003ddd63e
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
+EOF_f8742f8743ee
 
-
-COPY src/image_assets/bpmn-io__bpmn-js-1119/ /swebench/image_assets/
 
 WORKDIR /testbed

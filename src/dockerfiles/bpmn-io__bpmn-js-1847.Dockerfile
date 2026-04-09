@@ -89,11 +89,23 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_97e721c1c882
+RUN <<EOF_9bddf550224d
+#!/bin/bash
+set -euxo pipefail
+wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip
+unzip -q chrome-linux64.zip -d /opt/
+rm chrome-linux64.zip
+rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
+printf '#!/bin/bash\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
+chmod +x /usr/bin/google-chrome
+cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+EOF_9bddf550224d
+
+
+RUN <<EOF_0911582c52e4
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 3c90e8ef96b0a315bf78b25b29053abd87b57b27
 git remote remove origin
@@ -102,20 +114,14 @@ git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOC
 git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
 git reflog expire --expire=now --all
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip
-unzip -q chrome-linux64.zip -d /opt/
-rm chrome-linux64.zip
-rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
-printf '#!/bin/bash\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
-chmod +x /usr/bin/google-chrome
-cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 npm install
-EOF_97e721c1c882
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
+EOF_0911582c52e4
 
-
-COPY src/image_assets/bpmn-io__bpmn-js-1847/ /swebench/image_assets/
 
 WORKDIR /testbed

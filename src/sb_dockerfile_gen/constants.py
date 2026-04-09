@@ -631,8 +631,11 @@ SET_PUPPETEER_PATH = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').e
 # Switch Karma from 'spec' to 'json' reporter for structured test output.
 # The config file has an explicit plugins array so we must register the plugin.
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).
-SETUP_KARMA_JSON_REPORTER = "sed -i \"s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/\" {0} && " \
+SETUP_KARMA_JSON_REPORTER_NEXT = "sed -i \"s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/\" {0} && " \
     "sed -i \"s/reporters: \\['spec', 'coverage'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
+# bpmn-js variant: reporters line is `[ 'progress' ].concat(coverage ? 'coverage' : [])`.
+# No explicit plugins array — karma-* auto-discovery loads the reporter.
+SETUP_KARMA_JSON_REPORTER_BPMN = "sed -i \"s/reporters: \\[ 'progress' \\].concat(coverage ? 'coverage' : \\[\\])/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
 INSTALL_JULIA = [
     "wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz",
     "tar zxvf julia-1.9.3-linux-x86_64.tar.gz",
@@ -900,12 +903,20 @@ for v in ['3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
 # Pin era-appropriate Chrome versions for bpmn-js.
 # Chrome 146 (system default) breaks label rendering, coordinate precision,
 # and BpmnUpdater.updateSemanticParent in older tests.
+# Chromium downloads go in pre_install (cached layer before git clone).
 for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
-    SPECS_BPMN_JS[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_BPMN_JS[v]['install']
+    SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_72_INSTALL
 for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
-    SPECS_BPMN_JS[v]['install'] = _CHROMIUM_85_INSTALL + SPECS_BPMN_JS[v]['install']
+    SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_85_INSTALL
 for v in ['11.1', '11.3', '13.2', '14.0', '15.2']:
-    SPECS_BPMN_JS[v]['install'] = _CHROME_120_INSTALL + SPECS_BPMN_JS[v]['install']
+    SPECS_BPMN_JS[v]['pre_install'] = _CHROME_120_INSTALL
+# Install karma-json-reporter and patch config for structured JSON output.
+# Must be after npm install (so karma.unit.js and node_modules exist).
+for v in SPECS_BPMN_JS:
+    SPECS_BPMN_JS[v]['install'].extend([
+        "npm install karma-json-reporter@1.2.1 --no-save",
+        SETUP_KARMA_JSON_REPORTER_BPMN.format("test/config/karma.unit.js"),
+    ])
 
 SPECS_OPENLAYERS = {
     **{k: {
@@ -947,6 +958,24 @@ for v in ['6.0', '6.1', '6.2', '6.3', '6.4', '6.5']:
     SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
 # OL v7.4: rendering tests use Puppeteer's bundled Chromium 115 (downloaded at eval time).
 # No system Chrome override needed — Puppeteer.launch() uses its own browser.
+# Install karma-json-reporter for structured JSON output.
+# OL has two config patterns: test/karma.config.js (≤6.5) and test/browser/karma.config.cjs (≥6.5.1).
+# Reporter lines vary: ['dots'], ['dots', 'coverage-istanbul'], ['progress'].
+_OL_KARMA_JSON_SED_JS = (
+    "sed -i \"s/reporters: \\['dots', 'coverage-istanbul'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
+    "sed -i \"s/reporters: \\['dots'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
+    "sed -i \"s/reporters: \\['progress'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
+)
+for v in SPECS_OPENLAYERS:
+    SPECS_OPENLAYERS[v]['install'].append(
+        "npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps"
+    )
+    # Determine which config file this version uses
+    if v in ['6.5.1', '6.6', '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
+             '7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '8.1', '9.0', '9.1']:
+        SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format("test/browser/karma.config.cjs"))
+    else:
+        SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format("test/karma.config.js"))
 
 SPECS_EMOTION = {
     **{k: {
@@ -1085,7 +1114,7 @@ for v in [
 ]:
     SPECS_NEXT[v]['install'].extend([
         "npm install karma-json-reporter@1.2.1 --no-save",
-        SETUP_KARMA_JSON_REPORTER.format("scripts/test/karma.js"),
+        SETUP_KARMA_JSON_REPORTER_NEXT.format("scripts/test/karma.js"),
     ])
 
 SPECS_CYPRESS = {
