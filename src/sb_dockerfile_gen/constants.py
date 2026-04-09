@@ -693,7 +693,7 @@ SPECS_HIGHLIGHTJS = {k: {
     "test_cmd": [
         "npm install",
         "npm run build",
-        "npm run test",
+        "./node_modules/.bin/mocha test --reporter json",
     ],
     "docker_specs": {
         "node_version": "21.6.2"
@@ -845,7 +845,7 @@ for k in ['2023.5']:
     SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '18.15.0'
 
 
-TEST_CMD_ESLINT = './node_modules/.bin/mocha --forbid-only --reporter min -t 10000 --no-colors "tests/{bin,conf,lib,tools}/**/*.js"'
+TEST_CMD_ESLINT = './node_modules/.bin/mocha --forbid-only --reporter json -t 10000 --no-colors "tests/{bin,conf,lib,tools}/**/*.js"'
 SPECS_ESLINT = {
     **{k: {
         "install": ["npm install"],
