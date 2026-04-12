@@ -139,11 +139,29 @@ SPECS_CALYPSO = {
             "10.10.0",
             "10.12.0",
             "10.13.0",
-            "10.14.0",
-            "10.15.2",
             "10.16.3",
         ]
-    }
+    },
+    # color-studio@1.0.5 was unpublished from npm; replace with the scoped
+    # successor @automattic/color-studio@1.0.6 before npm install.
+    # Internal monorepo code does require('color-studio/...'), so we also
+    # symlink the scoped package back to the unscoped name.
+    **{
+        k: {
+            "apt-pkgs": ["libsass-dev", "sassc"],
+            "install": [
+                "sed -i 's/\"color-studio\": \"1.0.5\"/\"@automattic\\/color-studio\": \"1.0.6\"/' package.json",
+                "npm install --unsafe-perm --ignore-scripts",
+                "ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio",
+                "npm run build-packages",
+            ],
+            "test_cmd": "npm run test-client",
+            "docker_specs": {
+                "node_version": k,
+            },
+        }
+        for k in ["10.14.0", "10.15.2"]
+    },
 }
 
 TEST_CHART_JS_TEMPLATE = "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} --single-run --coverage --grep --auto-watch false"
@@ -295,7 +313,8 @@ SPECS_REACT_PDF = {
                 "librsvg2-dev",
             ]
             + X11_DEPS,
-            "install": ["npm i -g yarn", "yarn install"],
+            "pre_install": ["npm i -g yarn"],
+            "install": ["yarn install"],
             "test_cmd": 'NODE_OPTIONS="--experimental-vm-modules" ./node_modules/.bin/jest --no-color',
             "docker_specs": {"node_version": "18.20.4"},
         }
@@ -304,6 +323,7 @@ SPECS_REACT_PDF = {
 }
 for v in ["1.0", "1.1", "1.2"]:
     SPECS_REACT_PDF[v]["docker_specs"]["node_version"] = "8.17.0"
+    SPECS_REACT_PDF[v]["pre_install"] = []  # v1.x uses npm, not yarn
     SPECS_REACT_PDF[v]["install"] = ["npm install", "npm install cheerio@1.0.0-rc.3"]
     SPECS_REACT_PDF[v]["test_cmd"] = "./node_modules/.bin/jest --no-color"
 
@@ -1010,8 +1030,8 @@ SPECS_EMOTION = {
 
 SPECS_GROMMET = {
     **{k: {
+        "pre_install": ["npm i -g yarn"],
         "install": [
-            "npm i -g yarn",
             "yarn install"
         ],
         "test_cmd": [
@@ -1101,9 +1121,10 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
 # Pin era-appropriate Chromium for versions with known Chrome-sensitive tests.
 # Only pin versions that have confirmed Chrome-version failures.
 # v1.16-v1.20, v1.22-v1.24, v1.25-v1.26 work fine with system Chrome (146).
+# Chromium downloads go in pre_install (cached layer before git clone).
 for v in ['1.11', '1.14', '1.15']:
-    SPECS_NEXT[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_NEXT[v]['install']
-SPECS_NEXT['1.21']['install'] = _CHROMIUM_85_INSTALL + SPECS_NEXT['1.21']['install']
+    SPECS_NEXT[v]['pre_install'] = _CHROMIUM_72_INSTALL
+SPECS_NEXT['1.21']['pre_install'] = _CHROMIUM_85_INSTALL
 # v1.27 uses system Chrome (146) — Chrome 120 causes browser connection timeouts
 # in Cypress component testing. No pin needed.
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
@@ -1159,8 +1180,8 @@ for v in ['12.9', '12.10', '12.11', '12.12', '12.14', '12.17', '13.4', '13.6']:
 
 SPECS_CARBON = {
     **{k: {
+        "pre_install": ["npm i -g yarn"],
         "install": [
-            "npm i -g yarn",
             "yarn install",
             "yarn build",
         ],
@@ -1236,8 +1257,8 @@ SPECS_SCRATCH['8']['install'].append(
 
 SPECS_LIGHTHOUSE = {
     **{k: {
+        "pre_install": ["npm i -g yarn"],
         "install": [
-            "npm i -g yarn",
             "yarn",
             "yarn build-all"
         ],
@@ -1260,13 +1281,13 @@ SPECS_LIGHTHOUSE = {
 }
 for v in ['2.0', '2.1', '2.3', '2.4', '2.5', '2.6', '2.7', '2.8', '2.9']:
     SPECS_LIGHTHOUSE[v]["install"] = [
-        "npm i -g yarn",
         "yarn",
         "yarn install-all",
         "yarn build-all",
     ]
 for v in ['1.0', '1.1', '1.2', '1.4', '1.5', '1.6']:
     SPECS_LIGHTHOUSE[v]["docker_specs"]["node_version"] = "8.17.0"
+    SPECS_LIGHTHOUSE[v]["pre_install"] = []  # v1.x uses npm, not yarn
     SPECS_LIGHTHOUSE[v]["install"] = [
         "npm install",
         "npm run install-all",
@@ -1281,8 +1302,8 @@ for v in ['9.5', '10.0', '10.2']:
 
 SPECS_PRETTIER = {
     **{k: {
+        "pre_install": ["npm i -g yarn"],
         "install": [
-            "npm i -g yarn",
             "yarn",
         ],
         "test_cmd": "yarn test",
@@ -1299,8 +1320,8 @@ SPECS_PRETTIER = {
 # is in yarn's dependency graph and survives subsequent yarn operations.
 # Restore package.json/yarn.lock afterwards (gold patch will re-add meriyah).
 SPECS_PRETTIER['2.2'] = {
+    "pre_install": ["npm i -g yarn"],
     "install": [
-        "npm i -g yarn",
         "yarn",
         "yarn add meriyah@3.1.2",
         "git checkout -- package.json yarn.lock 2>/dev/null || true",
