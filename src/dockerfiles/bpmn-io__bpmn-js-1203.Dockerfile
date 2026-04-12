@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -62,14 +63,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 21.6.2
+ENV NODE_VERSION 10.24.1
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_df8f9cb8cc5e
+RUN <<EOF_31553638dfda
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=21.6.2
+export NODE_VERSION=10.24.1
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -79,42 +80,53 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v21.6.2/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v21.6.2/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v10.24.1/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v10.24.1/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_df8f9cb8cc5e
+EOF_31553638dfda
 
 
-RUN <<EOF_2967d02c6560
+RUN <<EOF_9025c28e31c3
+#!/bin/bash
+set -euxo pipefail
+add-apt-repository -y ppa:mozillateam/ppa
+apt-get update && apt-get install -y -t 'o=LP-PPA-mozillateam' firefox
+EOF_9025c28e31c3
+
+
+RUN <<EOF_38dcf723590a
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 59de7598b1ec402366999f39ea73b6f983d45661
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 59de7598b1ec402366999f39ea73b6f983d45661)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 59de7598b1ec402366999f39ea73b6f983d45661)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_2967d02c6560
+npm install karma-firefox-launcher@2.1.3 --no-save
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
+EOF_38dcf723590a
 
 
-RUN <<EOF_96e7b00b2851
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/65767709-eba95880-e12e-11e9-836f-917776cc029e.gif' 'https://user-images.githubusercontent.com/15003836/65767709-eba95880-e12e-11e9-836f-917776cc029e.gif' || true
-EOF_96e7b00b2851
-
+COPY src/image_assets/bpmn-io__bpmn-js-1203/ /swebench/image_assets/
 
 WORKDIR /testbed

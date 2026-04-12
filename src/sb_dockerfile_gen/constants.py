@@ -918,13 +918,31 @@ SPECS_BPMN_JS = {
 for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
     SPECS_BPMN_JS[v]["docker_specs"]["node_version"] = "16.20.2"
 # Set OpenSSL to legacy provider for certain versions
-for v in ['3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
+for v in ['3.0', '3.3', '3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
+# bpmn-js v5.0: use Firefox (matching upstream CI) instead of Chrome.
+# Upstream .travis.yml at commit 59de7598b1 uses Node 10 + Firefox + PhantomJS.
+# Chrome (72, 78, 146) all fail on label rendering and BpmnUpdater.updateSemanticParent.
+SPECS_BPMN_JS['5.0']['docker_specs']['node_version'] = '10.24.1'
+SPECS_BPMN_JS['5.0']['pre_install'] = [
+    "add-apt-repository -y ppa:mozillateam/ppa",
+    "apt-get update && apt-get install -y -t 'o=LP-PPA-mozillateam' firefox",
+]
+SPECS_BPMN_JS['5.0']['install'] = [
+    "npm install",
+    "npm install karma-firefox-launcher@2.1.3 --no-save",
+    "npm install karma-json-reporter@1.2.1 --no-save",
+    SETUP_KARMA_JSON_REPORTER_BPMN.format("test/config/karma.unit.js"),
+]
+SPECS_BPMN_JS['5.0']['test_cmd'] = [
+    "sed -i \"s/browsers: .*/browsers: ['FirefoxHeadless'],/\" test/config/karma.unit.js",
+    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors",
+]
 # Pin era-appropriate Chrome versions for bpmn-js.
 # Chrome 146 (system default) breaks label rendering, coordinate precision,
 # and BpmnUpdater.updateSemanticParent in older tests.
 # Chromium downloads go in pre_install (cached layer before git clone).
-for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
+for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3', '3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_72_INSTALL
 for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
     SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_85_INSTALL
