@@ -69,6 +69,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -137,6 +138,20 @@ def make_env_script_list(instance, specs):
     return make_heredoc_run_command(commands)
 
 
+def make_pre_install_script(specs):
+    """Generate a RUN block for pre_install commands (cached across instances).
+
+    Commands in specs["pre_install"] run in their own Docker layer before
+    git clone, so they are shared across all instances of the same repo/version.
+    Use this for expensive, repo-independent installs (TinyTeX, R packages, etc.).
+    """
+    pre_install = specs.get("pre_install")
+    if not pre_install:
+        return ""
+    commands = list(pre_install) if isinstance(pre_install, list) else [pre_install]
+    return make_heredoc_run_command(commands)
+
+
 def make_repo_script_list(specs, repo, base_commit):
     commands = [
         *git_clone_timesafe(repo, base_commit, CONTAINER_WORKDIR),
@@ -185,50 +200,30 @@ def _strip_binary_diffs(patch_text: str) -> tuple[str, list[str]]:
         if not skip_until_next_diff:
             cleaned.append(line)
 
-    return "\n".join(cleaned), binary_files
+    result = "\n".join(cleaned)
+    if result and not result.endswith("\n"):
+        result += "\n"
+    return result, binary_files
 
 
 def _make_image_download_script(instance: dict) -> str:
-    """Generate a RUN block to download image_assets into staging dirs at build time."""
+    """Generate a COPY instruction to bring in pre-downloaded image_assets."""
     image_assets = instance.get("image_assets")
     if not image_assets:
         return ""
     if isinstance(image_assets, str):
         image_assets = json.loads(image_assets) if image_assets else {}
 
-    commands = ["mkdir -p /swebench/image_assets"]
-
-    # test_patch images → /swebench/image_assets/test_patch/{repo_relative_path}
-    test_patch_assets = image_assets.get("test_patch", [])
-    if hasattr(test_patch_assets, "tolist"):
-        test_patch_assets = test_patch_assets.tolist()
-    for item in test_patch_assets:
-        if isinstance(item, str):
-            item = json.loads(item)
-        path = item.get("path", "")
-        url = item.get("url", "")
-        if path and url:
-            dest = f"/swebench/image_assets/test_patch/{path}"
-            commands.append(f"mkdir -p $(dirname '{dest}')")
-            commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
-
-    # problem_statement images → /swebench/image_assets/problem_statement/
-    ps_assets = image_assets.get("problem_statement", [])
-    if hasattr(ps_assets, "tolist"):
-        ps_assets = ps_assets.tolist()
-    seen_urls = set()
-    for url in ps_assets:
-        if not isinstance(url, str) or not url or url in seen_urls:
-            continue
-        seen_urls.add(url)
-        fname = url.rstrip("/").split("/")[-1]
-        dest = f"/swebench/image_assets/problem_statement/{fname}"
-        commands.append("mkdir -p /swebench/image_assets/problem_statement")
-        commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
-
-    if len(commands) <= 1:
+    has_assets = (
+        image_assets.get("test_patch")
+        or image_assets.get("problem_statement")
+        or image_assets.get("patch")
+    )
+    if not has_assets:
         return ""
-    return make_heredoc_run_command(commands)
+
+    instance_id = instance["instance_id"]
+    return f"COPY src/image_assets/{instance_id}/ /swebench/image_assets/"
 
 
 def _get_dockerfile(instance) -> str:
@@ -250,6 +245,9 @@ def _get_dockerfile(instance) -> str:
     env_script = make_env_script_list(instance, specs)
     if env_script:
         dockerfile += f"\n{env_script}\n"
+    pre_install_script = make_pre_install_script(specs)
+    if pre_install_script:
+        dockerfile += f"\n{pre_install_script}\n"
     repo_script = make_repo_script_list(specs, repo, base_commit)
     if repo_script:
         dockerfile += f"\n{repo_script}\n"
@@ -329,13 +327,15 @@ def _get_test_cmds_openlayers(instance: dict) -> list:
             '4.3', '4.4', '4.5', '4.6', '5.1', '5.2', '5.3'
         ]:
             cmds[-1] = f"{SSL_LEGACY} {cmds[-1]}"
-    return list(set(cmds))
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys(cmds))
 
 
 def _get_test_cmds_next(instance: dict) -> list:
     SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
-    return list(set([
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys([
         f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
         f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
         for test_path in _get_test_paths(instance)
@@ -343,26 +343,32 @@ def _get_test_cmds_next(instance: dict) -> list:
 
 
 def _get_test_cmds_carbon(instance: dict) -> list:
-    cmds = []
+    # Derives yarn-test commands from test_patch paths, normalizes each to a
+    # Jest-matchable location, then drops any scope dominated by a broader
+    # prefix so parallel Jest runs never overlap. Overlap is what §4.7 of
+    # MULTIMODAL_FIXES.md targets: a later broad run can overwrite a narrow
+    # run's PASS with a FAIL triggered by the achecker cache race.
     max_workers = " --maxWorkers=1" if instance.get("version") == "12" else ""
+    test_paths: list[str] = []
+    standalone_cmds: list[str] = []
+
     for test_path in _get_test_paths(instance):
+        # Snapshot files aren't runnable — point Jest at the component dir.
         if re.search(r"__snapshots__/(.*).js.snap$", test_path):
             test_path = "/".join(test_path.split("/")[:-2])
+        # __tests__/foo-test.js → parent dir (Jest resolves by directory).
         if "__tests__" in test_path:
             test_path = test_path.split("__tests__")[0]
-        # For paths under packages/*/src/components/*/next/ or packages/cra-template/,
-        # Jest won't match the specific file. Target the component directory instead.
+        # packages/*/src/components/*/next/* isn't file-matched by Jest —
+        # fall back to the component directory.
         if "/next/" in test_path and "/components/" in test_path:
             test_path = test_path.split("/next/")[0]
-        # cra-template is created by the gold patch as a standalone CRA template.
-        # It needs: (1) react-router-dom installed, (2) automatic JSX transform
-        # (template files don't import React), (3) bypass modulePathIgnorePatterns.
+        # cra-template/template/* is a standalone CRA scaffold: its deps
+        # aren't in package.json and files don't import React. Patch deps
+        # in, yarn install, then run jest with an inline config that
+        # enables the automatic JSX runtime. Self-contained — skips dedup.
         if "cra-template/template/" in test_path:
-            # cra-template is created by gold patch as a CRA template. Its deps
-            # (react-router-dom, @apollo/client, etc.) are listed in template.json
-            # but not in package.json. Copy them over and yarn install so PnP can
-            # resolve them. Then run jest with automatic JSX runtime.
-            cmds.append(
+            standalone_cmds.append(
                 "node -e '"
                 'const p=require("./packages/cra-template/package.json");'
                 'p.dependencies={"@apollo/client":"3.7.4","react-router-dom":"6.6.2",'
@@ -371,16 +377,31 @@ def _get_test_cmds_carbon(instance: dict) -> list:
                 '"react":"17.0.1","react-dom":"17.0.1"};'
                 'require("fs").writeFileSync("packages/cra-template/package.json",JSON.stringify(p,null,2));'
                 "' && yarn install 2>&1 | tail -3 ; "
-                'npx jest --no-colors '
+                'npx jest --no-colors --json '
                 """--config '{"preset":"jest-config-carbon","transform":{"^.+\\\\.(js|jsx)$":["babel-jest",{"presets":["@babel/preset-env",["@babel/preset-react",{"runtime":"automatic"}]]}]}}' """
                 'packages/cra-template/template/src'
             )
             continue
-        # e2e test files (.e2e.js) are not matched by Jest — target the component directory
+        # .e2e.js isn't file-matched by `yarn test` — containing dir instead.
         if test_path.endswith(".e2e.js"):
-            test_path = "/".join(test_path.split("/")[:-1])
-        cmds.append(f"yarn test{max_workers} {test_path}")
-    return list(set(cmds))
+            test_path = "/".join(test_path.split("/")[:-1]) + "/"
+        # Normalize directory-ish paths with a trailing slash so the prefix
+        # dedup below can distinguish dirs (which dominate) from files.
+        if not test_path.endswith((".js", ".ts", ".jsx", ".tsx", "/")):
+            test_path = test_path + "/"
+        test_paths.append(test_path)
+
+    # Prefix dedup: if A is a directory scope that's a strict prefix of B,
+    # running A already runs everything under B — drop B. Sort by length
+    # (shortest first) so each broader scope is seen before its extensions.
+    kept: list[str] = []
+    for p in sorted(set(test_paths), key=len):
+        if any(k.endswith("/") and p.startswith(k) and p != k for k in kept):
+            continue
+        kept.append(p)
+
+    yarn_cmds = [f"yarn test --json{max_workers} {p}" for p in kept]
+    return list(dict.fromkeys(standalone_cmds + yarn_cmds))
 
 
 def _get_test_cmds_scratch_gui(instance: dict) -> list:
@@ -390,7 +411,8 @@ def _get_test_cmds_scratch_gui(instance: dict) -> list:
         if "__snapshots__" in test_path:
             test_path = test_path.split("__snapshots__")[0]
         cmds.append(f"{test_prefix} {test_path}")
-    return list(set(cmds))
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys(cmds))
 
 
 def _get_test_cmds_lighthouse(instance: dict) -> list:
@@ -420,7 +442,8 @@ def _get_test_cmds_lighthouse(instance: dict) -> list:
             cmds.append(f"yarn jest --no-colors {test_path}")
         else:
             cmds.append(f"./node_modules/.bin/mocha --reporter json {test_path}")
-    return list(set(cmds))
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys(cmds))
 
 
 def _get_test_cmds_prettier(instance: dict) -> list:
@@ -435,7 +458,8 @@ def _get_test_cmds_prettier(instance: dict) -> list:
         if not test_path.endswith("jsfmt.spec.js") and not "/__tests__/" in test_path and not test_path.endswith("/"):
             test_path = "/".join(test_path.split("/")[:-1])
         cmds.append(f"yarn test {test_path}")
-    return list(set(cmds))
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys(cmds))
 
 
 def _get_test_cmds_react_pdf(instance: dict) -> list:
@@ -449,7 +473,8 @@ def _get_test_cmds_react_pdf(instance: dict) -> list:
             cmds.append(f"{test_prefix} {test_path}")
         elif test_path.startswith("tests/"):
             cmds.append(test_prefix)
-    return list(set(cmds))
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys(cmds))
 
 
 _MAP_REPO_TO_TEST_CMDS = {
@@ -494,25 +519,74 @@ def _get_eval_script(instance: dict) -> str:
 
     test_command = _get_test_commands(instance, specs)
 
+    # quarto-cli: `tests/docs/page-layout/tufte-pdf.qmd --to pdf` hangs xelatex
+    # indefinitely on pre-6902 versions (PDF pipeline stalls, not a timeout
+    # issue — the process never completes). Deleting the input .qmd before the
+    # suite runs prevents ./run-tests.sh from attempting the render at all.
+    # Safe no-op on 6902 (`rm -f` on a file that may or may not exist).
+    if repo == "quarto-dev/quarto-cli":
+        test_command = (
+            "rm -f tests/docs/page-layout/tufte-pdf.qmd ; " + test_command
+        )
+
+    # quarto-cli-5292: smoke-all.test.ts in this older quarto version discovers
+    # 0 tests, so ./run-tests.sh emits nothing for parse_log_quarto_cli to grade.
+    # Render each F2P/P2P target directly, printing parser-compatible lines.
+    # The P2P set is ~14 latex renders exercising the same code-annotation
+    # path the patch touches, plus tufte-html as a general smoke discriminator.
+    if instance["instance_id"] == "quarto-dev__quarto-cli-5292":
+        def _render_block(label: str) -> str:
+            # label format: "[smoke] > quarto render <docs-relative-path> --to <fmt>"
+            import re as _re
+            m = _re.match(r"\[smoke\] > quarto render (\S+) --to (\S+)", label)
+            assert m, f"unrecognised 5292 test label: {label}"
+            target = "tests/" + m.group(1)
+            fmt = m.group(2)
+            return (
+                f"cd /testbed && if quarto render {target} --to {fmt} 2>/dev/null ; "
+                f"then printf '{label} ... \\033[32mok\\033[0m\\n' ; "
+                f"else printf '{label} ... \\033[31mFAILED\\033[0m\\n' ; fi"
+            )
+        import json as _json
+        f2p_list = instance.get("FAIL_TO_PASS", [])
+        if isinstance(f2p_list, str):
+            f2p_list = _json.loads(f2p_list)
+        p2p_list = instance.get("PASS_TO_PASS", [])
+        if isinstance(p2p_list, str):
+            p2p_list = _json.loads(p2p_list)
+        parts = ["rm -f tests/docs/page-layout/tufte-pdf.qmd"]
+        parts.extend(_render_block(t) for t in f2p_list)
+        parts.extend(_render_block(t) for t in p2p_list)
+        test_command = " ; ".join(parts)
+
     eval_commands = [
         "#!/bin/bash",
         "set -uxo pipefail",
         f"cd {CONTAINER_WORKDIR}",
         f"git config --global --add safe.directory {CONTAINER_WORKDIR}",
         "source $NVM_DIR/nvm.sh",
-        "git status",
-        "git show",
-        f"git -c core.fileMode=false diff {base_commit}",
+        "git status > /dev/null 2>&1",
+        "git show > /tmp/git_show.log 2>&1",
+        f"git -c core.fileMode=false diff {base_commit} > /tmp/git_diff.log 2>&1",
     ]
 
-    # Carbon: accessibility-checker races on mkdir for engine dir when parallel workers
-    # all try to download rules simultaneously. Pre-create the dir to avoid EEXIST.
+    # Carbon: parallel Jest workers race to create the achecker rule cache on
+    # first load. The race is on lib/engine/cache/, not lib/engine/ (which
+    # ships with the npm package). Pre-create the cache subdir to eliminate
+    # the EEXIST / half-written cache that surfaces as
+    # "TypeError: ace.Checker is not a constructor".
     if repo == "carbon-design-system/carbon":
-        eval_commands.append("mkdir -p node_modules/accessibility-checker/lib/engine 2>/dev/null || true")
-    # Carbon: gold patch modifies source files — rebuild so tests use updated code.
-    # The image's yarn build output is stale after the gold patch is applied.
-    _CARBON_POST_PATCH_BUILD = {"16.16", "18.14"}
-    if repo == "carbon-design-system/carbon" and version in _CARBON_POST_PATCH_BUILD:
+        eval_commands.append(
+            "mkdir -p node_modules/accessibility-checker/lib/engine/cache 2>/dev/null || true"
+        )
+    # Carbon: when the gold patch touches packages/*/src/, the image's prebuilt
+    # yarn output is stale — rebuild so tests exercise patched code. Detect by
+    # scanning the patch rather than maintaining a per-version whitelist.
+    if repo == "carbon-design-system/carbon" and re.search(
+        r"^diff --git a/packages/[^/]+/src/",
+        instance.get("patch", "") or "",
+        re.MULTILINE,
+    ):
         eval_commands.append("yarn build 2>&1 | tail -5 || true")
 
     if test_patch:
@@ -560,6 +634,11 @@ def _get_eval_script(instance: dict) -> str:
     # Lighthouse v1.x: gold patch may add new modules that need linking
     if repo == "GoogleChrome/lighthouse" and version and version.startswith("1."):
         eval_commands.append("npm run install-all 2>/dev/null || true")
+    # Lighthouse v9.5/10.0/10.2: Docker image may be missing devDependencies
+    # (e.g. testdouble) if built without PUPPETEER_SKIP_DOWNLOAD=true.
+    # Re-run yarn install as fallback until images are rebuilt with the fix.
+    if repo == "GoogleChrome/lighthouse" and version in ("9.5", "10.0", "10.2"):
+        eval_commands.append("yarn install --frozen-lockfile 2>&1 | tail -3 || true")
 
     # Next v1.27: Cypress/Vite tests run as chromeuser; ensure writable dirs
     if repo == "alibaba-fusion/next" and version == "1.27":
@@ -583,8 +662,13 @@ def _get_eval_script(instance: dict) -> str:
     eval_commands += [
         f": '{START_TEST_OUTPUT}'",
         test_command,
-        f": '{END_TEST_OUTPUT}'",
     ]
+    # Quarto: force stdout flush before the END marker. Without this, buffered
+    # `quarto render` / `printf` output can arrive after END and be cut off by
+    # the grader slice — quarto-5292's tufte-html P2P hit exactly this race.
+    if repo == "quarto-dev/quarto-cli":
+        eval_commands.append("sync 2>/dev/null ; sleep 0.1")
+    eval_commands.append(f": '{END_TEST_OUTPUT}'")
 
     if test_patch:
         eval_commands.append(reset_tests_command)

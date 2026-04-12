@@ -628,11 +628,61 @@ SPECS_AXIOS = {
 SET_OPENSSL_TO_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
 SET_PUPPETEER_ENV_VAR = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
 SET_PUPPETEER_PATH = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|\" {}"
+# Switch Karma from 'spec' to 'json' reporter for structured test output.
+# The config file has an explicit plugins array so we must register the plugin.
+# The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).
+SETUP_KARMA_JSON_REPORTER_NEXT = "sed -i \"s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/\" {0} && " \
+    "sed -i \"s/reporters: \\['spec', 'coverage'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
+# bpmn-js variant: reporters line is `[ 'progress' ].concat(coverage ? 'coverage' : [])`.
+# No explicit plugins array — karma-* auto-discovery loads the reporter.
+SETUP_KARMA_JSON_REPORTER_BPMN = "sed -i \"s/reporters: \\[ 'progress' \\].concat(coverage ? 'coverage' : \\[\\])/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
 INSTALL_JULIA = [
     "wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz",
     "tar zxvf julia-1.9.3-linux-x86_64.tar.gz",
     "mv julia-1.9.3/ /opt/",
     "ln -s /opt/julia-1.9.3/bin/julia /usr/local/bin/julia",
+]
+# Install TinyTeX directly (older quarto versions lack 'quarto install tool tinytex').
+# Uses the default TinyTeX-1 bundle (~125 packages), then adds packages needed by the
+# test suite's PDF renders (tufte, koma-script, tcolorbox, etc.).
+INSTALL_TINYTEX = [
+    "wget -qO- 'https://yihui.org/tinytex/install-bin-unix.sh' | sh && "
+    "ln -sf $HOME/.TinyTeX/bin/x86_64-linux/* /usr/local/bin/",
+    # Install the full set of TeX packages needed by quarto's test suite PDF renders.
+    # This list matches quarto's own TinyTeX installer output (~320 packages).
+    "export PATH=$HOME/.TinyTeX/bin/x86_64-linux:$PATH && "
+    "tlmgr install "
+    "a4wide achemso adjustbox ae algorithmicx algorithms apacite appendix "
+    "awesomebox babel-english babel-french bbm-macros beamer biblatex biber "
+    "breakurl caption carlisle catoptions ccicons changepage charter chemgreek "
+    "cite cleveref collectbox colorprofiles colortbl comment count1to courier "
+    "crop csquotes currfile datetime dblfloatfix doclicense draftwatermark "
+    "eepic endfloat endnotes enumitem environ epsf epstopdf-pkg eso-pic esvect "
+    "etex-pkg eurosym everysel everyshi expex extsizes fancyhdr fancyvrb "
+    "filemod float floatflt floatrow fmtcount fontawesome5 fontaxes fontspec "
+    "footmisc forarray fp fpl framed gincltex grfext grffile hardwrap hyperxmp "
+    "hyphen-english hyphen-french hyphenat ifmtarg jknapltx kastrup koma-script "
+    "langsci lastpage latex-lab latexindent lettrine libertine lineno lipsum "
+    "listings logreq ltxkeys ly1 lualatex-math makecell makecmds makeindex "
+    "marginnote marvosym mathalpha mathpazo mathspec mathtools mdframed memoir "
+    "metalogo mhchem microtype minifp mnras morefloats moreverb multirow "
+    "multitoc mweights natbib ncntrsbk needspace newfloat newtx ntgclass "
+    "oberdiek palatino paralist parskip pbox pdfcol pdflscape "
+    "pdfmanagement-testphase pdfpages pdfsync pgf picinpar placeins polyglossia "
+    "prelim2e preprint preview psfrag ragged2e realscripts revtex4-1 roboto "
+    "rsfs sauerj sectsty selnolig seqsplit setspace sidecap sidenotes siunitx "
+    "soul srcltx standalone stix stmaryrd sttools subfig subfigure svn-prov "
+    "tabto-ltx tabu tcolorbox tex-gyre texcount textcase thmtools "
+    "threeparttable threeparttablex thumbpdf tikzfill tipa titlesec totcount "
+    "totpages translator trimspaces tufte-latex ucs ulem units upquote urlbst "
+    "varwidth vmargin vruler wallpaper wrapfig xargs xifthen xltxtra xpatch "
+    "xstring xwatermark xypic zapfchan",
+]
+# Install R packages needed by knitr engine for rendering .qmd documents with {r} blocks.
+# cmake is required to compile the 'fs' R package (dependency of rmarkdown).
+INSTALL_R_PACKAGES = [
+    "R -e \"install.packages(c('rmarkdown', 'knitr', 'jsonlite'), "
+    "repos='https://cloud.r-project.org', quiet=TRUE)\"",
 ]
 
 SPECS_HIGHLIGHTJS = {k: {
@@ -643,7 +693,7 @@ SPECS_HIGHLIGHTJS = {k: {
     "test_cmd": [
         "npm install",
         "npm run build",
-        "npm run test",
+        "./node_modules/.bin/mocha test --reporter json",
     ],
     "docker_specs": {
         "node_version": "21.6.2"
@@ -795,7 +845,7 @@ for k in ['2023.5']:
     SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '18.15.0'
 
 
-TEST_CMD_ESLINT = './node_modules/.bin/mocha --forbid-only --reporter min -t 10000 --no-colors "tests/{bin,conf,lib,tools}/**/*.js"'
+TEST_CMD_ESLINT = './node_modules/.bin/mocha --forbid-only --reporter json -t 10000 --no-colors "tests/{bin,conf,lib,tools}/**/*.js"'
 SPECS_ESLINT = {
     **{k: {
         "install": ["npm install"],
@@ -850,6 +900,23 @@ for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', 
 # Set OpenSSL to legacy provider for certain versions
 for v in ['3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
+# Pin era-appropriate Chrome versions for bpmn-js.
+# Chrome 146 (system default) breaks label rendering, coordinate precision,
+# and BpmnUpdater.updateSemanticParent in older tests.
+# Chromium downloads go in pre_install (cached layer before git clone).
+for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3', '3.4', '4.0', '5.0', '5.1']:
+    SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_72_INSTALL
+for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
+    SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_85_INSTALL
+for v in ['11.1', '11.3', '13.2', '14.0', '15.2']:
+    SPECS_BPMN_JS[v]['pre_install'] = _CHROME_120_INSTALL
+# Install karma-json-reporter and patch config for structured JSON output.
+# Must be after npm install (so karma.unit.js and node_modules exist).
+for v in SPECS_BPMN_JS:
+    SPECS_BPMN_JS[v]['install'].extend([
+        "npm install karma-json-reporter@1.2.1 --no-save",
+        SETUP_KARMA_JSON_REPORTER_BPMN.format("test/config/karma.unit.js"),
+    ])
 
 SPECS_OPENLAYERS = {
     **{k: {
@@ -871,6 +938,15 @@ SPECS_OPENLAYERS = {
         '8.1', '9.0', '9.1'
     ]},
 }
+# v6.4: Heatmap/WebGL tests need Mesa's llvmpipe software rasterizer in headless Chrome.
+# Also patch Karma config to use a custom Chrome launcher with SwiftShader-based WebGL
+# (Chrome can't create a WebGL context in Docker without explicit --use-angle flags).
+SPECS_OPENLAYERS['6.4']["apt-pkgs"] = XVFB_DEPS + ["libgl1-mesa-dri", "libegl1-mesa"]
+SPECS_OPENLAYERS['6.4']["install"].append(
+    "sed -i \"s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/"
+    "customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },"
+    "\\n    browsers: ['ChromeWebGL']/\" test/karma.config.js"
+)
 # Replace puppeteer executable path
 # NOTE: 6.5.1 was an artificially introduced version for karma.config.[js -> cjs]
 for v in [
@@ -882,6 +958,24 @@ for v in ['6.0', '6.1', '6.2', '6.3', '6.4', '6.5']:
     SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
 # OL v7.4: rendering tests use Puppeteer's bundled Chromium 115 (downloaded at eval time).
 # No system Chrome override needed — Puppeteer.launch() uses its own browser.
+# Install karma-json-reporter for structured JSON output.
+# OL has two config patterns: test/karma.config.js (≤6.5) and test/browser/karma.config.cjs (≥6.5.1).
+# Reporter lines vary: ['dots'], ['dots', 'coverage-istanbul'], ['progress'].
+_OL_KARMA_JSON_SED_JS = (
+    "sed -i \"s/reporters: \\['dots', 'coverage-istanbul'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
+    "sed -i \"s/reporters: \\['dots'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
+    "sed -i \"s/reporters: \\['progress'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
+)
+for v in SPECS_OPENLAYERS:
+    SPECS_OPENLAYERS[v]['install'].append(
+        "npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps"
+    )
+    # Determine which config file this version uses
+    if v in ['6.5.1', '6.6', '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
+             '7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '8.1', '9.0', '9.1']:
+        SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format("test/browser/karma.config.cjs"))
+    else:
+        SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format("test/karma.config.js"))
 
 SPECS_EMOTION = {
     **{k: {
@@ -912,7 +1006,7 @@ SPECS_GROMMET = {
         ],
         "test_cmd": [
             "yarn install",
-            "yarn test",
+            "npx jest --runInBand --json",
         ],
         "docker_specs": {
             "node_version": "21.6.2"
@@ -963,7 +1057,8 @@ SPECS_NEXT = {
         '1.20', '1.21', '1.22', '1.23', '1.24', '1.25', '1.26', '1.27'
     ]}
 }
-SPECS_NEXT['1.27']['docker_specs']['node_version'] = '21.6.2'
+# Node 18 LTS — Node 21 causes Chrome connection timeouts in Docker with Cypress.
+SPECS_NEXT['1.27']['docker_specs']['node_version'] = '18.20.4'
 for v in ['1.22', '1.23', '1.24', '1.25', '1.26', '1.27']:
     SPECS_NEXT[v]['install'].insert(0, SET_PUPPETEER_PATH.format("scripts/test/karma.js"))
 for v in [
@@ -993,18 +1088,34 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['install'].extend([
         "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
     ])
-# Pin era-appropriate Chromium for versions with Chrome-sensitive tests
+# Pin era-appropriate Chromium for versions with known Chrome-sensitive tests.
+# Only pin versions that have confirmed Chrome-version failures.
+# v1.16-v1.20, v1.22-v1.24, v1.25-v1.26 work fine with system Chrome (146).
 for v in ['1.11', '1.14', '1.15']:
     SPECS_NEXT[v]['install'] = _CHROMIUM_72_INSTALL + SPECS_NEXT[v]['install']
 SPECS_NEXT['1.21']['install'] = _CHROMIUM_85_INSTALL + SPECS_NEXT['1.21']['install']
-SPECS_NEXT['1.27']['install'] = _CHROME_120_INSTALL + SPECS_NEXT['1.27']['install']
+# v1.27 uses system Chrome (146) — Chrome 120 causes browser connection timeouts
+# in Cypress component testing. No pin needed.
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
 # the actual Electron binary must be installed separately.
+# Upgrade Cypress from 13.6.1 to 13.14.2 to fix "Missing browserCriClient in
+# connectToNewSpec" — a CRI reconnection bug during spec transitions (PR #29663).
 # Install to chromeuser's cache dir (tests run as chromeuser via su).
-SPECS_NEXT['1.27']['install'].append(
+SPECS_NEXT['1.27']['install'].extend([
+    "npm install cypress@13.14.2 --no-save",
     "CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && "
-    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress"
-)
+    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress",
+])
+# Install karma-json-reporter and patch config for structured output parsing.
+# Must be after npm install (so karma.js and node_modules exist).
+for v in [
+    '1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19',
+    '1.20', '1.21', '1.22', '1.23', '1.24', '1.25', '1.26'
+]:
+    SPECS_NEXT[v]['install'].extend([
+        "npm install karma-json-reporter@1.2.1 --no-save",
+        SETUP_KARMA_JSON_REPORTER_NEXT.format("scripts/test/karma.js"),
+    ])
 
 SPECS_CYPRESS = {
     **{k: {
@@ -1041,7 +1152,7 @@ SPECS_CARBON = {
             "yarn install",
             "yarn build",
         ],
-        "test_cmd": "yarn test",
+        "test_cmd": "yarn test --json",
         "docker_specs": {
             "node_version": {
                 "20.14": "20.14.0", "20.12": "20.12.2", "20.11": "20.11.1", "20.9": "20.9.0",
@@ -1069,18 +1180,18 @@ for v in SPECS_CARBON:
         "tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && "
         "rm nwsapi-2.2.7.tgz"
     )
-_CARBON_ACHECKER_RULES = {
-    '16.15': '12March2022',
-    '20.12': '12March2022',
-    '20.14': '12March2022',
-}
-for v, archive in _CARBON_ACHECKER_RULES.items():
-    SPECS_CARBON[v]['install'].append(f"echo 'ruleArchive: {archive}' > .achecker.yml")
+# Pin achecker rule archive for every carbon version. accessibility-checker
+# defaults to fetching "latest" from able.ibm.com, which IBM tightens over
+# time — tests written against the rules-as-of-2022 flake against 2026's
+# "latest". The 12March2022 snapshot is a known-good baseline. Pinning all
+# versions (vs. a whitelist) removes the silent-drift failure mode.
+for v in SPECS_CARBON:
+    SPECS_CARBON[v]['install'].append("echo 'ruleArchive: 12March2022' > .achecker.yml")
 
 SPECS_SCRATCH = {
     **{k: {
         "install": ["npm install"],
-        "test_cmd": "./node_modules/.bin/jest --runInBand --no-colors --forceExit --testPathIgnorePatterns='test/integration' --testPathIgnorePatterns='vm-manager-hoc'",
+        "test_cmd": "./node_modules/.bin/jest --runInBand --no-colors --json --forceExit --testPathIgnorePatterns='test/integration' --testPathIgnorePatterns='vm-manager-hoc'",
         "docker_specs": {
             "node_version": {
                 "1": "20.16.0",
@@ -1199,12 +1310,19 @@ PIP_INSTALLS_QUARTOCLI = [
 SPECS_QUARTOCLI = {
     None : {
         "apt-pkgs": ["libffi-dev", "zip", "unzip", "python3", "python3-pip", "python3.10-distutils", "r-base-core",
-                     "poppler-utils", "libxml2-utils"],
-        "install": INSTALL_JULIA + ["ls .",
+                     "poppler-utils", "libxml2-utils", "cmake"],
+        # pre_install runs in its own Docker layer BEFORE git clone, so it's
+        # cached and shared across all 24 quarto instances (~7 min saved per image).
+        "pre_install": INSTALL_JULIA + INSTALL_TINYTEX + INSTALL_R_PACKAGES + PIP_INSTALLS_QUARTOCLI,
+        # install runs AFTER git clone (per-instance layer).
+        "install": ["ls .",
                     "[ -f configure.sh ] || ./configure-linux.sh",
                     "[ -f configure-linux.sh ] || ./configure.sh",
-                    "cd tests", "./configure-test-env.sh || true", "cd ..",
-                    ] + PIP_INSTALLS_QUARTOCLI,
+                    "cd tests",
+                    "sed -i 's/quarto install.*tinytex/true/' configure-test-env.sh 2>/dev/null || true",
+                    "./configure-test-env.sh || true",
+                    "cd ..",
+                    ],
         "test_cmd": [ # test generates files that add future test cases -- run tests fairly
             "cp -r tests/ tests_tmp/", 
             "cd tests", 

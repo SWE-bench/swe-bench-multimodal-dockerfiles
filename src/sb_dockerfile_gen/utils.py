@@ -36,17 +36,28 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         clone_cmd = f"git clone -o origin https://github.com/{repo} {workdir}"
     return [
         clone_cmd,
-        f"chmod -R 777 {workdir}",
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
-        # Remove tags newer than base commit (prevents future info leakage)
-        f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
-        'git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done',
-        # Delete all branches except the detached HEAD at base_commit
-        'git branch -D $(git branch | grep -v "^\\*") 2>/dev/null || true',
+        # Unconditionally delete all non-HEAD branches and ALL tags. Timestamp-gated
+        # tag deletion misses tags pointing to commits that predate base_commit but sit
+        # on branches whose tips are after base_commit — those tags keep future commits
+        # reachable (see multilingual d2cf82d / swe-bench issue #465).
+        "git branch | grep -v '^\\*' | xargs -r git branch -D || true",
+        "git tag -l | xargs -r git tag -d",
         "git reflog expire --expire=now --all",
+        # Prune unreachable objects so future commits cannot be recovered via
+        # `git fsck --lost-found` or `git cat-file -p <sha>`.
+        "git gc --prune=now --aggressive",
+        # Verify no future commits remain reachable.
+        f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
+        'AFTER_EPOCH=$((TARGET_EPOCH + 1))',
+        'AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")',
+        'COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)',
+        '[ "$COMMIT_COUNT" -eq 0 ] || exit 1',
         "cd - || true",
+        # chmod after git reset so permissions aren't reverted by git
+        f"chmod -R 777 {workdir}",
     ]
 
 
