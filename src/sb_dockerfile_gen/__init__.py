@@ -477,6 +477,40 @@ def _get_test_cmds_react_pdf(instance: dict) -> list:
     return list(dict.fromkeys(cmds))
 
 
+def _get_test_cmds_quarto(instance: dict) -> list[str]:
+    """Quarto: direct-render for 5292, tufte-pdf removal for all others."""
+    if instance["instance_id"] == "quarto-dev__quarto-cli-5292":
+        def _render_block(label: str) -> str:
+            m = re.match(r"\[smoke\] > quarto render (\S+) --to (\S+)", label)
+            assert m, f"unrecognised 5292 test label: {label}"
+            target = "tests/" + m.group(1)
+            fmt = m.group(2)
+            return (
+                f"cd /testbed && if quarto render {target} --to {fmt} 2>/dev/null ; "
+                f"then printf '{label} ... \\033[32mok\\033[0m\\n' ; "
+                f"else printf '{label} ... \\033[31mFAILED\\033[0m\\n' ; fi"
+            )
+        f2p_list = instance.get("FAIL_TO_PASS", [])
+        if isinstance(f2p_list, str):
+            f2p_list = json.loads(f2p_list)
+        p2p_list = instance.get("PASS_TO_PASS", [])
+        if isinstance(p2p_list, str):
+            p2p_list = json.loads(p2p_list)
+        parts = ["rm -f tests/docs/page-layout/tufte-pdf.qmd"]
+        parts.extend(_render_block(t) for t in f2p_list)
+        parts.extend(_render_block(t) for t in p2p_list)
+        return parts
+
+    # All other quarto instances: prepend tufte-pdf removal to standard test_cmd
+    specs = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance.get("version")]
+    test_cmd = specs["test_cmd"]
+    if isinstance(test_cmd, list):
+        test_cmd = list(test_cmd)
+    else:
+        test_cmd = [test_cmd]
+    return ["rm -f tests/docs/page-layout/tufte-pdf.qmd"] + test_cmd
+
+
 _MAP_REPO_TO_TEST_CMDS = {
     "alibaba-fusion/next": _get_test_cmds_next,
     "carbon-design-system/carbon": _get_test_cmds_carbon,
@@ -484,6 +518,7 @@ _MAP_REPO_TO_TEST_CMDS = {
     "openlayers/openlayers": _get_test_cmds_openlayers,
     "prettier/prettier": _get_test_cmds_prettier,
     "PrismJS/prism": _get_test_cmds_prism,
+    "quarto-dev/quarto-cli": _get_test_cmds_quarto,
     # scratch-gui: static test_cmd runs all jest tests, works fine.
     # Per-instance cmd is too narrow (misses F2P tests not in test_patch).
     "diegomura/react-pdf": _get_test_cmds_react_pdf,
@@ -493,7 +528,7 @@ _MAP_REPO_TO_TEST_CMDS = {
 def _get_test_commands(instance: dict, specs: dict) -> str:
     """Get test command(s) for an instance. Uses per-repo handler if available."""
     repo = instance["repo"]
-    if repo in _MAP_REPO_TO_TEST_CMDS and instance.get("test_patch"):
+    if repo in _MAP_REPO_TO_TEST_CMDS:
         cmds = _MAP_REPO_TO_TEST_CMDS[repo](instance)
         if cmds:
             # Use ; instead of && so all test commands run even if one fails.
@@ -504,6 +539,66 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
     if isinstance(test_cmd, list):
         return " ; ".join(test_cmd)
     return test_cmd
+
+
+# ── Per-repo eval setup ────────────────────────────────────────────────
+# Dispatch map for pre-test environment commands (run after patch
+# application, before START_TEST_OUTPUT). Same pattern as
+# _MAP_REPO_TO_TEST_CMDS but for setup rather than test invocations.
+
+
+def _get_eval_setup_carbon(instance: dict) -> list[str]:
+    """Carbon: achecker cache dir + conditional yarn build."""
+    cmds = ["mkdir -p node_modules/accessibility-checker/lib/engine/cache 2>/dev/null || true"]
+    if re.search(
+        r"^diff --git a/packages/[^/]+/src/",
+        instance.get("patch", "") or "",
+        re.MULTILINE,
+    ):
+        cmds.append("yarn build 2>&1 | tail -5 || true")
+    return cmds
+
+
+def _get_eval_setup_lighthouse(instance: dict) -> list[str]:
+    """Lighthouse: link new modules (v1.x) + install missing deps (v9.5/10.0/10.2)."""
+    cmds = []
+    version = instance.get("version")
+    if version and version.startswith("1."):
+        cmds.append("npm run install-all 2>/dev/null || true")
+    if version in ("9.5", "10.0", "10.2"):
+        cmds.append("yarn install --frozen-lockfile 2>&1 | tail -3 || true")
+    return cmds
+
+
+def _get_eval_setup_next(instance: dict) -> list[str]:
+    """Next v1.27: Cypress/Vite tests run as chromeuser; ensure writable dirs."""
+    if instance.get("version") == "1.27":
+        return ["chmod -R a+w /testbed/node_modules 2>/dev/null || true"]
+    return []
+
+
+def _get_eval_setup_openlayers(instance: dict) -> list[str]:
+    """OL v7.4: download Puppeteer's bundled Chromium for pixel-exact rendering tests."""
+    if instance.get("version") != "7.4":
+        return []
+    cache = "/home/chromeuser/.cache/puppeteer"
+    chrome_dir = f"{cache}/chrome/linux-115.0.5790.98"
+    return [
+        f"mkdir -p {chrome_dir}",
+        f"wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.98/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
+        f"python3 -c \"import zipfile; zipfile.ZipFile('/tmp/chrome.zip').extractall('{chrome_dir}')\"",
+        "rm /tmp/chrome.zip",
+        f"chmod -R 755 {chrome_dir}/chrome-linux64",
+        f"chown -R chromeuser:chromeuser {cache}",
+    ]
+
+
+_MAP_REPO_TO_EVAL_SETUP = {
+    "carbon-design-system/carbon": _get_eval_setup_carbon,
+    "GoogleChrome/lighthouse": _get_eval_setup_lighthouse,
+    "alibaba-fusion/next": _get_eval_setup_next,
+    "openlayers/openlayers": _get_eval_setup_openlayers,
+}
 
 
 # ── Eval script generation ─────────────────────────────────────────────
@@ -519,46 +614,6 @@ def _get_eval_script(instance: dict) -> str:
 
     test_command = _get_test_commands(instance, specs)
 
-    # quarto-cli: `tests/docs/page-layout/tufte-pdf.qmd --to pdf` hangs xelatex
-    # indefinitely on pre-6902 versions (PDF pipeline stalls, not a timeout
-    # issue — the process never completes). Deleting the input .qmd before the
-    # suite runs prevents ./run-tests.sh from attempting the render at all.
-    # Safe no-op on 6902 (`rm -f` on a file that may or may not exist).
-    if repo == "quarto-dev/quarto-cli":
-        test_command = (
-            "rm -f tests/docs/page-layout/tufte-pdf.qmd ; " + test_command
-        )
-
-    # quarto-cli-5292: smoke-all.test.ts in this older quarto version discovers
-    # 0 tests, so ./run-tests.sh emits nothing for parse_log_quarto_cli to grade.
-    # Render each F2P/P2P target directly, printing parser-compatible lines.
-    # The P2P set is ~14 latex renders exercising the same code-annotation
-    # path the patch touches, plus tufte-html as a general smoke discriminator.
-    if instance["instance_id"] == "quarto-dev__quarto-cli-5292":
-        def _render_block(label: str) -> str:
-            # label format: "[smoke] > quarto render <docs-relative-path> --to <fmt>"
-            import re as _re
-            m = _re.match(r"\[smoke\] > quarto render (\S+) --to (\S+)", label)
-            assert m, f"unrecognised 5292 test label: {label}"
-            target = "tests/" + m.group(1)
-            fmt = m.group(2)
-            return (
-                f"cd /testbed && if quarto render {target} --to {fmt} 2>/dev/null ; "
-                f"then printf '{label} ... \\033[32mok\\033[0m\\n' ; "
-                f"else printf '{label} ... \\033[31mFAILED\\033[0m\\n' ; fi"
-            )
-        import json as _json
-        f2p_list = instance.get("FAIL_TO_PASS", [])
-        if isinstance(f2p_list, str):
-            f2p_list = _json.loads(f2p_list)
-        p2p_list = instance.get("PASS_TO_PASS", [])
-        if isinstance(p2p_list, str):
-            p2p_list = _json.loads(p2p_list)
-        parts = ["rm -f tests/docs/page-layout/tufte-pdf.qmd"]
-        parts.extend(_render_block(t) for t in f2p_list)
-        parts.extend(_render_block(t) for t in p2p_list)
-        test_command = " ; ".join(parts)
-
     eval_commands = [
         "#!/bin/bash",
         "set -uxo pipefail",
@@ -570,24 +625,9 @@ def _get_eval_script(instance: dict) -> str:
         f"git -c core.fileMode=false diff {base_commit} > /tmp/git_diff.log 2>&1",
     ]
 
-    # Carbon: parallel Jest workers race to create the achecker rule cache on
-    # first load. The race is on lib/engine/cache/, not lib/engine/ (which
-    # ships with the npm package). Pre-create the cache subdir to eliminate
-    # the EEXIST / half-written cache that surfaces as
-    # "TypeError: ace.Checker is not a constructor".
-    if repo == "carbon-design-system/carbon":
-        eval_commands.append(
-            "mkdir -p node_modules/accessibility-checker/lib/engine/cache 2>/dev/null || true"
-        )
-    # Carbon: when the gold patch touches packages/*/src/, the image's prebuilt
-    # yarn output is stale — rebuild so tests exercise patched code. Detect by
-    # scanning the patch rather than maintaining a per-version whitelist.
-    if repo == "carbon-design-system/carbon" and re.search(
-        r"^diff --git a/packages/[^/]+/src/",
-        instance.get("patch", "") or "",
-        re.MULTILINE,
-    ):
-        eval_commands.append("yarn build 2>&1 | tail -5 || true")
+    # Per-repo eval setup (env prep before tests)
+    if repo in _MAP_REPO_TO_EVAL_SETUP:
+        eval_commands.extend(_MAP_REPO_TO_EVAL_SETUP[repo](instance))
 
     if test_patch:
         # Strip binary diffs — they can't be applied via heredoc
@@ -630,34 +670,6 @@ def _get_eval_script(instance: dict) -> str:
                 "test -d /swebench/image_assets/test_patch && "
                 "cp -a /swebench/image_assets/test_patch/. /testbed/ 2>/dev/null || true"
             )
-
-    # Lighthouse v1.x: gold patch may add new modules that need linking
-    if repo == "GoogleChrome/lighthouse" and version and version.startswith("1."):
-        eval_commands.append("npm run install-all 2>/dev/null || true")
-    # Lighthouse v9.5/10.0/10.2: Docker image may be missing devDependencies
-    # (e.g. testdouble) if built without PUPPETEER_SKIP_DOWNLOAD=true.
-    # Re-run yarn install as fallback until images are rebuilt with the fix.
-    if repo == "GoogleChrome/lighthouse" and version in ("9.5", "10.0", "10.2"):
-        eval_commands.append("yarn install --frozen-lockfile 2>&1 | tail -3 || true")
-
-    # Next v1.27: Cypress/Vite tests run as chromeuser; ensure writable dirs
-    if repo == "alibaba-fusion/next" and version == "1.27":
-        eval_commands.append("chmod -R a+w /testbed/node_modules 2>/dev/null || true")
-
-    # OL v7.4: rendering tests need Puppeteer's bundled Chromium (115.0.5790.98)
-    # for pixel-exact match with expected.png. Download directly (install.js hangs).
-    # Puppeteer 20.9.0 expects: $CACHE/chrome/linux-115.0.5790.98/chrome-linux64/chrome
-    if repo == "openlayers/openlayers" and version == "7.4":
-        cache = "/home/chromeuser/.cache/puppeteer"
-        chrome_dir = f"{cache}/chrome/linux-115.0.5790.98"
-        eval_commands.extend([
-            f"mkdir -p {chrome_dir}",
-            f"wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.98/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
-            f"python3 -c \"import zipfile; zipfile.ZipFile('/tmp/chrome.zip').extractall('{chrome_dir}')\"",
-            "rm /tmp/chrome.zip",
-            f"chmod -R 755 {chrome_dir}/chrome-linux64",
-            f"chown -R chromeuser:chromeuser {cache}",
-        ])
 
     eval_commands += [
         f": '{START_TEST_OUTPUT}'",
