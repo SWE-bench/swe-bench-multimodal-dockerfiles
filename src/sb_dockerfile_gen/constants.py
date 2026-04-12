@@ -956,8 +956,18 @@ for v in [
     SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/browser/karma.config.cjs"))
 for v in ['6.0', '6.1', '6.2', '6.3', '6.4', '6.5']:
     SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
-# OL v7.4: rendering tests use Puppeteer's bundled Chromium 115 (downloaded at eval time).
-# No system Chrome override needed — Puppeteer.launch() uses its own browser.
+# OL v7.4: rendering tests need Puppeteer's bundled Chromium (115.0.5790.98)
+# for pixel-exact match with expected.png. Downloaded at eval time because
+# Puppeteer's install.js hangs during Docker build.
+# Puppeteer 20.9.0 expects: $CACHE/chrome/linux-115.0.5790.98/chrome-linux64/chrome
+SPECS_OPENLAYERS['7.4']['eval_setup'] = [
+    "mkdir -p /home/chromeuser/.cache/puppeteer/chrome/linux-115.0.5790.98",
+    "wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.98/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
+    "python3 -c \"import zipfile; zipfile.ZipFile('/tmp/chrome.zip').extractall('/home/chromeuser/.cache/puppeteer/chrome/linux-115.0.5790.98')\"",
+    "rm /tmp/chrome.zip",
+    "chmod -R 755 /home/chromeuser/.cache/puppeteer/chrome/linux-115.0.5790.98/chrome-linux64",
+    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/puppeteer",
+]
 # Install karma-json-reporter for structured JSON output.
 # OL has two config patterns: test/karma.config.js (≤6.5) and test/browser/karma.config.cjs (≥6.5.1).
 # Reporter lines vary: ['dots'], ['dots', 'coverage-istanbul'], ['progress'].
@@ -1106,6 +1116,8 @@ SPECS_NEXT['1.27']['install'].extend([
     "CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && "
     "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress",
 ])
+# Eval setup: Cypress/Vite tests run as chromeuser; node_modules is root-owned.
+SPECS_NEXT['1.27']['eval_setup'] = ["chmod -R a+w /testbed/node_modules 2>/dev/null || true"]
 # Install karma-json-reporter and patch config for structured output parsing.
 # Must be after npm install (so karma.js and node_modules exist).
 for v in [
@@ -1187,6 +1199,12 @@ for v in SPECS_CARBON:
 # versions (vs. a whitelist) removes the silent-drift failure mode.
 for v in SPECS_CARBON:
     SPECS_CARBON[v]['install'].append("echo 'ruleArchive: 12March2022' > .achecker.yml")
+# Eval setup: pre-create achecker cache dir to prevent parallel Jest workers
+# from racing on mkdir (EEXIST / half-written cache → "ace.Checker is not a constructor").
+for v in SPECS_CARBON:
+    SPECS_CARBON[v]['eval_setup'] = [
+        "mkdir -p node_modules/accessibility-checker/lib/engine/cache 2>/dev/null || true",
+    ]
 
 SPECS_SCRATCH = {
     **{k: {
@@ -1253,6 +1271,13 @@ for v in ['1.0', '1.1', '1.2', '1.4', '1.5', '1.6']:
         "npm install",
         "npm run install-all",
     ]
+# Eval setup: v1.x gold patches may add new modules that need linking.
+# v9.5/10.0/10.2 images may be missing devDependencies (e.g. testdouble)
+# if built without PUPPETEER_SKIP_DOWNLOAD=true.
+for v in ['1.0', '1.1', '1.2', '1.4', '1.5', '1.6']:
+    SPECS_LIGHTHOUSE[v]['eval_setup'] = ["npm run install-all 2>/dev/null || true"]
+for v in ['9.5', '10.0', '10.2']:
+    SPECS_LIGHTHOUSE[v]['eval_setup'] = ["yarn install --frozen-lockfile 2>&1 | tail -3 || true"]
 
 SPECS_PRETTIER = {
     **{k: {

@@ -541,64 +541,6 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
     return test_cmd
 
 
-# ── Per-repo eval setup ────────────────────────────────────────────────
-# Dispatch map for pre-test environment commands (run after patch
-# application, before START_TEST_OUTPUT). Same pattern as
-# _MAP_REPO_TO_TEST_CMDS but for setup rather than test invocations.
-
-
-def _get_eval_setup_carbon(instance: dict) -> list[str]:
-    """Carbon: achecker cache dir + conditional yarn build."""
-    cmds = ["mkdir -p node_modules/accessibility-checker/lib/engine/cache 2>/dev/null || true"]
-    if re.search(
-        r"^diff --git a/packages/[^/]+/src/",
-        instance.get("patch", "") or "",
-        re.MULTILINE,
-    ):
-        cmds.append("yarn build 2>&1 | tail -5 || true")
-    return cmds
-
-
-def _get_eval_setup_lighthouse(instance: dict) -> list[str]:
-    """Lighthouse: link new modules (v1.x) + install missing deps (v9.5/10.0/10.2)."""
-    cmds = []
-    version = instance.get("version")
-    if version and version.startswith("1."):
-        cmds.append("npm run install-all 2>/dev/null || true")
-    if version in ("9.5", "10.0", "10.2"):
-        cmds.append("yarn install --frozen-lockfile 2>&1 | tail -3 || true")
-    return cmds
-
-
-def _get_eval_setup_next(instance: dict) -> list[str]:
-    """Next v1.27: Cypress/Vite tests run as chromeuser; ensure writable dirs."""
-    if instance.get("version") == "1.27":
-        return ["chmod -R a+w /testbed/node_modules 2>/dev/null || true"]
-    return []
-
-
-def _get_eval_setup_openlayers(instance: dict) -> list[str]:
-    """OL v7.4: download Puppeteer's bundled Chromium for pixel-exact rendering tests."""
-    if instance.get("version") != "7.4":
-        return []
-    cache = "/home/chromeuser/.cache/puppeteer"
-    chrome_dir = f"{cache}/chrome/linux-115.0.5790.98"
-    return [
-        f"mkdir -p {chrome_dir}",
-        f"wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.98/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
-        f"python3 -c \"import zipfile; zipfile.ZipFile('/tmp/chrome.zip').extractall('{chrome_dir}')\"",
-        "rm /tmp/chrome.zip",
-        f"chmod -R 755 {chrome_dir}/chrome-linux64",
-        f"chown -R chromeuser:chromeuser {cache}",
-    ]
-
-
-_MAP_REPO_TO_EVAL_SETUP = {
-    "carbon-design-system/carbon": _get_eval_setup_carbon,
-    "GoogleChrome/lighthouse": _get_eval_setup_lighthouse,
-    "alibaba-fusion/next": _get_eval_setup_next,
-    "openlayers/openlayers": _get_eval_setup_openlayers,
-}
 
 
 # ── Eval script generation ─────────────────────────────────────────────
@@ -625,9 +567,16 @@ def _get_eval_script(instance: dict) -> str:
         f"git -c core.fileMode=false diff {base_commit} > /tmp/git_diff.log 2>&1",
     ]
 
-    # Per-repo eval setup (env prep before tests)
-    if repo in _MAP_REPO_TO_EVAL_SETUP:
-        eval_commands.extend(_MAP_REPO_TO_EVAL_SETUP[repo](instance))
+    # Per-repo/version eval setup from specs (env prep before tests)
+    eval_commands.extend(specs.get("eval_setup", []))
+
+    # Carbon: rebuild when gold patch touches source (instance-specific, can't be in specs)
+    if repo == "carbon-design-system/carbon" and re.search(
+        r"^diff --git a/packages/[^/]+/src/",
+        instance.get("patch", "") or "",
+        re.MULTILINE,
+    ):
+        eval_commands.append("yarn build 2>&1 | tail -5 || true")
 
     if test_patch:
         # Strip binary diffs — they can't be applied via heredoc
