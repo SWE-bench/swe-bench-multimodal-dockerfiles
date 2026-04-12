@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,36 +92,34 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_076908f164d1
+RUN <<EOF_863bfa1b7b1d
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard a1b8f08bca483c856bd6fe3de08e0e333145a757
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct a1b8f08bca483c856bd6fe3de08e0e333145a757)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct a1b8f08bca483c856bd6fe3de08e0e333145a757)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_076908f164d1
+npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
+sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
+EOF_863bfa1b7b1d
 
 
-RUN <<EOF_7d33bdbec4eb
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-mixed-layers/expected.png')
-curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-mixed-layers/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/a2f3c02ac5cde8b0afa6598f951886254b8a1833/test/rendering/cases/webgl-mixed-layers/expected.png' || true
-mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-multiple-layers/expected.png')
-curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-multiple-layers/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/a2f3c02ac5cde8b0afa6598f951886254b8a1833/test/rendering/cases/webgl-multiple-layers/expected.png' || true
-EOF_7d33bdbec4eb
-
+COPY src/image_assets/openlayers__openlayers-12965/ /swebench/image_assets/
 
 WORKDIR /testbed

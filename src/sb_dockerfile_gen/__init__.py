@@ -582,8 +582,11 @@ def _get_eval_script(instance: dict) -> str:
         # Strip binary diffs — they can't be applied via heredoc
         clean_test_patch, binary_files = _strip_binary_diffs(test_patch)
 
-        test_files = re.findall(r"diff --git a/.* b/(.*)", test_patch)
-        # Separate existing files (can git checkout) from new files (need rm)
+        # Extract both a/ and b/ sides of each diff header
+        a_sides = re.findall(r"diff --git a/(.*) b/.*", test_patch)
+        b_sides = re.findall(r"diff --git a/.* b/(.*)", test_patch)
+
+        # Detect new files (need rm, not checkout)
         new_file_markers = set()
         lines = test_patch.split("\n")
         for i, line in enumerate(lines):
@@ -593,14 +596,28 @@ def _get_eval_script(instance: dict) -> str:
                     if m:
                         new_file_markers.add(m.group(1))
                         break
-        existing_files = [f for f in test_files if f not in new_file_markers]
-        new_files = [f for f in test_files if f in new_file_markers]
+
+        # Build reset command handling renames correctly:
+        # - Regular files (a == b): git checkout a/ side
+        # - Renames (a != b): git checkout a/ side + rm b/ side
+        # - New files: rm b/ side
+        checkout_files = []
+        rm_files = list(new_file_markers)
+        for a, b in zip(a_sides, b_sides):
+            if b in new_file_markers:
+                continue  # already handled
+            if a != b:
+                # Rename: restore old name, remove new name
+                checkout_files.append(a)
+                rm_files.append(b)
+            else:
+                checkout_files.append(a)
 
         reset_parts = []
-        if existing_files:
-            reset_parts.append(f"git checkout {base_commit} {' '.join(existing_files)}")
-        if new_files:
-            reset_parts.append(f"rm -f {' '.join(new_files)}")
+        if checkout_files:
+            reset_parts.append(f"git checkout {base_commit} {' '.join(checkout_files)}")
+        if rm_files:
+            reset_parts.append(f"rm -f {' '.join(rm_files)}")
         reset_tests_command = " && ".join(reset_parts) if reset_parts else "true"
 
         eval_commands.append(reset_tests_command)
