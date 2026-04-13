@@ -228,7 +228,7 @@ def _make_image_download_script(instance: dict) -> str:
 
 def _get_dockerfile(instance) -> str:
     repo = instance["repo"]
-    version = instance.get("version")
+    version = instance.get("version") or None
     base_commit = instance["base_commit"]
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
     dockerfile = _DOCKERFILE_BASE_JS
@@ -502,7 +502,7 @@ def _get_test_cmds_quarto(instance: dict) -> list[str]:
         return parts
 
     # All other quarto instances: prepend tufte-pdf removal to standard test_cmd
-    specs = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance.get("version")]
+    specs = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance.get("version") or None]
     test_cmd = specs["test_cmd"]
     if isinstance(test_cmd, list):
         test_cmd = list(test_cmd)
@@ -549,7 +549,7 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
 def _get_eval_script(instance: dict) -> str:
     """Generate the eval.sh script for a multimodal instance."""
     repo = instance["repo"]
-    version = instance.get("version")
+    version = instance.get("version") or None
     base_commit = instance["base_commit"]
     test_patch = instance.get("test_patch", "")
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
@@ -641,11 +641,10 @@ def _get_eval_script(instance: dict) -> str:
         f": '{START_TEST_OUTPUT}'",
         test_command,
     ]
-    # Quarto: force stdout flush before the END marker. Without this, buffered
-    # `quarto render` / `printf` output can arrive after END and be cut off by
-    # the grader slice — quarto-5292's tufte-html P2P hit exactly this race.
-    if repo == "quarto-dev/quarto-cli":
-        eval_commands.append("sync 2>/dev/null ; sleep 0.1")
+    # Force stdout flush before the END marker. Without this, buffered test
+    # output (e.g. mocha JSON at 9MB+) can arrive after END and be cut off by
+    # the grader's START/END slice. Hits eslint, quarto, and any large suite.
+    eval_commands.append("{ set +x ; } 2>/dev/null ; sync ; sleep 0.1 ; set -x")
     eval_commands.append(f": '{END_TEST_OUTPUT}'")
 
     if test_patch:
