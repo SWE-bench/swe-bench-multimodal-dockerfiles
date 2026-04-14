@@ -315,7 +315,15 @@ def _get_test_cmds_openlayers(instance: dict) -> list:
                     f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force"'
                 )
             else:
-                cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-rendering"')
+                # CI=true activates puppeteer's --no-sandbox args (required in
+                # Docker, else chromium zygote fails with "Operation not
+                # permitted"). --log-level=info makes the runner emit "ok"
+                # lines for passing cases (default 'error' only logs mismatches,
+                # so the parser never sees passes and graded them as missing).
+                cmds.append(
+                    f'CI=true {SET_PUPPETEER} {XVFB} su chromeuser -c '
+                    f'"CI=true npm run test-rendering -- --log-level=info"'
+                )
         elif test_type == "spec":
             cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
         elif test_type == "node":
