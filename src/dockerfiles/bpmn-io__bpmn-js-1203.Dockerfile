@@ -97,7 +97,7 @@ apt-get update && apt-get install -y -t 'o=LP-PPA-mozillateam' firefox
 EOF_9025c28e31c3
 
 
-RUN <<EOF_38dcf723590a
+RUN <<EOF_4e99f2f9e649
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
@@ -122,9 +122,9 @@ npm install
 npm install karma-firefox-launcher@2.1.3 --no-save
 npm install karma-json-reporter@1.2.1 --no-save
 sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
-npm install karma-json-reporter@1.2.1 --no-save
+npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
-EOF_38dcf723590a
+EOF_4e99f2f9e649
 
 
 COPY src/image_assets/bpmn-io__bpmn-js-1203/ /swebench/image_assets/

@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,33 +89,47 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_af8e5b68fdd0
+RUN <<EOF_71683d3e4e95
+#!/bin/bash
+set -euxo pipefail
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/793478/chrome-linux.zip
+unzip -q chrome-linux.zip -d /opt/
+rm chrome-linux.zip
+rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
+printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
+chmod +x /usr/bin/google-chrome
+cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+EOF_71683d3e4e95
+
+
+RUN <<EOF_37ee293ce572
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard c3e0d6d16477bc2e9e37109a9ff1254b6695c7cc
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c3e0d6d16477bc2e9e37109a9ff1254b6695c7cc)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c3e0d6d16477bc2e9e37109a9ff1254b6695c7cc)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_af8e5b68fdd0
+npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
+sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
+EOF_37ee293ce572
 
 
-RUN <<EOF_67b2c50ed62d
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/89532801-a647c400-d7f2-11ea-87d6-ea536b0197ba.gif' 'https://user-images.githubusercontent.com/7633572/89532801-a647c400-d7f2-11ea-87d6-ea536b0197ba.gif' || true
-EOF_67b2c50ed62d
-
+COPY src/image_assets/bpmn-io__bpmn-js-1434/ /swebench/image_assets/
 
 WORKDIR /testbed

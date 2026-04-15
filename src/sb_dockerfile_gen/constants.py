@@ -90,22 +90,37 @@ def _chromium_snapshot_install(revision: str) -> list[str]:
 # Chrome for Testing 120 — for v1.27 and openlayers v7.4
 _CHROMIUM_72_INSTALL = _chromium_snapshot_install("599821")
 _CHROMIUM_85_INSTALL = _chromium_snapshot_install("793478")
-_CHROME_120_INSTALL = [
-    "wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip",
-    "unzip -q chrome-linux64.zip -d /opt/",
-    "rm chrome-linux64.zip",
-    "rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable",
-    'printf \'#!/bin/bash\\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\\n\' > /usr/bin/google-chrome',
-    "chmod +x /usr/bin/google-chrome",
-    "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
-]
+# Additional era-appropriate Chromium pins for chart.js visual/rendering tests.
+_CHROMIUM_90_INSTALL = _chromium_snapshot_install("856583")   # Chrome 90
+_CHROMIUM_97_INSTALL = _chromium_snapshot_install("938248")   # Chrome 97
+_CHROMIUM_100_INSTALL = _chromium_snapshot_install("901912")  # Chrome 100
+_CHROMIUM_107_INSTALL = _chromium_snapshot_install("1036745") # Chrome 107
+_CHROMIUM_108_INSTALL = _chromium_snapshot_install("1025233") # Chrome 108
+
+
+def _chrome_for_testing_install(version: str) -> list[str]:
+    """Install a specific Chrome-for-Testing version, replacing system Chrome."""
+    return [
+        f"wget -q https://storage.googleapis.com/chrome-for-testing-public/{version}/linux64/chrome-linux64.zip",
+        "unzip -q chrome-linux64.zip -d /opt/",
+        "rm chrome-linux64.zip",
+        "rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+        'printf \'#!/bin/bash\\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\\n\' > /usr/bin/google-chrome',
+        "chmod +x /usr/bin/google-chrome",
+        "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+    ]
+
+
+_CHROMIUM_110_INSTALL = _chromium_snapshot_install("1069273")  # Chrome 110
+_CHROME_113_INSTALL = _chrome_for_testing_install("113.0.5672.63")
+_CHROME_120_INSTALL = _chrome_for_testing_install("120.0.6099.109")
 
 SPECS_CALYPSO = {
     **{
         k: {
             "apt-pkgs": ["libsass-dev", "sassc"],
             "install": ["npm install --unsafe-perm"],
-            "test_cmd": "npm run test-client",
+            "test_cmd": "npm run test-client -- --verbose",
             "docker_specs": {
                 "node_version": k,
             },
@@ -146,6 +161,9 @@ SPECS_CALYPSO = {
     # successor @automattic/color-studio@1.0.6 before npm install.
     # Internal monorepo code does require('color-studio/...'), so we also
     # symlink the scoped package back to the unscoped name.
+    # Also run `lerna bootstrap` at image-build time so workspace packages like
+    # `i18n-calypso` are linked into node_modules/ before tests run. Eval-time
+    # pretest re-runs bootstrap but it becomes a no-op once pre-populated.
     **{
         k: {
             "apt-pkgs": ["libsass-dev", "sassc"],
@@ -155,8 +173,9 @@ SPECS_CALYPSO = {
                 "npm rebuild node-sass",
                 "ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio",
                 "npm run build-packages",
+                "./node_modules/.bin/lerna bootstrap || true",
             ],
-            "test_cmd": "npm run test-client",
+            "test_cmd": "npm run test-client -- --verbose",
             "docker_specs": {
                 "node_version": k,
             },
@@ -164,8 +183,29 @@ SPECS_CALYPSO = {
         for k in ["10.14.0", "10.15.2"]
     },
 }
+# v8.9.3 test suite imports optional deps (`cpf`, `hoek`) at runtime that were
+# pruned from package.json. Install them explicitly so Ebanx / hoek tests run.
+for _v in ["8.9.3"]:
+    SPECS_CALYPSO[_v]["install"].append(
+        "npm install cpf@0.1.8 hoek@6.1.3 --no-save --legacy-peer-deps || true"
+    )
 
-TEST_CHART_JS_TEMPLATE = "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} --single-run --coverage --grep --auto-watch false"
+TEST_CHART_JS_TEMPLATE = "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} --single-run --coverage --grep --auto-watch false --browsers chrome"
+# chart.js variant: reporters line is `['spec', 'kjhtml']`. Replace with the
+# karma-json-reporter to emit structured stdout (passed tests included).
+SETUP_KARMA_JSON_REPORTER_CHART = (
+    "sed -i \"s/reporters: \\['spec'[^]]*\\],/reporters: ['json'],"
+    "\\n        jsonReporter: {{ stdout: true }},/\" {0}"
+)
+# Extend karma timeouts so slow/heavy Chrome startup under xvfb + docker doesn't
+# trigger "no message in 30000 ms" disconnects while rollup bundles large suites.
+SETUP_KARMA_TIMEOUTS_CHART = (
+    "sed -i \"s/frameworks: \\['jasmine'\\],/frameworks: ['jasmine'],"
+    "\\n    captureTimeout: 180000,"
+    "\\n    browserDisconnectTimeout: 120000,"
+    "\\n    browserDisconnectTolerance: 3,"
+    "\\n    browserNoActivityTimeout: 180000,/\" {0}"
+)
 SPECS_CHART_JS = {
     **{
         k: {
@@ -225,11 +265,67 @@ SPECS_CHART_JS = {
 }
 for v in SPECS_CHART_JS.keys():
     SPECS_CHART_JS[v]["apt-pkgs"] = XVFB_DEPS
+# Install karma-json-reporter and patch karma config for structured JSON output.
+# Without this, the karma 'spec' reporter only emits FAILED lines, so passed
+# F2P tests can't be detected by the parser.
+# Use --save-dev (not --no-save) because the eval_script re-runs `npm install`
+# at eval time, which would strip any --no-save package.
+for v in ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8"]:
+    SPECS_CHART_JS[v]["install"].extend([
+        "npm install karma-json-reporter@1.2.1 --save-dev --legacy-peer-deps",
+        SETUP_KARMA_JSON_REPORTER_CHART.format("karma.conf.js"),
+        SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.js"),
+    ])
+for v in ["4.0", "4.1", "4.2", "4.3", "4.4"]:
+    SPECS_CHART_JS[v]["install"].extend([
+        "pnpm add karma-json-reporter@1.2.1 --save-dev -w",
+        SETUP_KARMA_JSON_REPORTER_CHART.format("karma.conf.cjs"),
+        SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.cjs"),
+    ])
+# Pin era-appropriate Chrome versions for chart.js. System Chrome (147+) breaks
+# xhr fixture loading in karma's file server; visual tests also fail on Chrome
+# version drift. Pins follow CHROMIUM_PINS.md (system Chrome recommendations
+# mapped to closest available snapshot/CfT build).
+_CHART_JS_CHROME_PINS = {
+    # v2.x, v3.0-3.3 -> Chromium 85/90 era
+    "2.0": _CHROMIUM_85_INSTALL, "2.1": _CHROMIUM_85_INSTALL,
+    "2.2": _CHROMIUM_85_INSTALL, "2.3": _CHROMIUM_85_INSTALL,
+    "2.4": _CHROMIUM_85_INSTALL, "2.5": _CHROMIUM_85_INSTALL,
+    "2.6": _CHROMIUM_85_INSTALL, "2.7": _CHROMIUM_85_INSTALL,
+    "2.8": _CHROMIUM_85_INSTALL, "2.9": _CHROMIUM_85_INSTALL,
+    "3.0": _CHROMIUM_90_INSTALL, "3.1": _CHROMIUM_90_INSTALL,
+    "3.2": _CHROMIUM_90_INSTALL, "3.3": _CHROMIUM_90_INSTALL,
+    "3.4": _CHROMIUM_90_INSTALL,
+    # v3.5-3.8 -> Chromium 110 (was 97; 97 disconnected under xvfb)
+    "3.5": _CHROMIUM_110_INSTALL, "3.6": _CHROMIUM_110_INSTALL,
+    "3.7": _CHROMIUM_110_INSTALL, "3.8": _CHROMIUM_110_INSTALL,
+    # v4.0-4.1 -> Chromium 110 (was 107; 107 disconnected instantly)
+    "4.0": _CHROMIUM_110_INSTALL, "4.1": _CHROMIUM_110_INSTALL,
+    # v4.2 -> Chrome 110, v4.3-4.4 -> CfT 120 (was CfT 113; 113 disconnects)
+    "4.2": _CHROMIUM_110_INSTALL,
+    "4.3": _CHROME_120_INSTALL, "4.4": _CHROME_120_INSTALL,
+}
+for v, install in _CHART_JS_CHROME_PINS.items():
+    SPECS_CHART_JS[v]["pre_install"] = install
 
+# Jasmine's default reporter only emits dots for passing tests. Install a
+# tiny custom reporter that logs `JASMINE_TEST: <status> :: <fullName>` per
+# spec so the parser can detect passes (not just failures).
+MARKED_JASMINE_REPORTER_SETUP = (
+    "mkdir -p test/helpers && "
+    "printf '%s\\n' "
+    "\"jasmine.getEnv().addReporter({ specDone: function(r){ "
+    "console.log('JASMINE_TEST: ' + r.status + ' :: ' + r.fullName); } });\" "
+    "> test/helpers/jasmine_names.js && "
+    "python3 -c \"import json; p='jasmine.json'; d=json.load(open(p)); "
+    "h=d.get('helpers', []); "
+    "(h.append('helpers/jasmine_names.js') if 'helpers/jasmine_names.js' not in h else None); "
+    "d['helpers']=h; json.dump(d, open(p,'w'), indent=2)\""
+)
 SPECS_MARKED = {
     **{
         k: {
-            "install": ["npm install"],
+            "install": ["npm install", MARKED_JASMINE_REPORTER_SETUP],
             "test_cmd": "./node_modules/.bin/jasmine --no-color --config=jasmine.json",
             "docker_specs": {
                 "node_version": "12.22.12",
@@ -977,36 +1073,130 @@ SPECS_OPENLAYERS = {
         '8.1', '9.0', '9.1'
     ]},
 }
-# v6.4: Heatmap/WebGL tests need Mesa's llvmpipe software rasterizer in headless Chrome.
-# Also patch Karma config to use a custom Chrome launcher with SwiftShader-based WebGL
-# (Chrome can't create a WebGL context in Docker without explicit --use-angle flags).
-SPECS_OPENLAYERS['6.4']["apt-pkgs"] = XVFB_DEPS + ["libgl1-mesa-dri", "libegl1-mesa"]
-SPECS_OPENLAYERS['6.4']["install"].append(
-    "sed -i \"s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/"
+# WebGL fix: all openlayers versions have a Heatmap/WebGL test that crashes
+# mocha when Chrome can't create a WebGL context (headless Docker default).
+# The crash aborts the entire test run, so tests alphabetically after
+# ol.layer.Heatmap never execute. Fix: install Mesa's llvmpipe software
+# rasterizer + replace Karma's Chrome launcher with SwiftShader-flagged custom.
+# Match all three browser config variants seen across versions:
+#   ['Chrome']                                        (v6.1, v6.2)
+#   [process.env.CI ? 'ChromeHeadless' : 'Chrome']    (v6.3, v6.5, v6.5.1, v6.6)
+#   ['ChromeHeadless']                                (v6.9+)
+_OL_WEBGL_LAUNCHER_REPL = (
     "customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },"
-    "\\n    browsers: ['ChromeWebGL']/\" test/karma.config.js"
+    "\\n    browsers: ['ChromeWebGL']"
 )
-# Replace puppeteer executable path
-# NOTE: 6.5.1 was an artificially introduced version for karma.config.[js -> cjs]
+def _OL_WEBGL_SED(cfg: str) -> str:
+    return (
+        "sed -i \"s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/" + _OL_WEBGL_LAUNCHER_REPL + "/; "
+        "s/browsers: \\['ChromeHeadless'\\]/" + _OL_WEBGL_LAUNCHER_REPL + "/; "
+        "s/browsers: \\['Chrome'\\]/" + _OL_WEBGL_LAUNCHER_REPL + "/\" " + cfg
+    )
+for v in SPECS_OPENLAYERS:
+    # libxtst6 is needed by older puppeteer-bundled Chromium (v5.x-6.x era).
+    SPECS_OPENLAYERS[v]["apt-pkgs"] = XVFB_DEPS + ["libgl1-mesa-dri", "libegl1-mesa", "libxtst6"]
+# Pre-bake puppeteer's Chromium at the EXACT version the project's puppeteer
+# expects. Derived from each puppeteer version's own revisions.js / lock file
+# (read from npm registry + unpkg at the time of writing this config — see
+# `derive_puppeteer_chromium.py` for the script).
+#
+# We install into `/opt/chromium/chrome-linux[64]/chrome` at pre_install time
+# (base-image layer, cached across repo changes). A stable symlink
+# `/opt/chromium/chrome` points at the binary. Both karma (via CHROME_BIN) and
+# puppeteer (via PUPPETEER_EXECUTABLE_PATH) use this single path, which means:
+#   - no `npm install` download (PUPPETEER_SKIP_DOWNLOAD stays true)
+#   - pixel-exact parity with expected.png (era-matched Chromium)
+#   - one Chrome binary per image (not two), shared across karma + puppeteer
+#
+# Mapping:  puppeteer version -> ('rev', Chromium snapshot revision)
+#                              -> ('cft', chrome-for-testing version)
+_OL_CHROMIUM_PINS = {
+    '1.13.0': ('rev', '637110'),    # Chrome 73
+    '2.0.0':  ('rev', '706915'),    # Chrome 79
+    '2.1.0':  ('rev', '722234'),    # Chrome 81
+    '2.1.1':  ('rev', '722234'),
+    '5.3.1':  ('rev', '800071'),    # Chrome 88
+    '8.0.0':  ('rev', '856583'),    # Chrome 90
+    '10.0.0': ('rev', '884014'),    # Chrome 92
+    '10.2.0': ('rev', '901912'),    # Chrome 93
+    '12.0.0': ('rev', '938248'),    # Chrome 97
+    '13.0.1': ('rev', '938248'),
+    '13.5.1': ('rev', '970485'),    # Chrome 100
+    '15.3.2': ('rev', '1011831'),   # Chrome 103
+    '15.5.0': ('rev', '1022525'),   # Chrome 105
+    '17.1.1': ('rev', '1036745'),   # Chrome 107
+    '19.4.1': ('rev', '1069273'),   # Chrome 110
+    '20.3.0': ('cft', '113.0.5672.63'),
+    '20.9.0': ('cft', '115.0.5790.98'),
+    '21.1.1': ('cft', '116.0.5845.96'),
+    '21.2.1': ('cft', '116.0.5845.96'),
+    '21.9.0': ('cft', '121.0.6167.85'),
+    '22.5.0': ('cft', '122.0.6261.128'),
+}
+# OpenLayers version -> puppeteer version (from each project's package.json).
+_OL_PUPPETEER_VERSION = {
+    # v4.6 and v5.1 don't use puppeteer — karma-chrome-launcher only. Skip.
+    '5.3': '1.13.0',
+    '6.1': '2.0.0',  '6.2': '2.1.0',  '6.3': '2.1.1',
+    '6.4': '5.3.1',  '6.5': '8.0.0',
+    '6.5.1': '10.0.0', '6.6': '10.2.0',
+    '6.9': '12.0.0', '6.10': '13.0.1',
+    '6.11': '13.0.1', '6.12': '13.0.1',
+    '6.13': '13.5.1', '6.14': '15.3.2',
+    '7.0': '15.5.0', '7.1': '17.1.1', '7.2': '19.4.1',
+    '7.3': '20.3.0', '7.4': '20.9.0', '7.5': '21.1.1',
+    '8.1': '21.2.1', '9.0': '21.9.0', '9.1': '22.5.0',
+}
+def _ol_chromium_preinstall(puppeteer_version: str) -> list[str]:
+    """Commands to download + install Chromium at the puppeteer-pinned version
+    into /opt/chromium/, with a stable symlink at /opt/chromium/chrome."""
+    kind, rev_or_ver = _OL_CHROMIUM_PINS[puppeteer_version]
+    if kind == 'rev':
+        # Chromium snapshots: chrome-linux/chrome
+        url = f"https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev_or_ver}/chrome-linux.zip"
+        return [
+            f"wget -q {url} -O /tmp/chromium.zip",
+            "unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/",
+            "rm /tmp/chromium.zip",
+            "mkdir -p /opt/chromium",
+            "ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome",
+            "chmod -R 755 /opt/chromium-pinned",
+        ]
+    # chrome-for-testing: chrome-linux64/chrome
+    url = f"https://storage.googleapis.com/chrome-for-testing-public/{rev_or_ver}/linux64/chrome-linux64.zip"
+    return [
+        f"wget -q {url} -O /tmp/chromium.zip",
+        "unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/",
+        "rm /tmp/chromium.zip",
+        "mkdir -p /opt/chromium",
+        "ln -sf /opt/chromium-pinned/chrome-linux64/chrome /opt/chromium/chrome",
+        "chmod -R 755 /opt/chromium-pinned",
+    ]
+# Apply pre_install per openlayers version.
+for ol_version, pup_version in _OL_PUPPETEER_VERSION.items():
+    if ol_version in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[ol_version]['pre_install'] = _ol_chromium_preinstall(pup_version)
+# Karma: use SYSTEM Chrome (`/usr/bin/google-chrome-stable`, currently 147+).
+# NOT the era-matched Chromium at /opt/chromium/chrome. Why two browsers?
+#
+#   - Karma's WebGL tests (ol.layer.Heatmap etc.) need modern Chrome's ANGLE
+#     flags (`--use-gl=angle --use-angle=swiftshader-webgl`) to software-render
+#     WebGL in headless Docker. Era-matched Chromium snapshots (2019–2022)
+#     don't have working ANGLE support → WebGL crashes, aborts mocha early.
+#   - Puppeteer rendering tests (test-rendering, ./cases/*) compare screenshots
+#     against expected.png pixel-for-pixel. They MUST use the era-matched
+#     Chromium — any version mismatch → pixel diff failures.
+#
+# So: karma → /usr/bin/google-chrome-stable, puppeteer → /opt/chromium/chrome.
 for v in [
     '6.5.1', '6.6', '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
-    '7.0', '7.1', '7.2', '7.3', '7.5'
+    '7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '8.1', '9.0', '9.1',
 ]:
-    SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/browser/karma.config.cjs"))
+    if v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/browser/karma.config.cjs"))
 for v in ['6.0', '6.1', '6.2', '6.3', '6.4', '6.5']:
-    SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
-# OL v7.4: rendering tests need Puppeteer's bundled Chromium (115.0.5790.98)
-# for pixel-exact match with expected.png. Downloaded at eval time because
-# Puppeteer's install.js hangs during Docker build.
-# Puppeteer 20.9.0 expects: $CACHE/chrome/linux-115.0.5790.98/chrome-linux64/chrome
-SPECS_OPENLAYERS['7.4']['eval_setup'] = [
-    "mkdir -p /home/chromeuser/.cache/puppeteer/chrome/linux-115.0.5790.98",
-    "wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.98/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
-    "python3 -c \"import zipfile; zipfile.ZipFile('/tmp/chrome.zip').extractall('/home/chromeuser/.cache/puppeteer/chrome/linux-115.0.5790.98')\"",
-    "rm /tmp/chrome.zip",
-    "chmod -R 755 /home/chromeuser/.cache/puppeteer/chrome/linux-115.0.5790.98/chrome-linux64",
-    "chown -R chromeuser:chromeuser /home/chromeuser/.cache/puppeteer",
-]
+    if v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
 # Install karma-json-reporter for structured JSON output.
 # OL has two config patterns: test/karma.config.js (≤6.5) and test/browser/karma.config.cjs (≥6.5.1).
 # Reporter lines vary: ['dots'], ['dots', 'coverage-istanbul'], ['progress'].
@@ -1015,6 +1205,28 @@ _OL_KARMA_JSON_SED_JS = (
     "sed -i \"s/reporters: \\['dots'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
     "sed -i \"s/reporters: \\['progress'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
 )
+# Add `ol` alias to karma webpack config. ol-mapbox-style imports
+# `ol/format/GeoJSON.js` etc.; rendering webpack.config.js already has this
+# alias but karma.config.cjs does not, causing ModuleNotFoundError.
+# Some versions have an existing `resolve: { fallback: {...} }` block — adding
+# a sibling `resolve:` creates a duplicate key that JS silently collapses to
+# the last one (dropping our alias). So: inject alias INSIDE the first
+# `resolve: {` if one exists; otherwise add a new one after `webpack: {`.
+# sed `0,/pattern/` addresses the first match only. We use double quotes in
+# the replacement for `require("path")` to avoid conflicting with sed's outer
+# single-quoted substitution.
+def _OL_KARMA_ALIAS_SED(cfg: str) -> str:
+    # Alias path has `/` chars, so use `|` as sed delimiter instead of `/`.
+    alias = 'alias: { ol: require(\\"path\\").resolve(__dirname, \\"../../src/ol\\") },'
+    return (
+        # If file has `resolve: {`, inject alias as first key; otherwise add
+        # a full resolve block after webpack: {.
+        f"if grep -q 'resolve:' {cfg}; then "
+        f"sed -i '0,/resolve:[[:space:]]*{{/s|resolve:[[:space:]]*{{|resolve: {{ {alias}|' {cfg}; "
+        f"else "
+        f"sed -i '/webpack:[[:space:]]*{{/a\\    resolve: {{ {alias} }},' {cfg}; "
+        f"fi"
+    )
 for v in SPECS_OPENLAYERS:
     SPECS_OPENLAYERS[v]['install'].append(
         "npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps"
@@ -1022,9 +1234,12 @@ for v in SPECS_OPENLAYERS:
     # Determine which config file this version uses
     if v in ['6.5.1', '6.6', '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
              '7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '8.1', '9.0', '9.1']:
-        SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format("test/browser/karma.config.cjs"))
+        cfg = "test/browser/karma.config.cjs"
     else:
-        SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format("test/karma.config.js"))
+        cfg = "test/karma.config.js"
+    SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format(cfg))
+    SPECS_OPENLAYERS[v]['install'].append(_OL_WEBGL_SED(cfg))
+    SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_ALIAS_SED(cfg))
 
 SPECS_EMOTION = {
     **{k: {

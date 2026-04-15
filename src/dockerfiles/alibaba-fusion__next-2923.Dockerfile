@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,23 +92,29 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_34bcbc9afaa6
+RUN <<EOF_b358a29ec43c
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 14fd9f1e5cbbec2f3b2d2ddd5054a01b268a69ed
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 14fd9f1e5cbbec2f3b2d2ddd5054a01b268a69ed)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 14fd9f1e5cbbec2f3b2d2ddd5054a01b268a69ed)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
+chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
@@ -115,16 +122,11 @@ npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install puppeteer@19.11.1 --save-exact
 npm install highlight.js@10.7.3 --save-exact
-EOF_34bcbc9afaa6
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_b358a29ec43c
 
 
-RUN <<EOF_49f416664923
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/sqRqVjI664kt.png' 'https://fusion-image.oss-cn-beijing.aliyuncs.com/images/sqRqVjI664kt.png' || true
-EOF_49f416664923
-
+COPY src/image_assets/alibaba-fusion__next-2923/ /swebench/image_assets/
 
 WORKDIR /testbed

@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,22 +92,9 @@ python2 -V
 EOF_4d2410c5ce08
 
 
-RUN <<EOF_06cf9600602d
+RUN <<EOF_6e3b4f5ca0fb
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/alibaba-fusion/next /testbed
-chmod -R 777 /testbed
-cd /testbed
-git reset --hard 02d786bf55d5c457b48a16e77dcf209048bb7366
-git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 02d786bf55d5c457b48a16e77dcf209048bb7366)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
-git reflog expire --expire=now --all
-cd - || true
-cd /testbed
-git clean -fdxq
-source $NVM_DIR/nvm.sh
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
 wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/599821/chrome-linux.zip
 unzip -q chrome-linux.zip -d /opt/
@@ -115,22 +103,42 @@ rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
 printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
 chmod +x /usr/bin/google-chrome
 cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+EOF_6e3b4f5ca0fb
+
+
+RUN <<EOF_99783da0a3da
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/alibaba-fusion/next /testbed
+cd /testbed
+git reset --hard 02d786bf55d5c457b48a16e77dcf209048bb7366
+git remote remove origin
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 02d786bf55d5c457b48a16e77dcf209048bb7366)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
+cd - || true
+chmod -R 777 /testbed
+cd /testbed
+git clean -fdxq
+source $NVM_DIR/nvm.sh
+chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
-EOF_06cf9600602d
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_99783da0a3da
 
 
-RUN <<EOF_9cf9fea865b3
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/58321336-752ede00-7e50-11e9-8433-87809d351bf5.png' 'https://user-images.githubusercontent.com/5189853/58321336-752ede00-7e50-11e9-8433-87809d351bf5.png' || true
-EOF_9cf9fea865b3
-
+COPY src/image_assets/alibaba-fusion__next-717/ /swebench/image_assets/
 
 WORKDIR /testbed

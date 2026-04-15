@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,38 +92,39 @@ python2 -V
 EOF_4d2410c5ce08
 
 
-RUN <<EOF_e6ef623bcde6
+RUN <<EOF_85c9375346a0
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 42555dd1b1b7e25da8b049aac17ad4157c99870f
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 42555dd1b1b7e25da8b049aac17ad4157c99870f)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 42555dd1b1b7e25da8b049aac17ad4157c99870f)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
+chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
-EOF_e6ef623bcde6
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_85c9375346a0
 
 
-RUN <<EOF_a57cb9a890f1
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/63851563-00c48780-c9c9-11e9-9006-074098cdc711.png' 'https://user-images.githubusercontent.com/10049465/63851563-00c48780-c9c9-11e9-9006-074098cdc711.png' || true
-EOF_a57cb9a890f1
-
+COPY src/image_assets/alibaba-fusion__next-1063/ /swebench/image_assets/
 
 WORKDIR /testbed

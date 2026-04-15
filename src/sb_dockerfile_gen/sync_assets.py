@@ -6,8 +6,8 @@ eval scripts.  Falls back to ``__`` unflattening for files not listed in
 metadata.
 
 Usage:
-    python src/sb_dockerfile_gen/download_assets.py /path/to/mm-resources/resources
-    python src/sb_dockerfile_gen/download_assets.py /path/to/mm-resources/resources \\
+    python src/sb_dockerfile_gen/sync_assets.py /path/to/mm-resources/resources
+    python src/sb_dockerfile_gen/sync_assets.py /path/to/mm-resources/resources \\
         --instance_ids chartjs__Chart.js-10157
 """
 

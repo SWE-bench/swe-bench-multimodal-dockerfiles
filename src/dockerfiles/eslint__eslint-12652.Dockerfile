@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,35 +89,31 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_69acfa89e238
+RUN <<EOF_62b30982c281
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/eslint/eslint /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard a230f8404e4f2423dd79378b065d24c12776775b
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct a230f8404e4f2423dd79378b065d24c12776775b)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct a230f8404e4f2423dd79378b065d24c12776775b)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_69acfa89e238
+EOF_62b30982c281
 
 
-RUN <<EOF_2c7fa82c9077
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/53028310-b097c600-3477-11e9-9fe3-2a222df69e10.png' 'https://user-images.githubusercontent.com/6201068/53028310-b097c600-3477-11e9-9fe3-2a222df69e10.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/53029220-6c0d2a00-3479-11e9-877c-b001a7c6ed44.png' 'https://user-images.githubusercontent.com/6201068/53029220-6c0d2a00-3479-11e9-877c-b001a7c6ed44.png' || true
-EOF_2c7fa82c9077
-
+COPY src/image_assets/eslint__eslint-12652/ /swebench/image_assets/
 
 WORKDIR /testbed

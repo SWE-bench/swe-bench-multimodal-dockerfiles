@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,33 +89,31 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_b420f3f9f81b
+RUN <<EOF_31be903f2135
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/eslint/eslint /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard f3a6cedd8e096a45b22fd503878858cd63d81672
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct f3a6cedd8e096a45b22fd503878858cd63d81672)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct f3a6cedd8e096a45b22fd503878858cd63d81672)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_b420f3f9f81b
+EOF_31be903f2135
 
 
-RUN <<EOF_5a8dd4ce755d
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/63752d16-f858-11e6-9ffe-5ac1b75f3379.png' 'https://cloud.githubusercontent.com/assets/9456433/23164328/63752d16-f858-11e6-9ffe-5ac1b75f3379.png' || true
-EOF_5a8dd4ce755d
-
+COPY src/image_assets/eslint__eslint-8120/ /swebench/image_assets/
 
 WORKDIR /testbed

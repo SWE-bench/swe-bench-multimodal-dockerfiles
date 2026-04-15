@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,35 +92,48 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_29d3231669fb
+RUN <<EOF_bb3d5099ae9d
+#!/bin/bash
+set -euxo pipefail
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1069273/chrome-linux.zip
+unzip -q chrome-linux.zip -d /opt/
+rm chrome-linux.zip
+rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
+printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
+chmod +x /usr/bin/google-chrome
+cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+EOF_bb3d5099ae9d
+
+
+RUN <<EOF_c69b4c18179b
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/chartjs/Chart.js /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 6bc47d3cea5ac0f496dc1b6bd53ed2fa5e1446d1
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 6bc47d3cea5ac0f496dc1b6bd53ed2fa5e1446d1)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 6bc47d3cea5ac0f496dc1b6bd53ed2fa5e1446d1)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_29d3231669fb
+npm install karma-json-reporter@1.2.1 --save-dev --legacy-peer-deps
+sed -i "s/reporters: \['spec'[^]]*\],/reporters: ['json'],\n        jsonReporter: { stdout: true },/" karma.conf.js
+sed -i "s/frameworks: \['jasmine'\],/frameworks: ['jasmine'],\n    captureTimeout: 180000,\n    browserDisconnectTimeout: 120000,\n    browserDisconnectTolerance: 3,\n    browserNoActivityTimeout: 180000,/" karma.conf.js
+EOF_c69b4c18179b
 
 
-RUN <<EOF_9f8734127576
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/139717879-7797fb43-b437-4ee0-bea6-ca34cbf75a23.png' 'https://user-images.githubusercontent.com/81261942/139717879-7797fb43-b437-4ee0-bea6-ca34cbf75a23.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/139717896-bd5ca61c-14a6-43f3-a5d1-d8f1a79977c0.png' 'https://user-images.githubusercontent.com/81261942/139717896-bd5ca61c-14a6-43f3-a5d1-d8f1a79977c0.png' || true
-EOF_9f8734127576
-
+COPY src/image_assets/chartjs__Chart.js-9871/ /swebench/image_assets/
 
 WORKDIR /testbed

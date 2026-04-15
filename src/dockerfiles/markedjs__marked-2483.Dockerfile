@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,33 +89,32 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_a671b4af4d26
+RUN <<EOF_2f262fc5b59c
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/markedjs/marked /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard b01ae92d1a57cfda9f8dc82c11b152db3a77cc8d
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct b01ae92d1a57cfda9f8dc82c11b152db3a77cc8d)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct b01ae92d1a57cfda9f8dc82c11b152db3a77cc8d)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_a671b4af4d26
+mkdir -p test/helpers && printf '%s\n' "jasmine.getEnv().addReporter({ specDone: function(r){ console.log('JASMINE_TEST: ' + r.status + ' :: ' + r.fullName); } });" > test/helpers/jasmine_names.js && python3 -c "import json; p='jasmine.json'; d=json.load(open(p)); h=d.get('helpers', []); (h.append('helpers/jasmine_names.js') if 'helpers/jasmine_names.js' not in h else None); d['helpers']=h; json.dump(d, open(p,'w'), indent=2)"
+EOF_2f262fc5b59c
 
 
-RUN <<EOF_9111ec449519
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/169825319-7f786584-0be3-4694-8962-530731a28ad0.png' 'https://user-images.githubusercontent.com/80378/169825319-7f786584-0be3-4694-8962-530731a28ad0.png' || true
-EOF_9111ec449519
-
+COPY src/image_assets/markedjs__marked-2483/ /swebench/image_assets/
 
 WORKDIR /testbed

@@ -107,7 +107,11 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install --unsafe-perm
+sed -i 's/"color-studio": "1.0.5"/"@automattic\/color-studio": "1.0.6"/' package.json
+npm install --unsafe-perm --ignore-scripts
+npm rebuild node-sass
+ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio
+npm run build-packages
 EOF_72fb749e6833
 
 

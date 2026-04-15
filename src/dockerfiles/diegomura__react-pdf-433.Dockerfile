@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,40 +92,32 @@ python2 -V
 EOF_9dbe435fcb39
 
 
-RUN <<EOF_a697976333e0
+RUN <<EOF_62e7c2980d45
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/diegomura/react-pdf /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard f508d4e9938e80e888deb2dc8cada6d84e116427
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct f508d4e9938e80e888deb2dc8cada6d84e116427)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct f508d4e9938e80e888deb2dc8cada6d84e116427)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
-EOF_a697976333e0
+EOF_62e7c2980d45
 
 
-RUN <<EOF_12d553d8b67a
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/49249306-b037e380-f3d0-11e8-96cd-29eee986683b.png' 'https://user-images.githubusercontent.com/4199296/49249306-b037e380-f3d0-11e8-96cd-29eee986683b.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/49249354-c5ad0d80-f3d0-11e8-8e2d-393dee2530e1.png' 'https://user-images.githubusercontent.com/4199296/49249354-c5ad0d80-f3d0-11e8-8e2d-393dee2530e1.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/49249430-f42ae880-f3d0-11e8-9272-cefd5bca1b0d.png' 'https://user-images.githubusercontent.com/4199296/49249430-f42ae880-f3d0-11e8-9272-cefd5bca1b0d.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/49249444-fb51f680-f3d0-11e8-8f24-49d22bc27962.png' 'https://user-images.githubusercontent.com/4199296/49249444-fb51f680-f3d0-11e8-8f24-49d22bc27962.png' || true
-EOF_12d553d8b67a
-
+COPY src/image_assets/diegomura__react-pdf-433/ /swebench/image_assets/
 
 WORKDIR /testbed

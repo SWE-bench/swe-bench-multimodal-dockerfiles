@@ -67,11 +67,11 @@ ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_55f960f4ac15
+RUN <<EOF_7c1864e7bb77
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libgl1-mesa-dri libegl1-mesa libxtst6
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -89,10 +89,22 @@ source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_55f960f4ac15
+EOF_7c1864e7bb77
 
 
-RUN <<EOF_4c90ab67d394
+RUN <<EOF_7046834c53fa
+#!/bin/bash
+set -euxo pipefail
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/706915/chrome-linux.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_7046834c53fa
+
+
+RUN <<EOF_afad81043dd0
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -117,7 +129,9 @@ npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/karma.config.js
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js
-EOF_4c90ab67d394
+sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/" test/karma.config.js
+if grep -q 'resolve:' test/karma.config.js; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/karma.config.js; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/karma.config.js; fi
+EOF_afad81043dd0
 
 
 COPY src/image_assets/openlayers__openlayers-10340/ /swebench/image_assets/

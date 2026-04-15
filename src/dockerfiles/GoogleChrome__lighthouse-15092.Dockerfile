@@ -88,6 +88,9 @@ python2 -V
 EOF_34e7d255ba3f
 
 
+COPY src/caches/lighthouse_yarn_cache.tar.gz /tmp/yarn_cache.tar.gz
+RUN tar xzf /tmp/yarn_cache.tar.gz -C / && rm /tmp/yarn_cache.tar.gz
+
 RUN <<EOF_d49c13da5446
 #!/bin/bash
 set -euxo pipefail
@@ -105,7 +108,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
-yarn
+yarn --ignore-scripts
 yarn build-all
 EOF_d49c13da5446
 

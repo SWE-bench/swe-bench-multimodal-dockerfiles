@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,34 +92,38 @@ python2 -V
 EOF_a32284fbdcc9
 
 
-RUN <<EOF_8a7a5c716b88
+RUN <<EOF_85baa44a9cc3
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+EOF_85baa44a9cc3
+
+
+RUN <<EOF_055f32175381
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/diegomura/react-pdf /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard c961db4bf2ba81581c7c0eda02e9fc5f5ef78f01
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c961db4bf2ba81581c7c0eda02e9fc5f5ef78f01)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c961db4bf2ba81581c7c0eda02e9fc5f5ef78f01)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
 yarn install
-EOF_8a7a5c716b88
+EOF_055f32175381
 
 
-RUN <<EOF_81c3efa6d36f
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/119581286-7ec0e880-bd7f-11eb-8eb6-0983bf4c8f45.png' 'https://user-images.githubusercontent.com/3676669/119581286-7ec0e880-bd7f-11eb-8eb6-0983bf4c8f45.png' || true
-EOF_81c3efa6d36f
-
+COPY src/image_assets/diegomura__react-pdf-1341/ /swebench/image_assets/
 
 WORKDIR /testbed

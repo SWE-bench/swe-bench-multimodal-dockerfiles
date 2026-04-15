@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -66,11 +67,11 @@ ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_55f960f4ac15
+RUN <<EOF_7c1864e7bb77
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libgl1-mesa-dri libegl1-mesa libxtst6
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -88,43 +89,51 @@ source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_55f960f4ac15
+EOF_7c1864e7bb77
 
 
-RUN <<EOF_b5c445a636ed
+RUN <<EOF_9ceaf64e6457
+#!/bin/bash
+set -euxo pipefail
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/884014/chrome-linux.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_9ceaf64e6457
+
+
+RUN <<EOF_16ba3c6a9f0b
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 7e33c416978354ba1de16f57278a76d0dc6c060d
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 7e33c416978354ba1de16f57278a76d0dc6c060d)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 7e33c416978354ba1de16f57278a76d0dc6c060d)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_b5c445a636ed
+npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
+sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
+sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/" test/browser/karma.config.cjs
+if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
+EOF_16ba3c6a9f0b
 
 
-RUN <<EOF_eea693acdf04
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-rendermode-vector/expected.png')
-curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-rendermode-vector/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/94537e331f69938b0362494ece701ebdbc239246/test/rendering/cases/layer-vectortile-rendermode-vector/expected.png' || true
-mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-rotate-vector/expected.png')
-curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-rotate-vector/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/94537e331f69938b0362494ece701ebdbc239246/test/rendering/cases/layer-vectortile-rotate-vector/expected.png' || true
-mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-rotate/expected.png')
-curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-rotate/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/94537e331f69938b0362494ece701ebdbc239246/test/rendering/cases/layer-vectortile-rotate/expected.png' || true
-mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-simple/expected.png')
-curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/layer-vectortile-simple/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/94537e331f69938b0362494ece701ebdbc239246/test/rendering/cases/layer-vectortile-simple/expected.png' || true
-EOF_eea693acdf04
-
+COPY src/image_assets/openlayers__openlayers-12467/ /swebench/image_assets/
 
 WORKDIR /testbed

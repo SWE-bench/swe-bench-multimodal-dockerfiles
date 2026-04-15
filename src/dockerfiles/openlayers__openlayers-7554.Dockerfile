@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -66,11 +67,11 @@ ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_55f960f4ac15
+RUN <<EOF_7c1864e7bb77
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libgl1-mesa-dri libegl1-mesa libxtst6
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -88,36 +89,38 @@ source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_55f960f4ac15
+EOF_7c1864e7bb77
 
 
-RUN <<EOF_bd7c1f084035
+RUN <<EOF_4ac08b75004a
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 3fdf1e2bc7d1d7b264c3b34eef4934b52a21a3c7
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 3fdf1e2bc7d1d7b264c3b34eef4934b52a21a3c7)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 3fdf1e2bc7d1d7b264c3b34eef4934b52a21a3c7)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_bd7c1f084035
+npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
+sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js
+sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/" test/karma.config.js
+if grep -q 'resolve:' test/karma.config.js; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/karma.config.js; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/karma.config.js; fi
+EOF_4ac08b75004a
 
 
-RUN <<EOF_36e19652a08e
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/33749706-33dc2ca8-dc0a-11e7-835b-e99fabbe6b89.png' 'https://user-images.githubusercontent.com/8294943/33749706-33dc2ca8-dc0a-11e7-835b-e99fabbe6b89.png' || true
-EOF_36e19652a08e
-
+COPY src/image_assets/openlayers__openlayers-7554/ /swebench/image_assets/
 
 WORKDIR /testbed

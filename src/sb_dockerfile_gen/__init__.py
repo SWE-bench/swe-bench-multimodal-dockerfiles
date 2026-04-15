@@ -294,40 +294,48 @@ def _get_test_cmds_prism(instance: dict) -> list:
 
 
 def _get_test_cmds_openlayers(instance: dict) -> list:
-    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    # TWO Chrome binaries per image, used for different test phases:
+    #
+    #   KARMA_CHROME = /usr/bin/google-chrome-stable (modern, system-wide).
+    #     Karma WebGL tests (ol.layer.Heatmap) crash in era-matched Chromium
+    #     because 2019–2022 snapshots don't have working ANGLE/SwiftShader
+    #     support. Modern Chrome does, with customLaunchers flags.
+    #
+    #   RENDERING_CHROME = /opt/chromium/chrome (era-matched to this version's
+    #     puppeteer — see _OL_CHROMIUM_PINS in constants.py). Puppeteer
+    #     rendering tests compare screenshots against expected.png
+    #     pixel-for-pixel; any browser drift → pixel diff failures.
+    KARMA_CHROME = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    RENDERING_CHROME = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
     SSL_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
     cmds = []
     for test_path in _get_test_paths(instance):
         test_type = test_path.split('/')[1] if '/' in test_path else ""
         if test_type == "browser":
-            if instance.get("version") in ['6.9', '6.12', '6.14', '7.0', '7.1', '7.2', '7.3', '7.5']:
-                cmds.append(f'su chromeuser -c "npm run test-browser"')
-            else:
-                cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-browser"')
+            cmds.append(f'{KARMA_CHROME} {XVFB} su chromeuser -c "npm run test-browser"')
         elif test_type == "rendering":
-            # v7.4: use Puppeteer's bundled Chromium 115 via Xvfb (not --headless,
-            # which uses SwiftShader and hangs in Docker). --force continues past failures.
+            # CI=true activates puppeteer's --no-sandbox args (required in Docker).
+            # --log-level=info emits "ok" lines for passing cases.
+            # --force skips getOutdated() filter so ALL cases run.
+            PENV = f"CI=true {RENDERING_CHROME}"
             if instance.get("version") in ['7.4']:
-                PENV = "CI=true PUPPETEER_CACHE_DIR=/home/chromeuser/.cache/puppeteer"
+                # v7.4 needs a rollup build first (build-full) to produce ol.js.
                 cmds.append(
                     f'{PENV} {XVFB} su chromeuser -c "'
-                    f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force"'
+                    f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force --log-level=info"'
                 )
             else:
-                # CI=true activates puppeteer's --no-sandbox args (required in
-                # Docker, else chromium zygote fails with "Operation not
-                # permitted"). --log-level=info makes the runner emit "ok"
-                # lines for passing cases (default 'error' only logs mismatches,
-                # so the parser never sees passes and graded them as missing).
                 cmds.append(
-                    f'CI=true {SET_PUPPETEER} {XVFB} su chromeuser -c '
-                    f'"CI=true npm run test-rendering -- --log-level=info"'
+                    f'{PENV} {XVFB} su chromeuser -c '
+                    f'"{PENV} npm run test-rendering -- --force --log-level=info"'
                 )
         elif test_type == "spec":
-            cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
+            cmds.append(f'{KARMA_CHROME} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
         elif test_type == "node":
-            cmds.append("npm run test-node")
+            # Use mocha's JSON reporter so parser picks up results (default
+            # spec reporter tree with ✓/✗ isn't parsed).
+            cmds.append("npm run test-node -- --reporter json")
         else:
             cmds.append("npm run test")
         if test_type in ['spec', 'rendering', 'browser'] and instance.get('version') in [
@@ -471,18 +479,12 @@ def _get_test_cmds_prettier(instance: dict) -> list:
 
 
 def _get_test_cmds_react_pdf(instance: dict) -> list:
+    # Run the full test suite (not narrowed to the test_patch's package) so
+    # P2P entries in other packages (textkit, image, stylesheet, ...) are
+    # actually evaluated. Previously: jest was passed "packages/<name>" which
+    # made jest skip the rest of the monorepo.
     test_prefix = MAP_REPO_VERSION_TO_SPECS_JS[instance['repo']][instance['version']]["test_cmd"]
-    cmds = []
-    for test_path in _get_test_paths(instance):
-        if test_path.endswith(".png"):
-            continue
-        elif test_path.startswith("packages/"):
-            test_path = "/".join(test_path.split("/")[:2])
-            cmds.append(f"{test_prefix} {test_path}")
-        elif test_path.startswith("tests/"):
-            cmds.append(test_prefix)
-    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
-    return list(dict.fromkeys(cmds))
+    return [test_prefix]
 
 
 def _get_test_cmds_quarto(instance: dict) -> list[str]:
@@ -638,12 +640,17 @@ def _get_eval_script(instance: dict) -> str:
             )
             eval_commands.append(apply_test_patch_command)
 
-        # Restore binary files from build-time staging dir
+        # Restore binary files from build-time staging dir.
+        # `cp -a` copies attributes from the staging source (typically 775 root:root),
+        # clobbering the image's 777 perms on any overlapping dirs. That breaks
+        # non-root users (chromeuser, uid 1000) writing siblings (e.g. Puppeteer's
+        # actual.png). Restore world-writable after cp.
         if binary_files:
             eval_commands.append(
                 "test -d /swebench/image_assets/test_patch && "
                 "cp -a /swebench/image_assets/test_patch/. /testbed/ 2>/dev/null || true"
             )
+            eval_commands.append("chmod -R a+rwX /testbed 2>/dev/null || true")
 
     eval_commands += [
         f": '{START_TEST_OUTPUT}'",

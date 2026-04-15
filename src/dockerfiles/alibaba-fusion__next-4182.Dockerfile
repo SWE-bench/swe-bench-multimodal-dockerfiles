@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,34 +92,35 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_e4a3a80a3f9a
+RUN <<EOF_2ad39160892f
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 72c9786c16c20f0aaef66170ba4b1d25a08cfc67
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 72c9786c16c20f0aaef66170ba4b1d25a08cfc67)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 72c9786c16c20f0aaef66170ba4b1d25a08cfc67)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
+chmod -R 777 /testbed
 su chromeuser -c 'npm install'
-EOF_e4a3a80a3f9a
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_2ad39160892f
 
 
-RUN <<EOF_2054acdbeb4c
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/178670197-39e8aa2c-5905-465c-b29b-6810768bac7c.png' 'https://user-images.githubusercontent.com/109202769/178670197-39e8aa2c-5905-465c-b29b-6810768bac7c.png' || true
-EOF_2054acdbeb4c
-
+COPY src/image_assets/alibaba-fusion__next-4182/ /swebench/image_assets/
 
 WORKDIR /testbed

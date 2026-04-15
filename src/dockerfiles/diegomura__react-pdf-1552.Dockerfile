@@ -92,7 +92,14 @@ python2 -V
 EOF_a32284fbdcc9
 
 
-RUN <<EOF_1ae8f2f2616a
+RUN <<EOF_85baa44a9cc3
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+EOF_85baa44a9cc3
+
+
+RUN <<EOF_82b24766961c
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/diegomura/react-pdf /testbed
@@ -113,9 +120,8 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
 yarn install
-EOF_1ae8f2f2616a
+EOF_82b24766961c
 
 
 COPY src/image_assets/diegomura__react-pdf-1552/ /swebench/image_assets/

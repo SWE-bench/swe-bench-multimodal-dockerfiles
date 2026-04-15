@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,22 +92,9 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_ef1f450d5036
+RUN <<EOF_71683d3e4e95
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/alibaba-fusion/next /testbed
-chmod -R 777 /testbed
-cd /testbed
-git reset --hard c345df112a460ecc9128c159c647fd678b15ab05
-git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c345df112a460ecc9128c159c647fd678b15ab05)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
-git reflog expire --expire=now --all
-cd - || true
-cd /testbed
-git clean -fdxq
-source $NVM_DIR/nvm.sh
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
 wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/793478/chrome-linux.zip
 unzip -q chrome-linux.zip -d /opt/
@@ -115,28 +103,42 @@ rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
 printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
 chmod +x /usr/bin/google-chrome
 cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+EOF_71683d3e4e95
+
+
+RUN <<EOF_7c27828307cb
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/alibaba-fusion/next /testbed
+cd /testbed
+git reset --hard c345df112a460ecc9128c159c647fd678b15ab05
+git remote remove origin
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c345df112a460ecc9128c159c647fd678b15ab05)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
+cd - || true
+chmod -R 777 /testbed
+cd /testbed
+git clean -fdxq
+source $NVM_DIR/nvm.sh
+chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install lodash.clonedeep@4.5.0 --save-exact
-EOF_ef1f450d5036
+npm install karma-json-reporter@1.2.1 --no-save
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
+EOF_7c27828307cb
 
 
-RUN <<EOF_879dad80ed1b
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/98918477-a00b6700-2508-11eb-941c-c6a8d70c7bc8.png' 'https://user-images.githubusercontent.com/10049465/98918477-a00b6700-2508-11eb-941c-c6a8d70c7bc8.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/98918616-cb8e5180-2508-11eb-857d-61b0c2677266.png' 'https://user-images.githubusercontent.com/10049465/98918616-cb8e5180-2508-11eb-857d-61b0c2677266.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/98918631-d21cc900-2508-11eb-9b60-7d977ddc89d9.png' 'https://user-images.githubusercontent.com/10049465/98918631-d21cc900-2508-11eb-9b60-7d977ddc89d9.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/98918669-df39b800-2508-11eb-95f2-e53be5a0c78c.png' 'https://user-images.githubusercontent.com/10049465/98918669-df39b800-2508-11eb-95f2-e53be5a0c78c.png' || true
-EOF_879dad80ed1b
-
+COPY src/image_assets/alibaba-fusion__next-2355/ /swebench/image_assets/
 
 WORKDIR /testbed
