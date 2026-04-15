@@ -186,16 +186,28 @@ SPECS_CALYPSO = {
 # v8.9.3 test suite imports optional deps (`cpf`, `hoek`) at runtime that were
 # pruned from package.json. Install them explicitly so Ebanx / hoek tests run.
 for _v in ["8.9.3"]:
+    # Test imports `cpf.isValid` (available since cpf@1.0.0) and `hoek`.
+    # Single install call with --no-prune preserves both despite --no-save.
     SPECS_CALYPSO[_v]["install"].append(
-        "npm install cpf@0.1.8 hoek@6.1.3 --no-save --legacy-peer-deps || true"
+        "npm install cpf@1.0.1 hoek@6.1.3 --no-save --no-prune --legacy-peer-deps || true"
     )
 
-TEST_CHART_JS_TEMPLATE = "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} --single-run --coverage --grep --auto-watch false --browsers chrome"
-# chart.js variant: reporters line is `['spec', 'kjhtml']`. Replace with the
-# karma-json-reporter to emit structured stdout (passed tests included).
+# Run karma, then cat the json results file so the parser can read the structured
+# output. Writing to file instead of stdout avoids an issue where buffering 580+
+# tests x expectations caused Chrome to hang mid-run on v4.2 (instance 11116).
+# \\$? / \\$rc are escaped so they're passed literally to su's shell (the outer
+# eval.sh runs with `set -u` and would choke trying to expand unset vars).
+TEST_CHART_JS_TEMPLATE = (
+    "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} "
+    "--single-run --coverage --grep --auto-watch false --browsers chrome; "
+    "rc=\\$?; test -f /testbed/karma-results.json && cat /testbed/karma-results.json; exit \\$rc"
+)
+# chart.js variant: replace whole reporters list with just karma-json-reporter.
+# v3.0 uses ['progress', 'kjhtml']; v3.5+/v4.x use ['spec', 'kjhtml', ...].
+# Keeping other reporters alongside caused Chrome to hang at "Executed 0 of 0".
 SETUP_KARMA_JSON_REPORTER_CHART = (
-    "sed -i \"s/reporters: \\['spec'[^]]*\\],/reporters: ['json'],"
-    "\\n        jsonReporter: {{ stdout: true }},/\" {0}"
+    "sed -i -E \"s#reporters: \\['(spec|progress)'[^]]*\\],#reporters: ['json'],"
+    "\\n        jsonReporter: {{ outputFile: '/testbed/karma-results.json' }},#\" {0}"
 )
 # Extend karma timeouts so slow/heavy Chrome startup under xvfb + docker doesn't
 # trigger "no message in 30000 ms" disconnects while rollup bundles large suites.
@@ -361,6 +373,10 @@ SPECS_P5_JS = {
             ],
             "test_cmd": (
                 """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
+                # Re-run yuidoc with the patched docs/preprocessor.js so outputs
+                # like parameterData.json (added by gold patch in 4561) exist
+                # before grunt test loads src/core/error_helpers.js.
+                "./node_modules/.bin/grunt yui --force || true\n"
                 "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
             ),
             "docker_specs": {
@@ -1176,6 +1192,115 @@ def _ol_chromium_preinstall(puppeteer_version: str) -> list[str]:
 for ol_version, pup_version in _OL_PUPPETEER_VERSION.items():
     if ol_version in SPECS_OPENLAYERS:
         SPECS_OPENLAYERS[ol_version]['pre_install'] = _ol_chromium_preinstall(pup_version)
+
+# v9.x rendering runner: Chromium 121+ renderer crashes with
+# `V8 process OOM (ExternalEntityTable::AllocateSegment)` after ~5 GeoTIFF
+# WebGLTile cases when reusing a single page. V8's sandbox entity table is
+# per-isolate and doesn't get cleaned up between page.goto() calls. Patch the
+# runner to create a fresh page per entry (which resets the isolate) instead
+# of reusing a single page across all entries. Maintainer CI doesn't hit this
+# because it runs on GHA ubuntu-latest where ulimit/cgroup behavior differs.
+# Applies to v9.0 and v9.1 which use puppeteer 21.9+ (Chromium 121+).
+_OL_RENDERER_PAGE_RESET_PATCH = (
+    # heredoc preserves the JS verbatim — avoids sed escaping nightmare.
+    # Uses python's re to do a two-step replace.
+    "python3 - <<'PYEOF'\n"
+    "import re\n"
+    "f = 'test/rendering/test.js'\n"
+    "s = open(f).read()\n"
+    "new_fn = '''async function renderEach(browser, entries, options) {\\n"
+    "  let fail = false;\\n"
+    "  for (const entry of entries) {\\n"
+    "    const page = await browser.newPage();\\n"
+    "    page.on(\"error\", (err) => { options.log.error(\"page crash\", err); });\\n"
+    "    page.on(\"pageerror\", (err) => { options.log.error(\"uncaught exception\", err); });\\n"
+    "    page.on(\"console\", (message) => {\\n"
+    "      const type = message.type();\\n"
+    "      if (options.log[type]) options.log[type](`console: ${message.text()}`);\\n"
+    "    });\\n"
+    "    page.setDefaultNavigationTimeout(options.timeout);\\n"
+    "    await exposeRender(page);\\n"
+    "    await page.setViewport({width: 256, height: 256});\\n"
+    "    try {\\n"
+    "      const {tolerance = 0.005, message = \"\"} = await renderPage(page, entry, options);\\n"
+    "      if (options.fix) { await copyActualToExpected(entry); continue; }\\n"
+    "      const {error, mismatch} = await getScreenshotsMismatch(entry);\\n"
+    "      if (error) { options.log.error(error); fail = true; continue; }\\n"
+    "      let detail = `case ${entry}`;\\n"
+    "      if (message) detail = `${detail} (${message})`;\\n"
+    "      if (mismatch > tolerance) {\\n"
+    "        options.log.error(`${detail}\\\\x27: mismatch ${mismatch}`);\\n"
+    "        fail = true;\\n"
+    "      } else {\\n"
+    "        options.log.info(`${detail}\\\\x27: ok`);\\n"
+    "        await touch(getPassFilePath(entry));\\n"
+    "      }\\n"
+    "    } finally {\\n"
+    "      await page.close();\\n"
+    "    }\\n"
+    "  }\\n"
+    "  return fail;\\n"
+    "}\\n'''\n"
+    "# Patch render() first (landmark); then replace renderEach.\n"
+    "s = re.sub(r'    const page = await browser\\.newPage\\(\\);.*?fail = await renderEach\\(page, entries, options\\);',\n"
+    "           '    fail = await renderEach(browser, entries, options);', s, count=1, flags=re.DOTALL)\n"
+    "m = re.search(r'async function renderEach\\(page, entries, options\\)[^{]*\\{.*?  return fail;\\n\\}\\n', s, re.DOTALL)\n"
+    "if not m: raise SystemExit('renderEach not found')\n"
+    "open(f, 'w').write(s[:m.start()] + new_fn + s[m.end():])\n"
+    "PYEOF"
+)
+for v in ['9.0']:
+    if v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[v]['install'].append(_OL_RENDERER_PAGE_RESET_PATCH)
+
+# v9.1 uses Chromium 122 which accumulates state at the BROWSER level, not
+# just per-page. Page-close isn't enough — restart the whole browser per
+# entry. Verified: with page-only reset, crashes after ~5 cog-* cases.
+# With browser-per-entry, all cases complete.
+_OL_RENDERER_BROWSER_RESET_PATCH = (
+    "python3 - <<'PYEOF'\n"
+    "import re\n"
+    "f = 'test/rendering/test.js'\n"
+    "s = open(f).read()\n"
+    "new_fn = '''async function renderEach(_unused, entries, options) {\\n"
+    "  let fail = false;\\n"
+    "  for (const entry of entries) {\\n"
+    "    const browser = await puppeteer.launch({\\n"
+    "      args: options.puppeteerArgs,\\n"
+    "      headless: options.headless ? \"new\" : false,\\n"
+    "    });\\n"
+    "    const page = await browser.newPage();\\n"
+    "    page.on(\"error\", (err) => { options.log.error(\"page crash\", err); });\\n"
+    "    page.on(\"pageerror\", (err) => { options.log.error(\"uncaught exception\", err); });\\n"
+    "    page.on(\"console\", (m) => { const t = m.type(); if (options.log[t]) options.log[t](`console: ${m.text()}`); });\\n"
+    "    page.setDefaultNavigationTimeout(options.timeout);\\n"
+    "    await exposeRender(page);\\n"
+    "    await page.setViewport({width: 256, height: 256});\\n"
+    "    try {\\n"
+    "      const {tolerance = 0.005, message = \"\"} = await renderPage(page, entry, options);\\n"
+    "      if (options.fix) { await copyActualToExpected(entry); continue; }\\n"
+    "      const {error, mismatch} = await getScreenshotsMismatch(entry);\\n"
+    "      if (error) { options.log.error(error); fail = true; continue; }\\n"
+    "      let detail = `case ${entry}`;\\n"
+    "      if (message) detail = `${detail} (${message})`;\\n"
+    "      if (mismatch > tolerance) { options.log.error(`${detail}\\\\x27: mismatch ${mismatch}`); fail = true; }\\n"
+    "      else { options.log.info(`${detail}\\\\x27: ok`); await touch(getPassFilePath(entry)); }\\n"
+    "    } finally {\\n"
+    "      await browser.close();\\n"
+    "    }\\n"
+    "  }\\n"
+    "  return fail;\\n"
+    "}\\n'''\n"
+    "s = re.sub(r'    const page = await browser\\.newPage\\(\\);.*?fail = await renderEach\\(page, entries, options\\);',\n"
+    "           '    fail = await renderEach(browser, entries, options);', s, count=1, flags=re.DOTALL)\n"
+    "m = re.search(r'async function renderEach\\(page, entries, options\\)[^{]*\\{.*?  return fail;\\n\\}\\n', s, re.DOTALL)\n"
+    "if not m: raise SystemExit('renderEach not found')\n"
+    "open(f, 'w').write(s[:m.start()] + new_fn + s[m.end():])\n"
+    "PYEOF"
+)
+for v in ['9.1']:
+    if v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[v]['install'].append(_OL_RENDERER_BROWSER_RESET_PATCH)
 # Karma: use SYSTEM Chrome (`/usr/bin/google-chrome-stable`, currently 147+).
 # NOT the era-matched Chromium at /opt/chromium/chrome. Why two browsers?
 #

@@ -521,9 +521,44 @@ def _get_test_cmds_quarto(instance: dict) -> list[str]:
     return ["rm -f tests/docs/page-layout/tufte-pdf.qmd"] + test_cmd
 
 
+def _get_test_cmds_chart_js(instance: dict) -> list:
+    """Narrow karma to just the modified spec files via --grep.
+
+    Without this, karma's `test/index.js` rollup bundle + 54 script-tag specs
+    overload Chrome and only the alphabetically first ~14 describe() blocks
+    emit tests. Passing a grep pattern makes karma's specPattern
+    (`test/specs/**/*<grep>*.js`) match only the touched file so the F2P test
+    actually runs.
+    """
+    test_cmd_list = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance["version"]]["test_cmd"]
+    # Extract bare test file stems, e.g. "test/specs/scale.linear.tests.js" -> "scale.linear".
+    # Also derive from fixture paths (test/fixtures/controller.bubble/foo.png loads via
+    # controller.bubble.tests.js).
+    greps = set()
+    for path in _get_test_paths(instance):
+        if path.startswith("test/specs/") and path.endswith(".tests.js"):
+            greps.add(path[len("test/specs/"):-len(".tests.js")])
+        elif path.startswith("test/fixtures/"):
+            stem = path[len("test/fixtures/"):].split("/", 1)[0]
+            if stem:
+                greps.add(stem)
+    if not greps:
+        return test_cmd_list
+    # One karma run per grep pattern so we get the full test_patch coverage even
+    # when it touches multiple files.
+    base_cmds = [c for c in test_cmd_list if "karma start" not in c]
+    karma_cmds = [c for c in test_cmd_list if "karma start" in c]
+    result = list(base_cmds)
+    for grep in sorted(greps):
+        for cmd in karma_cmds:
+            result.append(cmd.replace("--grep ", f"--grep {grep} "))
+    return result
+
+
 _MAP_REPO_TO_TEST_CMDS = {
     "alibaba-fusion/next": _get_test_cmds_next,
     "carbon-design-system/carbon": _get_test_cmds_carbon,
+    "chartjs/Chart.js": _get_test_cmds_chart_js,
     "GoogleChrome/lighthouse": _get_test_cmds_lighthouse,
     "openlayers/openlayers": _get_test_cmds_openlayers,
     "prettier/prettier": _get_test_cmds_prettier,

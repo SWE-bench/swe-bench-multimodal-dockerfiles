@@ -92,7 +92,7 @@ python2 -V
 EOF_f4fd4a31eaa9
 
 
-RUN <<EOF_eb6148c80f26
+RUN <<EOF_6fcced3839c3
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
@@ -114,8 +114,8 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-npm install cpf@0.1.8 hoek@6.1.3 --no-save --legacy-peer-deps || true
-EOF_eb6148c80f26
+npm install cpf@1.0.1 hoek@6.1.3 --no-save --no-prune --legacy-peer-deps || true
+EOF_6fcced3839c3
 
 
 COPY src/image_assets/Automattic__wp-calypso-21635/ /swebench/image_assets/

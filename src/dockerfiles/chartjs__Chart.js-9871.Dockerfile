@@ -106,7 +106,7 @@ cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 EOF_bb3d5099ae9d
 
 
-RUN <<EOF_c69b4c18179b
+RUN <<EOF_8ddd0ed92466
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/chartjs/Chart.js /testbed
@@ -129,9 +129,9 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install karma-json-reporter@1.2.1 --save-dev --legacy-peer-deps
-sed -i "s/reporters: \['spec'[^]]*\],/reporters: ['json'],\n        jsonReporter: { stdout: true },/" karma.conf.js
+sed -i -E "s#reporters: \['(spec|progress)'[^]]*\],#reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json' },#" karma.conf.js
 sed -i "s/frameworks: \['jasmine'\],/frameworks: ['jasmine'],\n    captureTimeout: 180000,\n    browserDisconnectTimeout: 120000,\n    browserDisconnectTolerance: 3,\n    browserNoActivityTimeout: 180000,/" karma.conf.js
-EOF_c69b4c18179b
+EOF_8ddd0ed92466
 
 
 COPY src/image_assets/chartjs__Chart.js-9871/ /swebench/image_assets/

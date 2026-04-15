@@ -104,7 +104,7 @@ chmod -R 755 /opt/chromium-pinned
 EOF_aaf25f252694
 
 
-RUN <<EOF_48eba078f2cc
+RUN <<EOF_5aa31b09e9de
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -126,12 +126,24 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
+python3 - <<'PYEOF'
+import re
+f = 'test/rendering/test.js'
+s = open(f).read()
+new_fn = '''async function renderEach(browser, entries, options) {\n  let fail = false;\n  for (const entry of entries) {\n    const page = await browser.newPage();\n    page.on("error", (err) => { options.log.error("page crash", err); });\n    page.on("pageerror", (err) => { options.log.error("uncaught exception", err); });\n    page.on("console", (message) => {\n      const type = message.type();\n      if (options.log[type]) options.log[type](`console: ${message.text()}`);\n    });\n    page.setDefaultNavigationTimeout(options.timeout);\n    await exposeRender(page);\n    await page.setViewport({width: 256, height: 256});\n    try {\n      const {tolerance = 0.005, message = ""} = await renderPage(page, entry, options);\n      if (options.fix) { await copyActualToExpected(entry); continue; }\n      const {error, mismatch} = await getScreenshotsMismatch(entry);\n      if (error) { options.log.error(error); fail = true; continue; }\n      let detail = `case ${entry}`;\n      if (message) detail = `${detail} (${message})`;\n      if (mismatch > tolerance) {\n        options.log.error(`${detail}\\x27: mismatch ${mismatch}`);\n        fail = true;\n      } else {\n        options.log.info(`${detail}\\x27: ok`);\n        await touch(getPassFilePath(entry));\n      }\n    } finally {\n      await page.close();\n    }\n  }\n  return fail;\n}\n'''
+# Patch render() first (landmark); then replace renderEach.
+s = re.sub(r'    const page = await browser\.newPage\(\);.*?fail = await renderEach\(page, entries, options\);',
+           '    fail = await renderEach(browser, entries, options);', s, count=1, flags=re.DOTALL)
+m = re.search(r'async function renderEach\(page, entries, options\)[^{]*\{.*?  return fail;\n\}\n', s, re.DOTALL)
+if not m: raise SystemExit('renderEach not found')
+open(f, 'w').write(s[:m.start()] + new_fn + s[m.end():])
+PYEOF
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_48eba078f2cc
+EOF_5aa31b09e9de
 
 
 COPY src/image_assets/openlayers__openlayers-15614/ /swebench/image_assets/
