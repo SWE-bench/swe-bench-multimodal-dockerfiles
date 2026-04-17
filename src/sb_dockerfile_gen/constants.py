@@ -392,10 +392,6 @@ SPECS_P5_JS = {
             ],
             "test_cmd": (
                 """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
-                # Re-run yuidoc with the patched docs/preprocessor.js so outputs
-                # like parameterData.json (added by gold patch in 4561) exist
-                # before grunt test loads src/core/error_helpers.js.
-                "./node_modules/.bin/grunt yui --force || true\n"
                 "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
             ),
             "docker_specs": {

@@ -521,19 +521,24 @@ def _get_test_cmds_quarto(instance: dict) -> list[str]:
     return ["rm -f tests/docs/page-layout/tufte-pdf.qmd"] + test_cmd
 
 
-def _get_test_cmds_chart_js(instance: dict) -> list:
-    """Narrow karma to just the modified spec files via --grep.
+_CHART_JS_AUTO_LOADED_STEMS = {
+    "controller.bar", "controller.bubble", "controller.doughnut",
+    "controller.line", "controller.polarArea", "controller.radar",
+    "controller.scatter", "core.animation", "core.animations",
+    "core.animator", "core.controller", "core.datasetController",
+    "core.defaults", "core.element",
+}
 
-    Without this, karma's `test/index.js` rollup bundle + 54 script-tag specs
-    overload Chrome and only the alphabetically first ~14 describe() blocks
-    emit tests. Passing a grep pattern makes karma's specPattern
-    (`test/specs/**/*<grep>*.js`) match only the touched file so the F2P test
-    actually runs.
+
+def _get_test_cmds_chart_js(instance: dict) -> list:
+    """Conditionally narrow karma via --grep for spec files not auto-loaded.
+
+    Karma's rollup bundle only executes the alphabetically first ~14 spec
+    files. If the test_patch only touches files in that set, the default
+    (no --grep) run works and is more reliable (fixture auto-tests load).
+    Only add --grep runs for spec stems OUTSIDE the auto-loaded set.
     """
     test_cmd_list = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance["version"]]["test_cmd"]
-    # Extract bare test file stems, e.g. "test/specs/scale.linear.tests.js" -> "scale.linear".
-    # Also derive from fixture paths (test/fixtures/controller.bubble/foo.png loads via
-    # controller.bubble.tests.js).
     greps = set()
     for path in _get_test_paths(instance):
         if path.startswith("test/specs/") and path.endswith(".tests.js"):
@@ -542,17 +547,37 @@ def _get_test_cmds_chart_js(instance: dict) -> list:
             stem = path[len("test/fixtures/"):].split("/", 1)[0]
             if stem:
                 greps.add(stem)
-    if not greps:
+    # Only grep for stems NOT in the auto-loaded set
+    extra_greps = greps - _CHART_JS_AUTO_LOADED_STEMS
+    if not extra_greps:
         return test_cmd_list
-    # One karma run per grep pattern so we get the full test_patch coverage even
-    # when it touches multiple files.
     base_cmds = [c for c in test_cmd_list if "karma start" not in c]
     karma_cmds = [c for c in test_cmd_list if "karma start" in c]
-    result = list(base_cmds)
-    for grep in sorted(greps):
+    # Run full suite first (covers auto-loaded stems), then per-file for extras
+    result = list(test_cmd_list)
+    for grep in sorted(extra_greps):
         for cmd in karma_cmds:
             result.append(cmd.replace("--grep ", f"--grep {grep} "))
     return result
+
+
+def _get_test_cmds_p5js(instance: dict) -> list:
+    """Conditionally re-run yuidoc before tests.
+
+    Only needed when the gold patch touches docs/preprocessor.js (e.g. 4561
+    adds parameterData.json generation). Running yuidoc unconditionally
+    regenerates doc data and changes which doc-example tests exist, causing
+    spurious P2P drift on other instances.
+    """
+    specs = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance["version"]]
+    test_cmd = specs["test_cmd"]
+    if isinstance(test_cmd, list):
+        cmds = list(test_cmd)
+    else:
+        cmds = [test_cmd]
+    if any("docs/preprocessor" in p for p in _get_test_paths(instance)):
+        cmds.insert(0, "./node_modules/.bin/grunt yui --force || true")
+    return cmds
 
 
 _MAP_REPO_TO_TEST_CMDS = {
@@ -567,6 +592,7 @@ _MAP_REPO_TO_TEST_CMDS = {
     # scratch-gui: static test_cmd runs all jest tests, works fine.
     # Per-instance cmd is too narrow (misses F2P tests not in test_patch).
     "diegomura/react-pdf": _get_test_cmds_react_pdf,
+    "processing/p5.js": _get_test_cmds_p5js,
 }
 
 
