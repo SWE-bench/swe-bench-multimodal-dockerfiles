@@ -575,7 +575,10 @@ def _get_test_cmds_p5js(instance: dict) -> list:
         cmds = list(test_cmd)
     else:
         cmds = [test_cmd]
-    if any("docs/preprocessor" in p for p in _get_test_paths(instance)):
+    all_paths = _get_test_paths(instance) + re.findall(
+        r"diff --git a/.* b/(.*)", instance.get("patch", "")
+    )
+    if any("docs/preprocessor" in p for p in all_paths):
         cmds.insert(0, "./node_modules/.bin/grunt yui --force || true")
     return cmds
 
