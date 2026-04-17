@@ -164,6 +164,8 @@ SPECS_CALYPSO = {
     # Also run `lerna bootstrap` at image-build time so workspace packages like
     # `i18n-calypso` are linked into node_modules/ before tests run. Eval-time
     # pretest re-runs bootstrap but it becomes a no-op once pre-populated.
+    # Patch jest.config with a moduleNameMapper for @automattic/* so jest
+    # doesn't lose track of workspace symlinks mid-run (33948).
     **{
         k: {
             "apt-pkgs": ["libsass-dev", "sassc"],
@@ -174,8 +176,25 @@ SPECS_CALYPSO = {
                 "ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio",
                 "npm run build-packages",
                 "./node_modules/.bin/lerna bootstrap || true",
+                # Replace workspace symlinks with real copies so jest 24's resolver
+                # (which sometimes loses track of symlinked packages) can find
+                # them via standard node_modules traversal.
+                "for d in /testbed/node_modules/@automattic/* /testbed/node_modules/i18n-calypso /testbed/node_modules/photon; do"
+                "  [ -L \"$d\" ] && target=$(readlink -f \"$d\") && rm \"$d\" && cp -a \"$target\" \"$d\";"
+                " done",
             ],
-            "test_cmd": "npm run test-client -- --verbose",
+            # --maxWorkers=2 sidesteps a jest module-resolver race seen on
+            # v10.15.2 (33948) where many workers intermittently lose track of
+            # @automattic/* workspace symlinks in node_modules and fail with
+            # "Cannot find module '@automattic/format-currency'" mid-suite.
+            # NODE_OPTIONS bumps heap so the 12k-test run doesn't OOM with
+            # low worker counts.
+            # `npm run test-client` triggers pretest → lerna clean → wipes dist/
+            # from workspace packages. Invoke jest directly to skip pretest.
+            "test_cmd": (
+                "NODE_OPTIONS='--max-old-space-size=8192' "
+                "./node_modules/.bin/jest -c=test/client/jest.config.js --verbose"
+            ),
             "docker_specs": {
                 "node_version": k,
             },

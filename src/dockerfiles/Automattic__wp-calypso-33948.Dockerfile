@@ -92,7 +92,7 @@ python2 -V
 EOF_16a722167964
 
 
-RUN <<EOF_bc070b4bfd61
+RUN <<EOF_dfce58486bc6
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
@@ -119,7 +119,8 @@ npm rebuild node-sass
 ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio
 npm run build-packages
 ./node_modules/.bin/lerna bootstrap || true
-EOF_bc070b4bfd61
+for d in /testbed/node_modules/@automattic/* /testbed/node_modules/i18n-calypso /testbed/node_modules/photon; do  [ -L "$d" ] && target=$(readlink -f "$d") && rm "$d" && cp -a "$target" "$d"; done
+EOF_dfce58486bc6
 
 
 COPY src/image_assets/Automattic__wp-calypso-33948/ /swebench/image_assets/
