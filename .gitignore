@@ -7,3 +7,4 @@ build/
 .venv/
 *.DS_Store
 src/image_assets/
+data/

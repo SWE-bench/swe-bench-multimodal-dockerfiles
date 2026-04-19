@@ -277,11 +277,13 @@ def _ol_puppeteer_chromium_preinstall(puppeteer_version: str) -> list[str]:
     ]
 
 
-# OL versions whose puppeteer dep is 21+ — those use Chrome-for-Testing and
-# the install.mjs hook hangs in BuildKit (Promise.all of two parallel
-# downloads + heredoc stdout buffering deadlock). Pre-bake Chromium via wget
-# and skip npm's puppeteer install hook with PUPPETEER_SKIP_DOWNLOAD.
-_OL_BUILD_HOOK_HANGS = {'7.5', '8.1', '9.0', '9.1'}
+# OL versions whose puppeteer dep is 20+ (Chrome-for-Testing era) — those
+# fork two parallel downloads (chrome + chrome-headless-shell) inside
+# install.mjs which deadlocks under BuildKit's heredoc stdout buffering.
+# Pre-bake Chromium via wget and skip npm's puppeteer install hook with
+# PUPPETEER_SKIP_DOWNLOAD. Confirmed hung: v7.3 (puppeteer 20.3),
+# v7.4 (20.9), v7.5 (21.1), v8.1 (21.2), v9.0 (21.9), v9.1 (22.5).
+_OL_BUILD_HOOK_HANGS = {'7.3', '7.4', '7.5', '8.1', '9.0', '9.1'}
 for _ol_v, _pup_v in _OL_PUPPETEER_VERSION.items():
     if _ol_v in _OL_BUILD_HOOK_HANGS and _ol_v in SPECS_OPENLAYERS:
         SPECS_OPENLAYERS[_ol_v]['pre_install'] = _ol_puppeteer_chromium_preinstall(_pup_v)

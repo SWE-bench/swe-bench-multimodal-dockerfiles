@@ -67,6 +67,8 @@ USER root
 ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 RUN <<EOF_55f960f4ac15
 #!/bin/bash
@@ -91,6 +93,17 @@ source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
 EOF_55f960f4ac15
+
+
+RUN <<EOF_086e837d45dd
+#!/bin/bash
+set -euxo pipefail
+mkdir -p /opt/puppeteer-cache/chrome/linux-113.0.5672.63
+wget -q https://storage.googleapis.com/chrome-for-testing-public/113.0.5672.63/linux64/chrome-linux64.zip -O /tmp/chrome.zip
+unzip -q /tmp/chrome.zip -d /opt/puppeteer-cache/chrome/linux-113.0.5672.63/
+rm /tmp/chrome.zip
+chmod -R 755 /opt/puppeteer-cache/chrome/linux-113.0.5672.63
+EOF_086e837d45dd
 
 
 RUN <<EOF_b4697dd7e3ed
