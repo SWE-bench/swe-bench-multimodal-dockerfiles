@@ -17,6 +17,7 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_90_INSTALL,
     _CHROMIUM_110_INSTALL,
     _CHROME_120_INSTALL,
+    chromium_preinstall,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -318,11 +319,15 @@ SPECS_P5_JS = {
             "apt-pkgs": X11_DEPS,
             "install": [
                 "npm install",
-                "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js",
                 "./node_modules/.bin/grunt yui",
             ],
+            # Pre-baked Chromium at /opt/chromium/chrome (see _P5_CHROMIUM_PINS).
+            # PUPPETEER_EXECUTABLE_PATH routes puppeteer at it; CHROME_BIN routes
+            # karma-chrome-launcher at it (v0.4–v0.6 path).
             "test_cmd": (
                 """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
+                "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome "
+                "CHROME_BIN=/opt/chromium/chrome "
                 "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
             ),
             "docker_specs": {
@@ -351,11 +356,21 @@ SPECS_P5_JS = {
         ]
     },
 }
-for k in ["0.4", "0.5", "0.6"]:
-    SPECS_P5_JS[k]["install"] = [
-        "npm install",
-        "./node_modules/.bin/grunt yui",
-    ]
+# Per-puppeteer-version Chromium pins (from CHROMIUM_PINS.md). v0.6 keeps a
+# Chromium 62-era snapshot for karma-chrome-launcher (no puppeteer dep).
+_P5_CHROMIUM_PINS = {
+    "0.6":  ("rev", "499100"),   # Chrome 62 era (karma-chrome-launcher only); 499098 404s
+    "0.7":  ("rev", "624492"),   # Chrome 72
+    "0.8":  ("rev", "624492"),
+    "0.10": ("rev", "672088"),   # Chrome 73
+    "1.0":  ("rev", "686378"),   # Chrome 76
+    "1.3":  ("rev", "818858"),   # Chrome 88
+    "1.4":  ("rev", "901912"),   # Chrome 93
+    "1.5":  ("rev", "1045629"),  # Chrome 107
+    "1.6":  ("rev", "1045629"),
+}
+for _v, (_kind, _rev) in _P5_CHROMIUM_PINS.items():
+    SPECS_P5_JS[_v]["pre_install"] = chromium_preinstall(_kind, _rev)
 
 
 # ============================================================
@@ -449,7 +464,11 @@ def _p5js_test_cmds(instance: dict) -> list:
         r"diff --git a/.* b/(.*)", instance.get("patch", "")
     )
     if any("docs/preprocessor" in p for p in all_paths):
-        cmds.insert(0, "./node_modules/.bin/grunt yui --force || true")
+        # Need PUPPETEER_EXECUTABLE_PATH for the mochaChrome:yui subtask
+        cmds.insert(0,
+            "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome "
+            "./node_modules/.bin/grunt yui --force || true"
+        )
     return cmds
 
 
