@@ -2,8 +2,12 @@
 SPECS_* dicts for the SWE-bench Multimodal *dev split* repos.
 
 Each SPECS_X dict maps a repo version → eval/build/test config consumed by
-__init__.py via MAP_REPO_VERSION_TO_SPECS_JS.
+__init__.py via MAP_REPO_VERSION_TO_SPECS_JS. A spec's "test_cmd" entry may
+be a string, list of strings, or a callable(instance) -> list[str] for
+per-instance test command derivation.
 """
+
+import re
 
 from sb_dockerfile_gen.common import (
     TEST_XVFB_PREFIX,
@@ -14,6 +18,7 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_110_INSTALL,
     _CHROME_120_INSTALL,
 )
+from sb_dockerfile_gen.utils import get_test_paths
 
 
 # ============================================================
@@ -374,3 +379,87 @@ for v in ["1.0", "1.1", "1.2"]:
     SPECS_REACT_PDF[v]["pre_install"] = []  # v1.x uses npm, not yarn
     SPECS_REACT_PDF[v]["install"] = ["npm install", "npm install cheerio@1.0.0-rc.3"]
     SPECS_REACT_PDF[v]["test_cmd"] = "./node_modules/.bin/jest --no-color"
+
+
+# ============================================================
+# Per-instance test-command callables
+# ============================================================
+# Each callable takes the instance dict and returns list[str] of shell
+# commands. Assigned to SPECS_X[v]["test_cmd"] AFTER the static value is
+# established (so the callable can read the static template via specs_dict).
+
+_CHART_JS_AUTO_LOADED_STEMS = {
+    "controller.bar", "controller.bubble", "controller.doughnut",
+    "controller.line", "controller.polarArea", "controller.radar",
+    "controller.scatter", "core.animation", "core.animations",
+    "core.animator", "core.controller", "core.datasetController",
+    "core.defaults", "core.element",
+}
+
+
+def _chart_js_test_cmds(instance: dict) -> list:
+    """Conditionally narrow karma via --grep for spec files not auto-loaded.
+
+    Karma's rollup bundle only executes the alphabetically first ~14 spec
+    files. If the test_patch only touches files in that set, the default
+    (no --grep) run works and is more reliable (fixture auto-tests load).
+    Only add --grep runs for spec stems OUTSIDE the auto-loaded set.
+    """
+    test_cmd_list = _SPECS_CHART_JS_STATIC_TEST_CMD[instance["version"]]
+    greps = set()
+    for path in get_test_paths(instance):
+        if path.startswith("test/specs/") and path.endswith(".tests.js"):
+            greps.add(path[len("test/specs/"):-len(".tests.js")])
+        elif path.startswith("test/fixtures/"):
+            stem = path[len("test/fixtures/"):].split("/", 1)[0]
+            if stem:
+                greps.add(stem)
+    extra_greps = greps - _CHART_JS_AUTO_LOADED_STEMS
+    if not extra_greps:
+        return test_cmd_list
+    karma_cmds = [c for c in test_cmd_list if "karma start" in c]
+    result = list(test_cmd_list)
+    for grep in sorted(extra_greps):
+        for cmd in karma_cmds:
+            result.append(cmd.replace("--grep ", f"--grep {grep} "))
+    return result
+
+
+def _p5js_test_cmds(instance: dict) -> list:
+    """Conditionally re-run yuidoc before tests.
+
+    Only needed when the gold patch touches docs/preprocessor.js (e.g. 4561
+    adds parameterData.json generation). Running yuidoc unconditionally
+    regenerates doc data and changes which doc-example tests exist, causing
+    spurious P2P drift on other instances.
+    """
+    test_cmd = _SPECS_P5_JS_STATIC_TEST_CMD[instance["version"]]
+    cmds = list(test_cmd) if isinstance(test_cmd, list) else [test_cmd]
+    all_paths = get_test_paths(instance) + re.findall(
+        r"diff --git a/.* b/(.*)", instance.get("patch", "")
+    )
+    if any("docs/preprocessor" in p for p in all_paths):
+        cmds.insert(0, "./node_modules/.bin/grunt yui --force || true")
+    return cmds
+
+
+def _react_pdf_test_cmds(instance: dict) -> list:
+    # Run the full test suite (not narrowed to the test_patch's package) so
+    # P2P entries in other packages (textkit, image, stylesheet, ...) are
+    # actually evaluated. Previously: jest was passed "packages/<name>" which
+    # made jest skip the rest of the monorepo.
+    return [_SPECS_REACT_PDF_STATIC_TEST_CMD[instance["version"]]]
+
+
+# Snapshot the static test_cmd values BEFORE we replace them with callables,
+# so the callables can read them when invoked.
+_SPECS_CHART_JS_STATIC_TEST_CMD = {v: SPECS_CHART_JS[v]["test_cmd"] for v in SPECS_CHART_JS}
+_SPECS_P5_JS_STATIC_TEST_CMD = {v: SPECS_P5_JS[v]["test_cmd"] for v in SPECS_P5_JS}
+_SPECS_REACT_PDF_STATIC_TEST_CMD = {v: SPECS_REACT_PDF[v]["test_cmd"] for v in SPECS_REACT_PDF}
+
+for v in SPECS_CHART_JS:
+    SPECS_CHART_JS[v]["test_cmd"] = _chart_js_test_cmds
+for v in SPECS_P5_JS:
+    SPECS_P5_JS[v]["test_cmd"] = _p5js_test_cmds
+for v in SPECS_REACT_PDF:
+    SPECS_REACT_PDF[v]["test_cmd"] = _react_pdf_test_cmds

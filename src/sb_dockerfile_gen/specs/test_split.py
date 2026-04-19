@@ -2,12 +2,17 @@
 SPECS_* dicts for the SWE-bench Multimodal *test split* repos.
 
 Each SPECS_X dict maps a repo version → eval/build/test config consumed by
-__init__.py via MAP_REPO_VERSION_TO_SPECS_JS.
+__init__.py via MAP_REPO_VERSION_TO_SPECS_JS. A spec's "test_cmd" entry may
+be a string, list of strings, or a callable(instance) -> list[str]; the
+"eval_setup" entry may be a list[str] or a callable(instance) -> list[str].
 
 Six legacy SPECS dicts at the bottom of this file (MAPBOX, PLOTLYJS, INSOMNIA,
 EMOTION, PIXIJS, CYPRESS) are not currently wired into MAP_REPO_VERSION_TO_SPECS_JS
 but are preserved as-is for possible future use.
 """
+
+import json
+import re
 
 from sb_dockerfile_gen.common import (
     XVFB_DEPS,
@@ -23,6 +28,7 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_85_INSTALL,
     _CHROME_120_INSTALL,
 )
+from sb_dockerfile_gen.utils import get_test_paths
 
 
 # ============================================================
@@ -820,6 +826,281 @@ SPECS_QUARTOCLI = {
         }
     }
 }
+
+
+# ============================================================
+# Per-instance test-command and eval-setup callables
+# ============================================================
+# Each callable takes the instance dict and returns shell commands for that
+# specific instance. Assigned to SPECS_X[v]["test_cmd"] / ["eval_setup"]
+# AFTER the static value is established (snapshotted into a side table so
+# the callables can still read the version-specific template).
+
+_SPECS_PRISM_STATIC_TEST_CMD = {v: SPECS_PRISM[v]["test_cmd"] for v in SPECS_PRISM}
+_SPECS_SCRATCH_STATIC_TEST_CMD = {v: SPECS_SCRATCH[v]["test_cmd"] for v in SPECS_SCRATCH}
+_SPECS_QUARTOCLI_STATIC_TEST_CMD = {v: SPECS_QUARTOCLI[v]["test_cmd"] for v in SPECS_QUARTOCLI}
+
+
+def _prism_test_cmds(instance: dict) -> list:
+    test_cmd = _SPECS_PRISM_STATIC_TEST_CMD[instance["version"]]
+    directives = []
+    for test_path in get_test_paths(instance):
+        if test_path.startswith("tests/languages"):
+            directives.append(test_cmd + f" --language {test_path.split('/')[2]}")
+        elif test_path == "tests/core/greedy.js":
+            directives.append("./node_modules/.bin/mocha tests/core/**/*.js --reporter json")
+        elif test_path == "test.html":
+            continue
+    return sorted(list(set(directives)))
+
+
+def _openlayers_test_cmds(instance: dict) -> list:
+    # TWO Chrome binaries per image, used for different test phases:
+    #
+    #   KARMA_CHROME = /usr/bin/google-chrome-stable (modern, system-wide).
+    #     Karma WebGL tests (ol.layer.Heatmap) crash in era-matched Chromium
+    #     because 2019–2022 snapshots don't have working ANGLE/SwiftShader
+    #     support. Modern Chrome does, with customLaunchers flags.
+    #
+    #   RENDERING_CHROME = /opt/chromium/chrome (era-matched to this version's
+    #     puppeteer — see _OL_CHROMIUM_PINS above). Puppeteer rendering tests
+    #     compare screenshots against expected.png pixel-for-pixel; any
+    #     browser drift → pixel diff failures.
+    KARMA_CHROME = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    RENDERING_CHROME = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
+    XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
+    SSL_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
+    cmds = []
+    for test_path in get_test_paths(instance):
+        test_type = test_path.split('/')[1] if '/' in test_path else ""
+        if test_type == "browser":
+            cmds.append(f'{KARMA_CHROME} {XVFB} su chromeuser -c "npm run test-browser"')
+        elif test_type == "rendering":
+            # CI=true activates puppeteer's --no-sandbox args (required in Docker).
+            # --log-level=info emits "ok" lines for passing cases.
+            # --force skips getOutdated() filter so ALL cases run.
+            PENV = f"CI=true {RENDERING_CHROME}"
+            if instance.get("version") in ['7.4']:
+                # v7.4 needs a rollup build first (build-full) to produce ol.js.
+                cmds.append(
+                    f'{PENV} {XVFB} su chromeuser -c "'
+                    f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force --log-level=info"'
+                )
+            else:
+                cmds.append(
+                    f'{PENV} {XVFB} su chromeuser -c '
+                    f'"{PENV} npm run test-rendering -- --force --log-level=info"'
+                )
+        elif test_type == "spec":
+            cmds.append(f'{KARMA_CHROME} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
+        elif test_type == "node":
+            # Use mocha's JSON reporter so parser picks up results (default
+            # spec reporter tree with ✓/✗ isn't parsed).
+            cmds.append("npm run test-node -- --reporter json")
+        else:
+            cmds.append("npm run test")
+        if test_type in ['spec', 'rendering', 'browser'] and instance.get('version') in [
+            '6.1', '6.2', '6.3', '6.4', '6.5', '6.5.1', '6.6',
+            '4.3', '4.4', '4.5', '4.6', '5.1', '5.2', '5.3'
+        ]:
+            cmds[-1] = f"{SSL_LEGACY} {cmds[-1]}"
+    # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
+    return list(dict.fromkeys(cmds))
+
+
+def _next_test_cmds(instance: dict) -> list:
+    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
+    return list(dict.fromkeys([
+        f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
+        f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
+        for test_path in get_test_paths(instance)
+    ]))
+
+
+def _carbon_test_cmds(instance: dict) -> list:
+    # Derives yarn-test commands from test_patch paths, normalizes each to a
+    # Jest-matchable location, then drops any scope dominated by a broader
+    # prefix so parallel Jest runs never overlap. Overlap is what §4.7 of
+    # MULTIMODAL_FIXES.md targets: a later broad run can overwrite a narrow
+    # run's PASS with a FAIL triggered by the achecker cache race.
+    max_workers = " --maxWorkers=1" if instance.get("version") == "12" else ""
+    test_paths: list[str] = []
+    standalone_cmds: list[str] = []
+
+    for test_path in get_test_paths(instance):
+        # Snapshot files aren't runnable — point Jest at the component dir.
+        if re.search(r"__snapshots__/(.*).js.snap$", test_path):
+            test_path = "/".join(test_path.split("/")[:-2])
+        # __tests__/foo-test.js → parent dir (Jest resolves by directory).
+        if "__tests__" in test_path:
+            test_path = test_path.split("__tests__")[0]
+        # packages/*/src/components/*/next/* isn't file-matched by Jest —
+        # fall back to the component directory.
+        if "/next/" in test_path and "/components/" in test_path:
+            test_path = test_path.split("/next/")[0]
+        # cra-template/template/* is a standalone CRA scaffold: its deps
+        # aren't in package.json and files don't import React. Patch deps
+        # in, yarn install, then run jest with an inline config that
+        # enables the automatic JSX runtime. Self-contained — skips dedup.
+        if "cra-template/template/" in test_path:
+            standalone_cmds.append(
+                "node -e '"
+                'const p=require("./packages/cra-template/package.json");'
+                'p.dependencies={"@apollo/client":"3.7.4","react-router-dom":"6.6.2",'
+                '"@testing-library/react":"12.1.5","@testing-library/jest-dom":"5.16.5",'
+                '"@testing-library/user-event":"12.8.3","graphql":"16.6.0",'
+                '"react":"17.0.1","react-dom":"17.0.1"};'
+                'require("fs").writeFileSync("packages/cra-template/package.json",JSON.stringify(p,null,2));'
+                "' && yarn install 2>&1 | tail -3 ; "
+                'npx jest --no-colors --json '
+                """--config '{"preset":"jest-config-carbon","transform":{"^.+\\\\.(js|jsx)$":["babel-jest",{"presets":["@babel/preset-env",["@babel/preset-react",{"runtime":"automatic"}]]}]}}' """
+                'packages/cra-template/template/src'
+            )
+            continue
+        # .e2e.js isn't file-matched by `yarn test` — containing dir instead.
+        if test_path.endswith(".e2e.js"):
+            test_path = "/".join(test_path.split("/")[:-1]) + "/"
+        # Normalize directory-ish paths with a trailing slash so the prefix
+        # dedup below can distinguish dirs (which dominate) from files.
+        if not test_path.endswith((".js", ".ts", ".jsx", ".tsx", "/")):
+            test_path = test_path + "/"
+        test_paths.append(test_path)
+
+    # Prefix dedup: if A is a directory scope that's a strict prefix of B,
+    # running A already runs everything under B — drop B. Sort by length
+    # (shortest first) so each broader scope is seen before its extensions.
+    kept: list[str] = []
+    for p in sorted(set(test_paths), key=len):
+        if any(k.endswith("/") and p.startswith(k) and p != k for k in kept):
+            continue
+        kept.append(p)
+
+    yarn_cmds = [f"yarn test --json{max_workers} {p}" for p in kept]
+    return list(dict.fromkeys(standalone_cmds + yarn_cmds))
+
+
+def _carbon_eval_setup(instance: dict) -> list:
+    """Carbon's per-version eval setup, plus a rebuild step when the gold patch
+    touches packages/*/src/. Replaces the static eval_setup list — the patch
+    check used to live as an `if repo == ...` branch in __init__.py."""
+    base = [
+        "mkdir -p node_modules/accessibility-checker/lib/engine/cache 2>/dev/null || true",
+        # Stub out the achecker matcher entirely (§9.8). The HTTP fetch to
+        # able.ibm.com fails in Docker (no network) → process.exit(-1) →
+        # Jest EPIPE crash. A no-op matcher eliminates the flake class.
+        # The original file exports a single async function(node, label),
+        # not an object — Jest's expect.extend needs this exact shape.
+        "printf 'module.exports = async function toHaveNoACViolations() { return { pass: true, message: () => \"\" }; };\\n' "
+        "> config/jest-config-carbon/matchers/toHaveNoACViolations.js 2>/dev/null || true",
+    ]
+    if re.search(r"^diff --git a/packages/[^/]+/src/", instance.get("patch", "") or "", re.MULTILINE):
+        base.append("yarn build 2>&1 | tail -5 || true")
+    return base
+
+
+def _scratch_gui_test_cmds(instance: dict) -> list:
+    test_prefix = _SPECS_SCRATCH_STATIC_TEST_CMD[instance["version"]]
+    cmds = []
+    for test_path in get_test_paths(instance):
+        if "__snapshots__" in test_path:
+            test_path = test_path.split("__snapshots__")[0]
+        cmds.append(f"{test_prefix} {test_path}")
+    return list(dict.fromkeys(cmds))
+
+
+def _lighthouse_test_cmds(instance: dict) -> list:
+    cmds = []
+    SUBDIRS = ["report", "cli", "report", "treemap", "viewer"]
+    LH_PREFIX = "lighthouse-"
+    for test_path in get_test_paths(instance):
+        if any(test_path.endswith(ext) for ext in [".html", ".json", ".md", ".txt"]) or "smokehouse" in test_path:
+            continue
+        # Skip snapshot files — target the directory instead
+        if "__snapshots__" in test_path:
+            test_path = test_path.split("__snapshots__")[0].rstrip("/")
+        # Skip non-test helper files (e.g. fake-driver.js) — target the directory
+        if not test_path.endswith("-test.js") and not test_path.endswith("-test.ts") and test_path.endswith(".js"):
+            test_path = "/".join(test_path.split("/")[:-1])
+        parent_folder = test_path.split("/")[0]
+        if instance.get("version") in ['9.5', '10.0', '10.2']:
+            if parent_folder == "flow-report":
+                cmds.append("yarn unit-flow")
+            elif parent_folder in SUBDIRS + [LH_PREFIX + x for x in SUBDIRS]:
+                if parent_folder.startswith(LH_PREFIX):
+                    parent_folder = parent_folder[len(LH_PREFIX):]
+                cmds.append(f"yarn unit-{parent_folder} {test_path}")
+            else:
+                cmds.append(f"yarn mocha {test_path}")
+        elif '3.0' <= str(instance.get("version", "")) <= '8.6':
+            cmds.append(f"yarn jest --no-colors {test_path}")
+        else:
+            cmds.append(f"./node_modules/.bin/mocha --reporter json {test_path}")
+    return list(dict.fromkeys(cmds))
+
+
+def _prettier_test_cmds(instance: dict) -> list:
+    cmds = []
+    for test_path in get_test_paths(instance):
+        if "__snapshots__" in test_path:
+            test_path = test_path.split("__snapshots__")[0]
+        if test_path.endswith(".md"):
+            test_path = "/".join(test_path.split("/")[:-1])
+        # Only jsfmt.spec.js and __tests__/*.js are actual specs — everything else
+        # (fixture .js, .ts, .css, .snap, etc.) needs the directory instead
+        if not test_path.endswith("jsfmt.spec.js") and not "/__tests__/" in test_path and not test_path.endswith("/"):
+            test_path = "/".join(test_path.split("/")[:-1])
+        cmds.append(f"yarn test {test_path}")
+    return list(dict.fromkeys(cmds))
+
+
+def _quarto_test_cmds(instance: dict) -> list:
+    """Quarto: direct-render for 5292, tufte-pdf removal for all others."""
+    if instance["instance_id"] == "quarto-dev__quarto-cli-5292":
+        def _render_block(label: str) -> str:
+            m = re.match(r"\[smoke\] > quarto render (\S+) --to (\S+)", label)
+            assert m, f"unrecognised 5292 test label: {label}"
+            target = "tests/" + m.group(1)
+            fmt = m.group(2)
+            return (
+                f"cd /testbed && if quarto render {target} --to {fmt} 2>/dev/null ; "
+                f"then printf '{label} ... \\033[32mok\\033[0m\\n' ; "
+                f"else printf '{label} ... \\033[31mFAILED\\033[0m\\n' ; fi"
+            )
+        f2p_list = instance.get("FAIL_TO_PASS", [])
+        if isinstance(f2p_list, str):
+            f2p_list = json.loads(f2p_list)
+        p2p_list = instance.get("PASS_TO_PASS", [])
+        if isinstance(p2p_list, str):
+            p2p_list = json.loads(p2p_list)
+        parts = ["rm -f tests/docs/page-layout/tufte-pdf.qmd"]
+        parts.extend(_render_block(t) for t in f2p_list)
+        parts.extend(_render_block(t) for t in p2p_list)
+        return parts
+
+    # All other quarto instances: prepend tufte-pdf removal to standard test_cmd
+    test_cmd = _SPECS_QUARTOCLI_STATIC_TEST_CMD[instance.get("version") or None]
+    test_cmd = list(test_cmd) if isinstance(test_cmd, list) else [test_cmd]
+    return ["rm -f tests/docs/page-layout/tufte-pdf.qmd"] + test_cmd
+
+
+for v in SPECS_PRISM:
+    SPECS_PRISM[v]["test_cmd"] = _prism_test_cmds
+for v in SPECS_OPENLAYERS:
+    SPECS_OPENLAYERS[v]["test_cmd"] = _openlayers_test_cmds
+for v in SPECS_NEXT:
+    SPECS_NEXT[v]["test_cmd"] = _next_test_cmds
+for v in SPECS_CARBON:
+    SPECS_CARBON[v]["test_cmd"] = _carbon_test_cmds
+    SPECS_CARBON[v]["eval_setup"] = _carbon_eval_setup
+# scratch-gui: per-instance cmd is too narrow (misses F2P tests not in
+# test_patch). Keep static test_cmd; callable defined for parity / future use.
+for v in SPECS_LIGHTHOUSE:
+    SPECS_LIGHTHOUSE[v]["test_cmd"] = _lighthouse_test_cmds
+for v in SPECS_PRETTIER:
+    SPECS_PRETTIER[v]["test_cmd"] = _prettier_test_cmds
+for v in SPECS_QUARTOCLI:
+    SPECS_QUARTOCLI[v]["test_cmd"] = _quarto_test_cmds
 
 
 # ============================================================

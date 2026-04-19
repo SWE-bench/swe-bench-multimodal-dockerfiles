@@ -2,9 +2,23 @@
 Inlined utilities from swebench — makes this package fully standalone.
 """
 
+import re
 from hashlib import blake2b
 
-from sb_dockerfile_gen.constants import REPO_BASE_COMMIT_BRANCH
+try:
+    from unidiff import PatchSet
+except ImportError:
+    PatchSet = None
+
+
+def get_test_paths(instance: dict) -> list[str]:
+    """Extract test file paths from an instance's test_patch."""
+    test_patch = instance.get("test_patch", "")
+    if not test_patch:
+        return []
+    if PatchSet is not None:
+        return [x.path for x in PatchSet(test_patch)]
+    return re.findall(r"diff --git a/.* b/(.*)", test_patch)
 
 
 def generate_heredoc_delimiter(content: str) -> str:
@@ -27,6 +41,8 @@ def make_heredoc_run_command(commands: list[str]) -> str:
 
 def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
     """Generate shell commands to clone a repo and remove references to future information."""
+    # Imported lazily to avoid a circular import: constants → specs → utils.
+    from sb_dockerfile_gen.constants import REPO_BASE_COMMIT_BRANCH
     branch = REPO_BASE_COMMIT_BRANCH.get(repo, {}).get(base_commit, "")
     if branch:
         clone_cmd = f"git clone -o origin --branch {branch} --single-branch https://github.com/{repo} {workdir}"
@@ -63,8 +79,6 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
 
 def get_modified_files(patch: str) -> list[str]:
     """Get the list of modified files in a patch."""
-    from unidiff import PatchSet
-
     source_files = [
         f.source_file for f in PatchSet(patch) if f.source_file != "/dev/null"
     ]
