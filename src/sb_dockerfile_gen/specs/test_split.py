@@ -210,10 +210,85 @@ SPECS_OPENLAYERS = {
 }
 # OpenLayers runs on the vintage Ubuntu 20.04 base (see _DOCKERFILE_BASE_JS_OL
 # in __init__.py). That base ships Mesa 21 — what Chromium 97-122's headless
-# WebGL software-rendering was tested against. The puppeteer-bundled Chromium
-# (downloaded by `npm install` since PUPPETEER_SKIP_DOWNLOAD is unset on this
-# base) drives both karma and the puppeteer rendering tests; no system Chrome,
-# no /opt/chromium pre-bake.
+# WebGL software-rendering was tested against.
+#
+# The OL base sets PUPPETEER_SKIP_DOWNLOAD=true. The per-version pre_install
+# below wgets each project's puppeteer-pinned Chromium into the puppeteer cache
+# layout (/opt/puppeteer-cache/chrome/linux-{ver}/chrome-linux64/) so that
+# `puppeteer.executablePath()` returns it at runtime. Karma's CHROME_BIN —
+# unchanged from `require('puppeteer').executablePath()` — picks the same
+# binary. Both karma and rendering use one Chrome.
+
+# Puppeteer version → Chrome buildId (matches puppeteer's own revisions.js).
+# Older snapshot pins (rev 637110 etc.) are no longer used because puppeteer
+# 21+ migrated to Chrome-for-Testing build IDs.
+_OL_PUPPETEER_BUILDID = {
+    '1.13.0': '73.0.3683.0',
+    '2.0.0':  '79.0.3941.0',
+    '2.1.0':  '81.0.4044.0',
+    '2.1.1':  '81.0.4044.0',
+    '5.3.1':  '88.0.4324.0',
+    '8.0.0':  '90.0.4427.0',
+    '10.0.0': '92.0.4515.0',
+    '10.2.0': '93.0.4577.0',
+    '12.0.0': '97.0.4691.0',
+    '13.0.1': '97.0.4691.0',
+    '13.5.1': '100.0.4896.0',
+    '15.3.2': '103.0.5060.0',
+    '15.5.0': '105.0.5173.0',
+    '17.1.1': '107.0.5296.0',
+    '19.4.1': '110.0.5481.0',
+    '20.3.0': '113.0.5672.63',
+    '20.9.0': '115.0.5790.98',
+    '21.1.1': '116.0.5845.96',
+    '21.2.1': '116.0.5845.96',
+    '21.9.0': '121.0.6167.85',
+    '22.5.0': '122.0.6261.128',
+}
+# OpenLayers version -> puppeteer version (from each project's package.json).
+# v4.6 / v5.1 don't use puppeteer (karma-chrome-launcher only) — skip pre-bake.
+_OL_PUPPETEER_VERSION = {
+    '5.3': '1.13.0',
+    '6.1': '2.0.0',  '6.2': '2.1.0',  '6.3': '2.1.1',
+    '6.4': '5.3.1',  '6.5': '8.0.0',
+    '6.5.1': '10.0.0', '6.6': '10.2.0',
+    '6.9': '12.0.0', '6.10': '13.0.1',
+    '6.11': '13.0.1', '6.12': '13.0.1',
+    '6.13': '13.5.1', '6.14': '15.3.2',
+    '7.0': '15.5.0', '7.1': '17.1.1', '7.2': '19.4.1',
+    '7.3': '20.3.0', '7.4': '20.9.0', '7.5': '21.1.1',
+    '8.1': '21.2.1', '9.0': '21.9.0', '9.1': '22.5.0',
+}
+def _ol_puppeteer_chromium_preinstall(puppeteer_version: str) -> list[str]:
+    """wget Chrome-for-Testing into puppeteer's cache layout so
+    `puppeteer.executablePath()` resolves it (set
+    PUPPETEER_SKIP_DOWNLOAD=true on the SPEC's docker_specs.env so npm
+    install skips its own download — that download hook deadlocks under
+    BuildKit when puppeteer 21+ tries two parallel installs + heredoc
+    stdout buffering)."""
+    buildid = _OL_PUPPETEER_BUILDID[puppeteer_version]
+    cache_dir = f"/opt/puppeteer-cache/chrome/linux-{buildid}"
+    return [
+        f"mkdir -p {cache_dir}",
+        f"wget -q https://storage.googleapis.com/chrome-for-testing-public/{buildid}/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
+        f"unzip -q /tmp/chrome.zip -d {cache_dir}/",
+        "rm /tmp/chrome.zip",
+        f"chmod -R 755 {cache_dir}",
+    ]
+
+
+# OL versions whose puppeteer dep is 21+ — those use Chrome-for-Testing and
+# the install.mjs hook hangs in BuildKit (Promise.all of two parallel
+# downloads + heredoc stdout buffering deadlock). Pre-bake Chromium via wget
+# and skip npm's puppeteer install hook with PUPPETEER_SKIP_DOWNLOAD.
+_OL_BUILD_HOOK_HANGS = {'7.5', '8.1', '9.0', '9.1'}
+for _ol_v, _pup_v in _OL_PUPPETEER_VERSION.items():
+    if _ol_v in _OL_BUILD_HOOK_HANGS and _ol_v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[_ol_v]['pre_install'] = _ol_puppeteer_chromium_preinstall(_pup_v)
+        SPECS_OPENLAYERS[_ol_v].setdefault('docker_specs', {})['env'] = {
+            'PUPPETEER_SKIP_DOWNLOAD': 'true',
+            'PUPPETEER_SKIP_CHROMIUM_DOWNLOAD': 'true',
+        }
 #
 # Replacement for the original karma launcher:
 #   `[process.env.CI ? 'ChromeHeadless' : 'Chrome']`  (v6.3, v6.5, v6.5.1, v6.6)
@@ -226,10 +301,20 @@ _OL_NOSANDBOX_LAUNCHER_REPL = (
     "\\n    browsers: ['ChromeNoSandbox']"
 )
 def _OL_NOSANDBOX_SED(cfg: str) -> str:
+    """Two-pronged sed:
+    1) For older configs that just use `browsers: [...]` without a customLauncher,
+       inject our ChromeNoSandbox launcher.
+    2) For v9.0+ which already define a customLauncher with `flags: ['--headless=new']`,
+       just append `--no-sandbox` to its flags array.
+    Sed treats each `;`-separated expression independently — only the matching
+    one fires per file."""
     return (
-        "sed -i \"s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
+        "sed -i \""
+        "s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
         "s/browsers: \\['ChromeHeadless'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
-        "s/browsers: \\['Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/\" " + cfg
+        "s/browsers: \\['Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
+        "s/flags: \\['--headless=new'\\]/flags: ['--headless=new', '--no-sandbox']/"
+        "\" " + cfg
     )
 
 # v9.x rendering runner: Chromium 121+ renderer crashes with

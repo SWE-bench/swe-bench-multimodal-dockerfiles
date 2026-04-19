@@ -140,6 +140,13 @@ RUN dbus-daemon --system --fork
 
 ENV OPENSSL_CONF /etc/ssl
 
+# Puppeteer 19.7+ caches its bundled Chromium in $PUPPETEER_CACHE_DIR (defaults
+# to ~/.cache/puppeteer). Pin it to a shared, world-readable location so karma
+# (running as chromeuser) can use the same binary that npm install (root)
+# downloaded — without copying the cache across users.
+ENV PUPPETEER_CACHE_DIR=/opt/puppeteer-cache
+RUN mkdir -p /opt/puppeteer-cache && chmod 0777 /opt/puppeteer-cache
+
 RUN useradd -m chromeuser
 
 USER chromeuser
@@ -313,6 +320,10 @@ def _get_dockerfile(instance) -> str:
         dockerfile += f"ENV PNPM_VERSION {pnpm_version}\n"
         dockerfile += "ENV PNPM_HOME /usr/local/pnpm\n"
         dockerfile += "ENV PATH $PNPM_HOME:$PATH\n"
+    # Per-spec ENV vars (e.g. PUPPETEER_SKIP_DOWNLOAD for OL puppeteer-21+ pins
+    # to avoid the BuildKit npm install hang on the puppeteer download hook).
+    for env_key, env_value in docker_specs.get("env", {}).items():
+        dockerfile += f"ENV {env_key}={env_value}\n"
     env_script = make_env_script_list(instance, specs)
     if env_script:
         dockerfile += f"\n{env_script}\n"
