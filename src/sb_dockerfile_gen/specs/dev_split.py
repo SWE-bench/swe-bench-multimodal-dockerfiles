@@ -1,0 +1,376 @@
+"""
+SPECS_* dicts for the SWE-bench Multimodal *dev split* repos.
+
+Each SPECS_X dict maps a repo version → eval/build/test config consumed by
+__init__.py via MAP_REPO_VERSION_TO_SPECS_JS.
+"""
+
+from sb_dockerfile_gen.common import (
+    TEST_XVFB_PREFIX,
+    XVFB_DEPS,
+    X11_DEPS,
+    _CHROMIUM_85_INSTALL,
+    _CHROMIUM_90_INSTALL,
+    _CHROMIUM_110_INSTALL,
+    _CHROME_120_INSTALL,
+)
+
+
+# ============================================================
+# wp-calypso
+# ============================================================
+SPECS_CALYPSO = {
+    **{
+        k: {
+            "apt-pkgs": ["libsass-dev", "sassc"],
+            "install": ["npm install --unsafe-perm"],
+            "test_cmd": "npm run test-client -- --verbose",
+            "docker_specs": {
+                "node_version": k,
+            },
+        }
+        for k in [
+            "0.8",
+            "4.2.3",
+            "4.3.0",
+            "5.10.1",
+            "5.11.1",
+            "6.1.0",
+            "6.7.0",
+            "6.9.0",
+            "6.9.1",
+            "6.9.4",
+            "6.10.0",
+            "6.10.2",
+            "6.10.3",
+            "6.11.1",
+            "6.11.2",
+            "6.11.5",
+            "8.9.1",
+            "8.9.3",
+            "8.9.4",
+            "8.11.0",
+            "8.11.2",
+            "10.4.1",
+            "10.5.0",
+            "10.6.0",
+            "10.9.0",
+            "10.10.0",
+            "10.12.0",
+            "10.13.0",
+            "10.16.3",
+        ]
+    },
+    # color-studio@1.0.5 was unpublished from npm; replace with the scoped
+    # successor @automattic/color-studio@1.0.6 before npm install.
+    # Internal monorepo code does require('color-studio/...'), so we also
+    # symlink the scoped package back to the unscoped name.
+    # Also run `lerna bootstrap` at image-build time so workspace packages like
+    # `i18n-calypso` are linked into node_modules/ before tests run. Eval-time
+    # pretest re-runs bootstrap but it becomes a no-op once pre-populated.
+    # Patch jest.config with a moduleNameMapper for @automattic/* so jest
+    # doesn't lose track of workspace symlinks mid-run (33948).
+    **{
+        k: {
+            "apt-pkgs": ["libsass-dev", "sassc"],
+            "install": [
+                "sed -i 's/\"color-studio\": \"1.0.5\"/\"@automattic\\/color-studio\": \"1.0.6\"/' package.json",
+                "npm install --unsafe-perm --ignore-scripts",
+                "npm rebuild node-sass",
+                "ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio",
+                "npm run build-packages",
+                "./node_modules/.bin/lerna bootstrap || true",
+                # Replace workspace symlinks with real copies so jest 24's resolver
+                # (which sometimes loses track of symlinked packages) can find
+                # them via standard node_modules traversal.
+                "for d in /testbed/node_modules/@automattic/* /testbed/node_modules/i18n-calypso /testbed/node_modules/photon; do"
+                "  [ -L \"$d\" ] && target=$(readlink -f \"$d\") && rm \"$d\" && cp -a \"$target\" \"$d\";"
+                " done",
+            ],
+            # --maxWorkers=2 sidesteps a jest module-resolver race seen on
+            # v10.15.2 (33948) where many workers intermittently lose track of
+            # @automattic/* workspace symlinks in node_modules and fail with
+            # "Cannot find module '@automattic/format-currency'" mid-suite.
+            # NODE_OPTIONS bumps heap so the 12k-test run doesn't OOM with
+            # low worker counts.
+            # `npm run test-client` triggers pretest → lerna clean → wipes dist/
+            # from workspace packages. Invoke jest directly to skip pretest.
+            "test_cmd": (
+                "NODE_OPTIONS='--max-old-space-size=8192' "
+                "./node_modules/.bin/jest -c=test/client/jest.config.js --verbose"
+            ),
+            "docker_specs": {
+                "node_version": k,
+            },
+        }
+        for k in ["10.14.0", "10.15.2"]
+    },
+}
+# v8.9.3 test suite imports optional deps (`cpf`, `hoek`) at runtime that were
+# pruned from package.json. Install them explicitly so Ebanx / hoek tests run.
+for _v in ["8.9.3"]:
+    # Test imports `cpf.isValid` (available since cpf@1.0.0) and `hoek`.
+    # Single install call with --no-prune preserves both despite --no-save.
+    SPECS_CALYPSO[_v]["install"].append(
+        "npm install cpf@1.0.1 hoek@6.1.3 --no-save --no-prune --legacy-peer-deps || true"
+    )
+
+
+# ============================================================
+# Chart.js
+# ============================================================
+# Run karma, then cat the json results file so the parser can read the structured
+# output. Writing to file instead of stdout avoids an issue where buffering 580+
+# tests x expectations caused Chrome to hang mid-run on v4.2 (instance 11116).
+# \\$? / \\$rc are escaped so they're passed literally to su's shell (the outer
+# eval.sh runs with `set -u` and would choke trying to expand unset vars).
+TEST_CHART_JS_TEMPLATE = (
+    "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} "
+    "--single-run --coverage --grep --auto-watch false --browsers chrome; "
+    "rc=\\$?; test -f /testbed/karma-results.json && cat /testbed/karma-results.json; exit \\$rc"
+)
+# chart.js variant: replace whole reporters list with just karma-json-reporter.
+# v3.0 uses ['progress', 'kjhtml']; v3.5+/v4.x use ['spec', 'kjhtml', ...].
+# Keeping other reporters alongside caused Chrome to hang at "Executed 0 of 0".
+SETUP_KARMA_JSON_REPORTER_CHART = (
+    "sed -i -E \"s#reporters: \\['(spec|progress)'[^]]*\\],#reporters: ['json'],"
+    "\\n        jsonReporter: {{ outputFile: '/testbed/karma-results.json' }},#\" {0}"
+)
+# Extend karma timeouts so slow/heavy Chrome startup under xvfb + docker doesn't
+# trigger "no message in 30000 ms" disconnects while rollup bundles large suites.
+SETUP_KARMA_TIMEOUTS_CHART = (
+    "sed -i \"s/frameworks: \\['jasmine'\\],/frameworks: ['jasmine'],"
+    "\\n    captureTimeout: 180000,"
+    "\\n    browserDisconnectTimeout: 120000,"
+    "\\n    browserDisconnectTolerance: 3,"
+    "\\n    browserNoActivityTimeout: 180000,/\" {0}"
+)
+SPECS_CHART_JS = {
+    **{
+        k: {
+            "install": [
+                "pnpm install",
+                "pnpm run build",
+            ],
+            "test_cmd": [
+                "pnpm install",
+                "pnpm run build",
+                f'{TEST_XVFB_PREFIX} su chromeuser -c "{TEST_CHART_JS_TEMPLATE.format("./karma.conf.cjs")}"',
+            ],
+            "docker_specs": {
+                "node_version": "21.6.2",
+                "pnpm_version": "7.9.0",
+                "run_args": {
+                    "cap_add": ["SYS_ADMIN"],
+                },
+            },
+        }
+        for k in ["4.0", "4.1", "4.2", "4.3", "4.4"]
+    },
+    **{
+        k: {
+            "install": ["npm install"],
+            "test_cmd": [
+                "npm install",
+                "npm run build",
+                f'{TEST_XVFB_PREFIX} su chromeuser -c "{TEST_CHART_JS_TEMPLATE.format("./karma.conf.js")}"',
+            ],
+            "docker_specs": {
+                "node_version": "21.6.2",
+                "run_args": {
+                    "cap_add": ["SYS_ADMIN"],
+                },
+            },
+        }
+        for k in ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8"]
+    },
+    **{
+        k: {
+            "install": ["npm install", "npm install -g gulp-cli"],
+            "test_cmd": [
+                "npm install",
+                "gulp build",
+                TEST_XVFB_PREFIX + ' su chromeuser -c "gulp test"',
+            ],
+            "docker_specs": {
+                "node_version": "21.6.2",
+                "run_args": {
+                    "cap_add": ["SYS_ADMIN"],
+                },
+            },
+        }
+        for k in ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9"]
+    },
+}
+for v in SPECS_CHART_JS.keys():
+    SPECS_CHART_JS[v]["apt-pkgs"] = XVFB_DEPS
+# Install karma-json-reporter and patch karma config for structured JSON output.
+# Without this, the karma 'spec' reporter only emits FAILED lines, so passed
+# F2P tests can't be detected by the parser.
+# Use --save-dev (not --no-save) because the eval_script re-runs `npm install`
+# at eval time, which would strip any --no-save package.
+for v in ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8"]:
+    SPECS_CHART_JS[v]["install"].extend([
+        "npm install karma-json-reporter@1.2.1 --save-dev --legacy-peer-deps",
+        SETUP_KARMA_JSON_REPORTER_CHART.format("karma.conf.js"),
+        SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.js"),
+    ])
+for v in ["4.0", "4.1", "4.2", "4.3", "4.4"]:
+    SPECS_CHART_JS[v]["install"].extend([
+        "pnpm add karma-json-reporter@1.2.1 --save-dev -w",
+        SETUP_KARMA_JSON_REPORTER_CHART.format("karma.conf.cjs"),
+        SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.cjs"),
+    ])
+# Pin era-appropriate Chrome versions for chart.js. System Chrome (147+) breaks
+# xhr fixture loading in karma's file server; visual tests also fail on Chrome
+# version drift. Pins follow CHROMIUM_PINS.md (system Chrome recommendations
+# mapped to closest available snapshot/CfT build).
+_CHART_JS_CHROME_PINS = {
+    # v2.x, v3.0-3.3 -> Chromium 85/90 era
+    "2.0": _CHROMIUM_85_INSTALL, "2.1": _CHROMIUM_85_INSTALL,
+    "2.2": _CHROMIUM_85_INSTALL, "2.3": _CHROMIUM_85_INSTALL,
+    "2.4": _CHROMIUM_85_INSTALL, "2.5": _CHROMIUM_85_INSTALL,
+    "2.6": _CHROMIUM_85_INSTALL, "2.7": _CHROMIUM_85_INSTALL,
+    "2.8": _CHROMIUM_85_INSTALL, "2.9": _CHROMIUM_85_INSTALL,
+    "3.0": _CHROMIUM_90_INSTALL, "3.1": _CHROMIUM_90_INSTALL,
+    "3.2": _CHROMIUM_90_INSTALL, "3.3": _CHROMIUM_90_INSTALL,
+    "3.4": _CHROMIUM_90_INSTALL,
+    # v3.5-3.8 -> Chromium 110 (was 97; 97 disconnected under xvfb)
+    "3.5": _CHROMIUM_110_INSTALL, "3.6": _CHROMIUM_110_INSTALL,
+    "3.7": _CHROMIUM_110_INSTALL, "3.8": _CHROMIUM_110_INSTALL,
+    # v4.0-4.1 -> Chromium 110 (was 107; 107 disconnected instantly)
+    "4.0": _CHROMIUM_110_INSTALL, "4.1": _CHROMIUM_110_INSTALL,
+    # v4.2 -> Chrome 110, v4.3-4.4 -> CfT 120 (was CfT 113; 113 disconnects)
+    "4.2": _CHROMIUM_110_INSTALL,
+    "4.3": _CHROME_120_INSTALL, "4.4": _CHROME_120_INSTALL,
+}
+for v, install in _CHART_JS_CHROME_PINS.items():
+    SPECS_CHART_JS[v]["pre_install"] = install
+
+
+# ============================================================
+# marked
+# ============================================================
+# Jasmine's default reporter only emits dots for passing tests. Install a
+# tiny custom reporter that logs `JASMINE_TEST: <status> :: <fullName>` per
+# spec so the parser can detect passes (not just failures).
+MARKED_JASMINE_REPORTER_SETUP = (
+    "mkdir -p test/helpers && "
+    "printf '%s\\n' "
+    "\"jasmine.getEnv().addReporter({ specDone: function(r){ "
+    "console.log('JASMINE_TEST: ' + r.status + ' :: ' + r.fullName); } });\" "
+    "> test/helpers/jasmine_names.js && "
+    "python3 -c \"import json; p='jasmine.json'; d=json.load(open(p)); "
+    "h=d.get('helpers', []); "
+    "(h.append('helpers/jasmine_names.js') if 'helpers/jasmine_names.js' not in h else None); "
+    "d['helpers']=h; json.dump(d, open(p,'w'), indent=2)\""
+)
+SPECS_MARKED = {
+    **{
+        k: {
+            "install": ["npm install", MARKED_JASMINE_REPORTER_SETUP],
+            "test_cmd": "./node_modules/.bin/jasmine --no-color --config=jasmine.json",
+            "docker_specs": {
+                "node_version": "12.22.12",
+            },
+        }
+        for k in [
+            "0.3",
+            "0.5",
+            "0.6",
+            "0.7",
+            "1.0",
+            "1.1",
+            "1.2",
+            "2.0",
+            "3.9",
+            "4.0",
+            "4.1",
+            "5.0",
+        ]
+    }
+}
+for v in ["4.0", "4.1", "5.0"]:
+    SPECS_MARKED[v]["docker_specs"]["node_version"] = "20.16.0"
+
+
+# ============================================================
+# p5.js
+# ============================================================
+SPECS_P5_JS = {
+    **{
+        k: {
+            "apt-pkgs": X11_DEPS,
+            "install": [
+                "npm install",
+                "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js",
+                "./node_modules/.bin/grunt yui",
+            ],
+            "test_cmd": (
+                """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
+                "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
+            ),
+            "docker_specs": {
+                "node_version": "14.17.3",
+            },
+        }
+        for k in [
+            "0.10",
+            "0.2",
+            "0.4",
+            "0.5",
+            "0.6",
+            "0.7",
+            "0.8",
+            "0.9",
+            "1.0",
+            "1.1",
+            "1.2",
+            "1.3",
+            "1.4",
+            "1.5",
+            "1.6",
+            "1.7",
+            "1.8",
+            "1.9",
+        ]
+    },
+}
+for k in ["0.4", "0.5", "0.6"]:
+    SPECS_P5_JS[k]["install"] = [
+        "npm install",
+        "./node_modules/.bin/grunt yui",
+    ]
+
+
+# ============================================================
+# react-pdf
+# ============================================================
+SPECS_REACT_PDF = {
+    **{
+        k: {
+            "apt-pkgs": [
+                "pkg-config",
+                "build-essential",
+                "libpixman-1-0",
+                "libpixman-1-dev",
+                "libcairo2-dev",
+                "libpango1.0-dev",
+                "libjpeg-dev",
+                "libgif-dev",
+                "librsvg2-dev",
+            ]
+            + X11_DEPS,
+            "pre_install": ["npm i -g yarn"],
+            "install": ["yarn install"],
+            "test_cmd": 'NODE_OPTIONS="--experimental-vm-modules" ./node_modules/.bin/jest --no-color',
+            "docker_specs": {"node_version": "18.20.4"},
+        }
+        for k in ["1.0", "1.1", "1.2", "2.0"]
+    }
+}
+for v in ["1.0", "1.1", "1.2"]:
+    SPECS_REACT_PDF[v]["docker_specs"]["node_version"] = "8.17.0"
+    SPECS_REACT_PDF[v]["pre_install"] = []  # v1.x uses npm, not yarn
+    SPECS_REACT_PDF[v]["install"] = ["npm install", "npm install cheerio@1.0.0-rc.3"]
+    SPECS_REACT_PDF[v]["test_cmd"] = "./node_modules/.bin/jest --no-color"
