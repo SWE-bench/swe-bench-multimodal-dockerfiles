@@ -150,6 +150,14 @@ SETUP_KARMA_TIMEOUTS_CHART = (
     "\\n    browserDisconnectTolerance: 3,"
     "\\n    browserNoActivityTimeout: 180000,/\" {0}"
 )
+# Add --disable-dev-shm-usage to Chrome launcher flags. Without this, Chrome
+# runs out of /dev/shm in Docker and silently disconnects mid-test-suite
+# (10806, 9678 fail 100% without it, 0% with it).
+SETUP_CHROME_SHM_FIX_CHART = (
+    "sed -i \"s/--disable-renderer-backgrounding/"
+    "--disable-renderer-backgrounding',"
+    "\\n          '--disable-dev-shm-usage/\" {0}"
+)
 SPECS_CHART_JS = {
     **{
         k: {
@@ -219,12 +227,14 @@ for v in ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8"]:
         "npm install karma-json-reporter@1.2.1 --save-dev --legacy-peer-deps",
         SETUP_KARMA_JSON_REPORTER_CHART.format("karma.conf.js"),
         SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.js"),
+        SETUP_CHROME_SHM_FIX_CHART.format("karma.conf.js"),
     ])
 for v in ["4.0", "4.1", "4.2", "4.3", "4.4"]:
     SPECS_CHART_JS[v]["install"].extend([
         "pnpm add karma-json-reporter@1.2.1 --save-dev -w",
         SETUP_KARMA_JSON_REPORTER_CHART.format("karma.conf.cjs"),
         SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.cjs"),
+        SETUP_CHROME_SHM_FIX_CHART.format("karma.conf.cjs"),
     ])
 # Pin era-appropriate Chrome versions for chart.js. System Chrome (147+) breaks
 # xhr fixture loading in karma's file server; visual tests also fail on Chrome
