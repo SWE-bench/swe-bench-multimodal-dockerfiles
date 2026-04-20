@@ -19,6 +19,7 @@ from sb_dockerfile_gen.common import (
     SET_OPENSSL_TO_LEGACY,
     SET_PUPPETEER_ENV_VAR,
     SET_PUPPETEER_PATH,
+    SET_PUPPETEER_PATH_OPT,
     SETUP_KARMA_JSON_REPORTER_NEXT,
     SETUP_KARMA_JSON_REPORTER_BPMN,
     INSTALL_JULIA,
@@ -27,6 +28,7 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_72_INSTALL,
     _CHROMIUM_85_INSTALL,
     _CHROME_120_INSTALL,
+    chromium_preinstall,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -116,11 +118,12 @@ for v in ['8.1', '8.50']:
 # bpmn-js
 # ============================================================
 TEST_CMD_BPMN_JS = "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors"
+_BPMN_PUPPETEER_ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
 SPECS_BPMN_JS = {
     **{k: {
         "install": ["npm install"],
         "test_cmd": [
-            SET_PUPPETEER_PATH.format("test/config/karma.unit.js"),
+            SET_PUPPETEER_PATH_OPT.format("test/config/karma.unit.js"),
             "sed -i \"/module.exports = function(karma) {/i \\\\\n"
             "var customLaunchers = { \\\\\n"
             "  ChromeNoSandbox: { \\\\\n"
@@ -131,7 +134,7 @@ SPECS_BPMN_JS = {
             "browsers = ['ChromeNoSandbox']; \\\\\n"
             "\" test/config/karma.unit.js",
             "sed -i \"/browsers,/a \\\\    customLaunchers,\" test/config/karma.unit.js",
-            f'{SET_PUPPETEER_ENV_VAR} su chromeuser -c "{TEST_CMD_BPMN_JS}"',
+            f'{_BPMN_PUPPETEER_ENV} su chromeuser -c "{TEST_CMD_BPMN_JS}"',
         ],
         "docker_specs": {
             "node_version": "21.6.2",
@@ -148,9 +151,49 @@ for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', 
 # Set OpenSSL to legacy provider for certain versions
 for v in ['3.0', '3.3', '3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
-# bpmn-js v5.0: use Firefox (matching upstream CI) instead of Chrome.
-# Upstream .travis.yml at commit 59de7598b1 uses Node 10 + Firefox + PhantomJS.
-# Chrome (72, 78, 146) all fail on label rendering and BpmnUpdater.updateSemanticParent.
+# Per-version Chromium pins derived from each commit's puppeteer dep (CHROMIUM_PINS.md).
+# v5.0 stays on Firefox (see Firefox block below). Chrome 76 (rev 672088, puppeteer
+# 1.18.1's pin) handles 11/12 v5.0 instances but fails bpmn-js-1203's copy-paste
+# reattach F2P — Firefox preserves 12/12.
+# v9.0 pinned to Chrome 85: puppeteer 10.0.0's Chrome 92 (rev 884014) passes all
+# v9.1–9.3 instances but rev 793478 (Chrome 85) matches the old era-bucket behavior
+# and the current v9.0 pin — same result either way (see comment below).
+# Non-dataset versions (0.27, 0.9, 2.3–2.5, 3.0, 3.3, 14.0) kept on era buckets;
+# they aren't exercised by any dataset so per-version pinning is unwarranted.
+_BPMN_PINS = {
+    '3.4':  ('rev', '641577'),    # puppeteer 1.14.0, Chrome 73
+    '4.0':  ('rev', '669486'),    # puppeteer 1.18.0, Chrome 76
+    # v5.0 intentionally absent — see Firefox block below.
+    '5.1':  ('rev', '672088'),    # puppeteer 1.18.1, Chrome 76
+    '6.0':  ('rev', '672088'),
+    '6.3':  ('rev', '672088'),
+    '7.2':  ('rev', '672088'),
+    '7.3':  ('rev', '672088'),
+    '7.4':  ('rev', '818858'),    # puppeteer 5.5.0, Chrome 88
+    '8.3':  ('rev', '856583'),    # puppeteer 8.0.0, Chrome 90
+    '8.8':  ('rev', '884014'),    # puppeteer 10.0.0, Chrome 92
+    '8.9':  ('rev', '884014'),
+    # v9.0 pinned to Chrome 85 (rev 793478, old _CHROMIUM_85_INSTALL value) — stays
+    # compatible with the historical pre-stage baseline. Both rev 793478 and rev
+    # 884014 fail bpmn-js-1570, which is a pre-existing F2P name data issue in the
+    # parquet (trailing whitespace that karma output doesn't reproduce) — not a
+    # Chrome-rev bug. Keeping per-version-pin pattern via chromium_preinstall.
+    '9.0':  ('rev', '793478'),
+    '9.1':  ('rev', '884014'),
+    '9.2':  ('rev', '884014'),
+    '9.3':  ('rev', '884014'),
+    '11.1': ('rev', '1069273'),   # puppeteer 19.4.1, Chrome 110
+    '11.3': ('rev', '1069273'),
+    # CfT bucket starts at 113 — use snapshot rev for Chrome 112 (puppeteer 20.0.0).
+    '13.2': ('rev', '1110000'),   # ~Chromium 112 (CfT 112.0.5615.121 unavailable)
+    '15.2': ('cft', '117.0.5938.149'),  # puppeteer 21.3.8
+}
+for _v, (_kind, _rev) in _BPMN_PINS.items():
+    SPECS_BPMN_JS[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
+
+# v5.0 Firefox fallback: Chrome 76 (rev 672088) handles 11/12 v5.0 instances but
+# consistently fails bpmn-js-1203's "copy/paste and reattach" F2P. Firefox +
+# Node 10 (matching upstream .travis.yml at commit 59de7598b1) resolves all 12.
 SPECS_BPMN_JS['5.0']['docker_specs']['node_version'] = '10.24.1'
 SPECS_BPMN_JS['5.0']['pre_install'] = [
     "add-apt-repository -y ppa:mozillateam/ppa",
@@ -166,15 +209,10 @@ SPECS_BPMN_JS['5.0']['test_cmd'] = [
     "sed -i \"s/browsers: .*/browsers: ['FirefoxHeadless'],/\" test/config/karma.unit.js",
     "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors",
 ]
-# Pin era-appropriate Chrome versions for bpmn-js.
-# Chrome 146 (system default) breaks label rendering, coordinate precision,
-# and BpmnUpdater.updateSemanticParent in older tests.
-# Chromium downloads go in pre_install (cached layer before git clone).
-for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3', '3.4', '4.0', '5.1']:
+# Dataset-absent versions keep the old era buckets (no per-version pinning).
+for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3']:
     SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_72_INSTALL
-for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
-    SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_85_INSTALL
-for v in ['11.1', '11.3', '13.2', '14.0', '15.2']:
+for v in ['14.0']:
     SPECS_BPMN_JS[v]['pre_install'] = _CHROME_120_INSTALL
 # Install karma-json-reporter and patch config for structured JSON output.
 # Must be after npm install (so karma.unit.js and node_modules exist).
@@ -533,7 +571,7 @@ SPECS_NEXT = {
 # Node 18 LTS — Node 21 causes Chrome connection timeouts in Docker with Cypress.
 SPECS_NEXT['1.27']['docker_specs']['node_version'] = '18.20.4'
 for v in ['1.22', '1.23', '1.24', '1.25', '1.26', '1.27']:
-    SPECS_NEXT[v]['install'].insert(0, SET_PUPPETEER_PATH.format("scripts/test/karma.js"))
+    SPECS_NEXT[v]['install'].insert(0, SET_PUPPETEER_PATH_OPT.format("scripts/test/karma.js"))
 for v in [
     '1.11', '1.14', '1.15', '1.16', '1.17', '1.18',
     '1.19', '1.20', '1.21', '1.22', '1.23', '1.24', '1.25'
@@ -561,15 +599,31 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['install'].extend([
         "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
     ])
-# Pin era-appropriate Chromium for versions with known Chrome-sensitive tests.
-# Only pin versions that have confirmed Chrome-version failures.
-# v1.16-v1.20, v1.22-v1.24, v1.25-v1.26 work fine with system Chrome (146).
-# Chromium downloads go in pre_install (cached layer before git clone).
-for v in ['1.11', '1.14', '1.15']:
-    SPECS_NEXT[v]['pre_install'] = _CHROMIUM_72_INSTALL
-SPECS_NEXT['1.21']['pre_install'] = _CHROMIUM_85_INSTALL
-# v1.27 uses system Chrome (146) — Chrome 120 causes browser connection timeouts
-# in Cypress component testing. No pin needed.
+# Per-version Chromium pins derived from each commit's puppeteer dep (CHROMIUM_PINS.md).
+# v1.11–1.20 pinned to rev 599821 (Chrome 72) for uniformity — CHROMIUM_PINS.md marks
+# these as karma-chrome-launcher + system-Chrome, but per user direction we pin all
+# versions to an era-appropriate rev rather than relying on base-image Chrome.
+# v1.21 → rev 793478 (Chrome 85); v1.22–1.24 → rev 818858 (puppeteer 5.5.0 Chrome 88);
+# v1.25–1.27 → rev 901912 (puppeteer 10.2.0/10.4.0 Chrome 93).
+_NEXT_PINS = {
+    '1.11': ('rev', '599821'),
+    '1.14': ('rev', '599821'),
+    '1.15': ('rev', '599821'),
+    '1.16': ('rev', '599821'),
+    '1.17': ('rev', '599821'),
+    '1.18': ('rev', '599821'),
+    '1.19': ('rev', '599821'),
+    '1.20': ('rev', '599821'),
+    '1.21': ('rev', '793478'),
+    '1.22': ('rev', '818858'),
+    '1.23': ('rev', '818858'),
+    '1.24': ('rev', '818858'),
+    '1.25': ('rev', '901912'),
+    '1.26': ('rev', '901912'),
+    '1.27': ('rev', '901912'),
+}
+for _v, (_kind, _rev) in _NEXT_PINS.items():
+    SPECS_NEXT[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
 # the actual Electron binary must be installed separately.
 # Upgrade Cypress from 13.6.1 to 13.14.2 to fix "Missing browserCriClient in
@@ -726,6 +780,44 @@ for v in ['1.0', '1.1', '1.2', '1.4', '1.5', '1.6']:
         "npm install",
         "npm run install-all",
     ]
+# Per-version Chromium pins (from CHROMIUM_PINS.md + era-approximations for
+# v1.x-v2.8 which lack a puppeteer dep). Per user direction, every version is
+# pinned — no reliance on the base-image system Chrome. Revs that 404'd in the
+# snapshot bucket were replaced with nearest available.
+_LIGHTHOUSE_PINS = {
+    '1.4': ('rev', '474900'),    # ~Chrome 60 (Jul 2017); target 474934 unavailable
+    '1.5': ('rev', '494755'),    # ~Chrome 61 (Aug 2017)
+    '1.6': ('rev', '499100'),    # ~Chrome 62 (Sep 2017); target 499098 unavailable
+    '2.1': ('rev', '499100'),
+    '2.4': ('rev', '508578'),    # Chrome 63 (Nov 2017)
+    '2.5': ('rev', '513000'),    # ~Chrome 63 (Dec 2017); target 515693 unavailable
+    '2.6': ('rev', '513000'),
+    '2.8': ('rev', '530400'),    # ~Chrome 64 (Jan 2018); target 530368 unavailable
+    '2.9': ('rev', '536395'),    # puppeteer 1.1.1, Chrome 66
+    '3.0': ('rev', '555668'),    # puppeteer 1.4.0, Chrome 68
+    '3.1': ('rev', '555668'),
+    '4.0': ('rev', '599821'),    # puppeteer 1.10.0, Chrome 71
+    '4.1': ('rev', '599821'),
+    '5.0': ('rev', '599821'),
+    '5.1': ('rev', '599821'),
+    '5.2': ('rev', '599821'),
+    '5.6': ('rev', '674921'),    # puppeteer 1.19.0, Chrome 77
+    '6.0': ('rev', '674921'),
+    '6.1': ('rev', '674921'),
+    '6.4': ('rev', '674921'),
+    '6.5': ('rev', '674921'),
+    '7.0': ('rev', '674921'),
+    '8.3': ('rev', '869685'),    # puppeteer 9.1.1, Chrome 91
+    '8.6': ('rev', '901912'),    # puppeteer 10.2.0, Chrome 93
+    '9.5': ('rev', '1036745'),   # puppeteer 18.0.5, Chrome 107
+    '10.0': ('rev', '1083080'),  # puppeteer 19.6.0, Chrome 110
+    '10.2': ('cft', '113.0.5672.63'),  # puppeteer 20.1.0
+}
+for _v, (_kind, _rev) in _LIGHTHOUSE_PINS.items():
+    # Append chromium install so yarn install from earlier pre_install isn't lost.
+    SPECS_LIGHTHOUSE[_v]['pre_install'] = (
+        list(SPECS_LIGHTHOUSE[_v].get('pre_install') or []) + chromium_preinstall(_kind, _rev)
+    )
 # Eval setup: v1.x gold patches may add new modules that need linking.
 # v9.5/10.0/10.2 images may be missing devDependencies (e.g. testdouble)
 # if built without PUPPETEER_SKIP_DOWNLOAD=true.
@@ -909,11 +1001,15 @@ def _openlayers_test_cmds(instance: dict) -> list:
 
 
 def _next_test_cmds(instance: dict) -> list:
-    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
+    # Env vars must be inside the `su chromeuser -c` payload — su strips
+    # parent env by default, so setting them outside leaks through to the
+    # outer shell but not to npm/karma. CHROME_BIN for v1.11-1.21 karma-
+    # chrome-launcher; PUPPETEER_EXECUTABLE_PATH for v1.22+ puppeteer path.
+    ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome CHROME_BIN=/opt/chromium/chrome"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
     return list(dict.fromkeys([
-        f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
-        f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
+        f'timeout 5m bash -c \'{XVFB} '
+        f'su chromeuser -c "{ENV} npm run test {test_path.split("/")[1]}"\''
         for test_path in get_test_paths(instance)
     ]))
 
@@ -1010,6 +1106,10 @@ def _scratch_gui_test_cmds(instance: dict) -> list:
 
 
 def _lighthouse_test_cmds(instance: dict) -> list:
+    # Point puppeteer + chrome-launcher at the pinned /opt/chromium/chrome.
+    # PUPPETEER_EXECUTABLE_PATH handles viewer/extension puppeteer tests;
+    # CHROME_PATH handles smokehouse via chrome-launcher (v1.x–2.8 era).
+    ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome CHROME_PATH=/opt/chromium/chrome"
     cmds = []
     SUBDIRS = ["report", "cli", "report", "treemap", "viewer"]
     LH_PREFIX = "lighthouse-"
@@ -1025,17 +1125,17 @@ def _lighthouse_test_cmds(instance: dict) -> list:
         parent_folder = test_path.split("/")[0]
         if instance.get("version") in ['9.5', '10.0', '10.2']:
             if parent_folder == "flow-report":
-                cmds.append("yarn unit-flow")
+                cmds.append(f"{ENV} yarn unit-flow")
             elif parent_folder in SUBDIRS + [LH_PREFIX + x for x in SUBDIRS]:
                 if parent_folder.startswith(LH_PREFIX):
                     parent_folder = parent_folder[len(LH_PREFIX):]
-                cmds.append(f"yarn unit-{parent_folder} {test_path}")
+                cmds.append(f"{ENV} yarn unit-{parent_folder} {test_path}")
             else:
-                cmds.append(f"yarn mocha {test_path}")
+                cmds.append(f"{ENV} yarn mocha {test_path}")
         elif '3.0' <= str(instance.get("version", "")) <= '8.6':
-            cmds.append(f"yarn jest --no-colors {test_path}")
+            cmds.append(f"{ENV} yarn jest --no-colors {test_path}")
         else:
-            cmds.append(f"./node_modules/.bin/mocha --reporter json {test_path}")
+            cmds.append(f"{ENV} ./node_modules/.bin/mocha --reporter json {test_path}")
     return list(dict.fromkeys(cmds))
 
 
@@ -1103,189 +1203,3 @@ for v in SPECS_QUARTOCLI:
     SPECS_QUARTOCLI[v]["test_cmd"] = _quarto_test_cmds
 
 
-# ============================================================
-# Legacy unmapped SPECS — preserved for possible future use.
-# Not currently included in MAP_REPO_VERSION_TO_SPECS_JS.
-# ============================================================
-SPECS_MAPBOX = {k: {
-    "apt-pkgs": ["libglew-dev", "libxi-dev"],
-    "install": ["npm install"],
-    "test_cmd": "npm test",
-    "docker_specs": {
-        "node_version": "18.20.4"
-    }
-} for k in [
-    '0.11', '0.12', '0.13', '0.14', '0.15', '0.18', '0.21', '0.22', '0.23',
-    '0.25', '0.26', '0.28', '0.30', '0.31', '0.32', '0.33', '0.34', '0.36',
-    '0.37', '0.38', '0.39', '0.40', '0.41', '0.42', '0.43', '0.44', '0.45',
-    '0.46', '0.47', '0.49', '0.50', '0.51', '0.52', '0.53', '0.7', '0.8',
-    '0.9', '1.6'
-]}
-
-SPECS_PLOTLYJS = {k: {
-    "apt-pkgs": ["xvfb x11-xkb-utils",
-                 "xfonts-100dpi", "xfonts-75dpi", "xfonts-scalable",
-                 "xfonts-cyrillic x11-apps"],
-    "install": [
-        "su chromeuser -c 'npm install'",
-        "su chromeuser -c 'npm run build'",
-        "su chromeuser -c 'npm run pretest'",
-    ],
-    "test_cmd": (f'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99" '
-                 'su chromeuser -c "./node_modules/.bin/karma start test/jasmine/karma.conf.js '
-                 '--nowatch --verbose --capture-timeout 210000 --browser-disconnect-tolerance 3 '
-                 '--browser-disconnect-timeout 210000 --browser-no-activity-timeout 210000"'),
-    "docker_specs": {
-        "node_version": "9.2.0",
-        "run_args": {
-            "cap_add": ["SYS_ADMIN"],
-        },
-    },
-} for k in [
-    "2.33", "2.32", "2.31", "2.30", "2.29", "2.28", "2.27", "2.26", "2.25",
-    "2.24", "2.23", "2.22", "2.21", "2.20", "2.19", "2.18", "2.17", "2.16",
-    "2.15", "2.14", "2.13", "2.12", "2.11", "2.10", "2.9", "2.8", "2.7",
-    "2.6", "2.5", "2.4", "2.3", "2.2", "2.1", "2.0", "1.58", "1.57", "1.56",
-    "1.55", "1.54", "1.53", "1.52", "1.51", "1.50", "1.49", "1.48", "1.47",
-    "1.46", "1.45", "1.44", "1.43", "1.42", "1.41", "1.40", "1.39", "1.38",
-    "1.37", "1.36", "1.35", "1.34", "1.33", "1.32", "1.31", "1.30", "1.29",
-    "1.28", "1.27", "1.26", "1.25", "1.24", "1.23", "1.22", "1.21", "1.20",
-    "1.19", "1.18", "1.17", "1.16", "1.15", "1.14", "1.13", "1.12", "1.11",
-    "1.10", "1.9", "1.8", "1.7", "1.6", "1.5", "1.4", "1.3", "1.2", "1.1",
-    "1.0",
-]}
-for k in [
-    "2.33", "2.32", "2.31", "2.30", "2.29", "2.28", "2.27", "2.26", "2.25",
-    "2.24", "2.23", "2.22", "2.21", "2.20", "2.19", "2.18", "2.17", "2.16",
-    "2.15", "2.14", "2.13", "2.12", "2.11", "2.10", "2.9", "2.8", "2.7",
-    "2.6", "2.5", "2.4", "2.3", "2.2", "2.1", "2.0"
-]:
-    SPECS_PLOTLYJS[k]["docker_specs"]["node_version"] = "16.20.2"
-
-# Insomnia node versions:
-# 1.0 = '10.15'
-# 5.1 = '7.4.0'
-# 5.2 = '7.4.0'
-# 5.3 = '7.4.0'
-# 5.11 = '8'
-# 6.0 = '8'
-# 6.2 = '10'
-# 9.1 = '20.9.0'
-# 9.3 = '20.9.0'
-# 2020.1 = '10.15'
-# 2020.2 = '10'
-# 2020.4 = '12.18.3'
-# 2020.5 = '12.18.3'
-# 2021.1 = '12.18.3'
-# 2021.2 = '12.18.3'
-# 2021.4 = '12.18.3'
-# 2021.5 = '12.18.3'
-# 2021.6 = '12.18.3'
-# 2022.4 = '16.13.2'
-# 2022.7 = '16.17.0'
-# 2023.1 = '16.17.0'
-# 2023.2 = '16.17.0'
-# 2023.5 = '18.15.0'
-SPECS_INSOMNIA = {
-    k: {
-        "apt-pkgs": ["libfontconfig1-dev"],
-        "install": ["npm install"],
-        "test_cmd": "./node_modules/.bin/jest --json",
-        # "test_cmd": PRINT_WORKSPACE_TESTS,
-        "docker_specs": {},
-    } for k in ['1.0', '5.1', '5.2', '5.3', '5.11', '6.0', '6.2', '9.1', '9.3',
-                '2020.1', '2020.2', '2020.4', '2020.5', '2021.1', '2021.2',
-                '2021.4', '2021.5', '2021.6', '2022.4', '2022.7', '2023.1',
-                '2023.2', '2023.5']
-}
-for k in ['5.1', '5.2', '5.3']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '7.4.0'
-for k in ['1.0', '2020.1']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '10.15.3'
-for k in ['5.11', '6.0']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '8.17.0'
-for k in ['6.2', '2020.2']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '10.24.1'  # '10.15.3'
-for k in ['9.1', '9.3']:
-    SPECS_INSOMNIA[k]["install"] = ["npm install"]
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '20.9.0'
-    SPECS_INSOMNIA[k]['test_cmd'] = "npm run test -- --json"
-for k in ['2020.4', '2020.5', '2021.1', '2021.2', '2021.4', '2021.5', '2021.6']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '12.18.3'
-for k in ['2022.4']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '16.13.2'
-for k in ['2022.7', '2023.1', '2023.2']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '16.17.0'
-for k in ['2023.5']:
-    SPECS_INSOMNIA[k]['docker_specs']['node_version'] = '18.15.0'
-
-SPECS_EMOTION = {
-    **{k: {
-        "install": [
-            "npm i -g yarn",
-            "yarn",
-            "yarn build"
-        ],
-        "test_cmd": "yarn test",
-        "docker_specs": {
-            "node_version": "16.20.2"
-        }
-    } for k in ['10.0']},
-    **{k: {
-        "install": ["npm install"],
-        "test_cmd": "npm test",
-        "docker_specs": {
-            "node_version": "8.17.0"
-        }
-    } for k in ['2.0', '5.1', '5.2', '7.0']}
-}
-
-SPECS_PIXIJS = {
-    **{k: {
-        "apt-pkgs": XVFB_DEPS + ["libfontconfig1-dev"],
-        "install": [
-            "sed -i \"s/'ts-jest': {/'ts-jest': { isolatedModules: true,/\" jest.config.js",
-            "sed -i \"/coverageDirectory: '<rootDir>\/dist\/coverage',/d\" jest.config.js",
-            "sed -i 's/testTimeout: 10000/testTimeout: 10000,/' jest.config.js",
-            "sed -i 's/};/    maxConcurrency: 3,\\n};/' jest.config.js",
-            "sed -i 's/};/    maxWorkers: \"50%\",\\n};/' jest.config.js",
-            "npm install",
-            "cat jest.config.js",
-        ],
-        "test_cmd": ["npx jest --silent --no-colors"],
-        "docker_specs": {
-            "node_version": "18.20.4"
-        }
-    } for k in [
-        '4.1', '4.3', '4.5', '4.8', '5.0', '6.0',
-        '7.1', '7.2', '7.3', '8.0', '8.1', '8.2'
-    ]}
-}
-
-SPECS_CYPRESS = {
-    **{k: {
-        "apt-pkgs": XVFB_DEPS,
-        "install": ["npm i -g yarn", "yarn"],
-        "test_cmd": "yarn test",
-        "docker_specs": {
-            "node_version": '16.20.2'
-        }
-    } for k in [
-        '1.0', '1.1', '1.4',
-        '10.0', '10.1', '10.10', '10.11', '10.2', '10.3', '10.5', '10.6', '10.7', '10.8', '10.9',
-        '11.0', '11.1', '11.2',
-        '12.0', '12.1', '12.2', '12.3', '12.4', '12.5', '12.6', '12.7', '12.8',
-        '12.9', '12.10', '12.11', '12.12', '12.14', '12.17',
-        '13.4', '13.6',
-        '2.0', '2.1',
-        '3.0', '3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '3.7', '3.8',
-        '4.0', '4.1', '4.10', '4.11', '4.12', '4.2', '4.3', '4.4', '4.5', '4.6', '4.7', '4.8', '4.9',
-        '5.0', '5.1', '5.2', '5.3', '5.4', '5.5', '5.6',
-        '6.0', '6.1', '6.2', '6.3', '6.4', '6.5', '6.6', '6.7', '6.8',
-        '7.1', '7.2', '7.4', '7.5', '7.7',
-        '8.0', '8.1', '8.2', '8.3', '8.4', '8.6',
-        '9.0', '9.1', '9.2', '9.3', '9.4', '9.5', '9.6', '9.7'
-    ]}
-}
-for v in ['12.9', '12.10', '12.11', '12.12', '12.14', '12.17', '13.4', '13.6']:
-    SPECS_CYPRESS[v]['docker_specs']['node_version'] = '21.6.2'
