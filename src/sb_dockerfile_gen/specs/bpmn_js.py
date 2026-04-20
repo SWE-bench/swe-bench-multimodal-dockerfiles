@@ -3,7 +3,6 @@
 from sb_dockerfile_gen.common import (
     SET_OPENSSL_TO_LEGACY,
     SET_PUPPETEER_PATH_OPT,
-    SETUP_KARMA_JSON_REPORTER_BPMN,
     chromium_preinstall,
     CHROMIUM_73, CHROMIUM_76_A, CHROMIUM_76_B,
     CHROMIUM_85_A, CHROMIUM_88_A, CHROMIUM_90, CHROMIUM_92,
@@ -11,7 +10,9 @@ from sb_dockerfile_gen.common import (
 )
 
 
-TEST_CMD_BPMN_JS = "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors"
+# karma-json-reporter@1.2.1 emits JSON to stdout when no `jsonReporter` config
+# block is present, so the CLI flag alone is enough — no config patching needed.
+TEST_CMD_BPMN_JS = "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json"
 _BPMN_PUPPETEER_ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
 SPECS_BPMN_JS = {
     **{k: {
@@ -86,16 +87,14 @@ SPECS_BPMN_JS['5.0']['install'] = [
     "npm install",
     "npm install karma-firefox-launcher@2.1.3 --no-save",
     "npm install karma-json-reporter@1.2.1 --no-save",
-    SETUP_KARMA_JSON_REPORTER_BPMN.format("test/config/karma.unit.js"),
 ]
 SPECS_BPMN_JS['5.0']['test_cmd'] = [
     "sed -i \"s/browsers: .*/browsers: ['FirefoxHeadless'],/\" test/config/karma.unit.js",
-    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors",
+    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json",
 ]
-# Install karma-json-reporter and patch config for structured JSON output.
-# Must be after npm install (so karma.unit.js and node_modules exist).
+# Install karma-json-reporter — auto-discovered by karma at test time, structured
+# JSON emitted via `--reporters json` CLI flag (see TEST_CMD_BPMN_JS).
 for v in SPECS_BPMN_JS:
-    SPECS_BPMN_JS[v]['install'].extend([
-        "npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps",
-        SETUP_KARMA_JSON_REPORTER_BPMN.format("test/config/karma.unit.js"),
-    ])
+    SPECS_BPMN_JS[v]['install'].append(
+        "npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps"
+    )

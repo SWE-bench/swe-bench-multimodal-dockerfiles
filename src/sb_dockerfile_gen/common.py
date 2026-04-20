@@ -158,9 +158,6 @@ CHROMIUM_CFT_120 = ('cft', '120.0.6099.109')     # chart.js v4.3/v4.4
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).
 SETUP_KARMA_JSON_REPORTER_NEXT = "sed -i \"s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/\" {0} && " \
     "sed -i \"s/reporters: \\['spec', 'coverage'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
-# bpmn-js variant: reporters line is `[ 'progress' ].concat(coverage ? 'coverage' : [])`.
-# No explicit plugins array — karma-* auto-discovery loads the reporter.
-SETUP_KARMA_JSON_REPORTER_BPMN = "sed -i \"s/reporters: \\[ 'progress' \\].concat(coverage ? 'coverage' : \\[\\])/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
 
 INSTALL_JULIA = [
     "wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz",
