@@ -29,9 +29,13 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_85_INSTALL,
     _CHROME_120_INSTALL,
     chromium_preinstall,
-    BPMN_PINS,
-    NEXT_PINS,
-    LIGHTHOUSE_PINS,
+    CHROMIUM_71, CHROMIUM_73, CHROMIUM_76_A, CHROMIUM_76_B,
+    CHROMIUM_77, CHROMIUM_85, CHROMIUM_88, CHROMIUM_90,
+    CHROMIUM_91, CHROMIUM_92, CHROMIUM_93,
+    CHROMIUM_107_A, CHROMIUM_110_A, CHROMIUM_110_B, CHROMIUM_112,
+    CHROMIUM_CFT_113, CHROMIUM_CFT_117,
+    CHROMIUM_60, CHROMIUM_61, CHROMIUM_62, CHROMIUM_63, CHROMIUM_63_DEC,
+    CHROMIUM_64, CHROMIUM_66, CHROMIUM_68,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -154,11 +158,33 @@ for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', 
 # Set OpenSSL to legacy provider for certain versions
 for v in ['3.0', '3.3', '3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
-# Per-version Chromium pins live in common.BPMN_PINS. v5.0 intentionally
+# Per-version Chromium pins. Constants live in common.py. v5.0 intentionally
 # absent — stays on Firefox (see Firefox block below; Chrome 76 regresses
-# bpmn-js-1203's copy-paste reattach F2P). Non-dataset versions (0.27, 0.9,
-# 2.3–2.5, 3.0, 3.3, 14.0) keep the legacy era buckets (no puppeteer dep
-# to derive per-version pins, not exercised by any dataset).
+# bpmn-js-1203's copy-paste reattach F2P). v9.0 pinned to CHROMIUM_85 because
+# puppeteer 10.0.0's Chrome 92 regresses bpmn-js-1570 (pre-existing F2P name
+# format issue unrelated to rev). Non-dataset versions (0.27, 0.9, 2.3–2.5,
+# 3.0, 3.3, 14.0) keep the legacy era buckets (not exercised by any dataset).
+BPMN_PINS = {
+    '3.4':  CHROMIUM_73,
+    '4.0':  CHROMIUM_76_A,
+    '5.1':  CHROMIUM_76_B,
+    '6.0':  CHROMIUM_76_B,
+    '6.3':  CHROMIUM_76_B,
+    '7.2':  CHROMIUM_76_B,
+    '7.3':  CHROMIUM_76_B,
+    '7.4':  CHROMIUM_88,
+    '8.3':  CHROMIUM_90,
+    '8.8':  CHROMIUM_92,
+    '8.9':  CHROMIUM_92,
+    '9.0':  CHROMIUM_85,
+    '9.1':  CHROMIUM_92,
+    '9.2':  CHROMIUM_92,
+    '9.3':  CHROMIUM_92,
+    '11.1': CHROMIUM_110_A,
+    '11.3': CHROMIUM_110_A,
+    '13.2': CHROMIUM_112,
+    '15.2': CHROMIUM_CFT_117,
+}
 for _v, (_kind, _rev) in BPMN_PINS.items():
     SPECS_BPMN_JS[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
 
@@ -593,9 +619,26 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['install'].extend([
         "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
     ])
-# Per-version Chromium pins live in common.NEXT_PINS (v1.11–1.20 use a
-# karma-chrome-launcher era rev since there's no puppeteer to derive from;
-# v1.21–1.27 follow each commit's puppeteer dep).
+# Per-version Chromium pins. Constants in common.py. v1.11–1.20 use a
+# karma-chrome-launcher era rev (no puppeteer to derive from); v1.21–1.27
+# follow each commit's puppeteer dep.
+NEXT_PINS = {
+    '1.11': CHROMIUM_71,
+    '1.14': CHROMIUM_71,
+    '1.15': CHROMIUM_71,
+    '1.16': CHROMIUM_71,
+    '1.17': CHROMIUM_71,
+    '1.18': CHROMIUM_71,
+    '1.19': CHROMIUM_71,
+    '1.20': CHROMIUM_71,
+    '1.21': CHROMIUM_85,
+    '1.22': CHROMIUM_88,
+    '1.23': CHROMIUM_88,
+    '1.24': CHROMIUM_88,
+    '1.25': CHROMIUM_93,
+    '1.26': CHROMIUM_93,
+    '1.27': CHROMIUM_93,
+}
 for _v, (_kind, _rev) in NEXT_PINS.items():
     SPECS_NEXT[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
@@ -754,8 +797,37 @@ for v in ['1.0', '1.1', '1.2', '1.4', '1.5', '1.6']:
         "npm install",
         "npm run install-all",
     ]
-# Per-version Chromium pins live in common.LIGHTHOUSE_PINS (v1.x–v2.8 use
-# era-approximations since there's no puppeteer dep to derive from).
+# Per-version Chromium pins. Constants in common.py. v1.x–v2.8 use
+# era-approximations since there's no puppeteer dep to derive from.
+LIGHTHOUSE_PINS = {
+    '1.4': CHROMIUM_60,
+    '1.5': CHROMIUM_61,
+    '1.6': CHROMIUM_62,
+    '2.1': CHROMIUM_62,
+    '2.4': CHROMIUM_63,
+    '2.5': CHROMIUM_63_DEC,
+    '2.6': CHROMIUM_63_DEC,
+    '2.8': CHROMIUM_64,
+    '2.9': CHROMIUM_66,
+    '3.0': CHROMIUM_68,
+    '3.1': CHROMIUM_68,
+    '4.0': CHROMIUM_71,
+    '4.1': CHROMIUM_71,
+    '5.0': CHROMIUM_71,
+    '5.1': CHROMIUM_71,
+    '5.2': CHROMIUM_71,
+    '5.6': CHROMIUM_77,
+    '6.0': CHROMIUM_77,
+    '6.1': CHROMIUM_77,
+    '6.4': CHROMIUM_77,
+    '6.5': CHROMIUM_77,
+    '7.0': CHROMIUM_77,
+    '8.3': CHROMIUM_91,
+    '8.6': CHROMIUM_93,
+    '9.5': CHROMIUM_107_A,
+    '10.0': CHROMIUM_110_B,
+    '10.2': CHROMIUM_CFT_113,
+}
 for _v, (_kind, _rev) in LIGHTHOUSE_PINS.items():
     # Append chromium install so yarn install from earlier pre_install isn't lost.
     SPECS_LIGHTHOUSE[_v]['pre_install'] = (
