@@ -1,5 +1,5 @@
 
-FROM --platform=linux/amd64 ubuntu:jammy
+FROM --platform=linux/amd64 ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -22,13 +22,6 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
-        fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
-        --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
 
 ENV NVM_DIR /usr/local/nvm
 
@@ -36,24 +29,32 @@ RUN mkdir -p $NVM_DIR
 RUN curl --silent -o- https://raw.githubusercontent.com/creationix/nvm/v0.39.3/install.sh | bash
 RUN apt-get update && apt-get install -y \
     procps \
+    xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable \
+    xfonts-cyrillic x11-apps \
     libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 \
     libgbm1 libgconf-2-4 libgdk-pixbuf2.0-0 libgtk-3-0 libnspr4 \
     libnss3 libpango-1.0-0 libpangocairo-1.0-0 libxcomposite1 \
     libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 libxss1 libxshmfence1 libglu1 \
+    libgl1-mesa-dri libegl1-mesa libxtst6 \
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
+    fonts-khmeros fonts-kacst fonts-freefont-ttf \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHROME_BIN /usr/bin/google-chrome
-RUN echo "CHROME_BIN=$CHROME_BIN" >> /etc/environment
 RUN mkdir -p /run/dbus
 
 ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 
 RUN dbus-daemon --system --fork
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
+
+# Puppeteer 19.7+ caches its bundled Chromium in $PUPPETEER_CACHE_DIR (defaults
+# to ~/.cache/puppeteer). Pin it to a shared, world-readable location so karma
+# (running as chromeuser) can use the same binary that npm install (root)
+# downloaded — without copying the cache across users.
+ENV PUPPETEER_CACHE_DIR=/opt/puppeteer-cache
+RUN mkdir -p /opt/puppeteer-cache && chmod 0777 /opt/puppeteer-cache
 
 RUN useradd -m chromeuser
 
@@ -67,11 +68,11 @@ ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_7c1864e7bb77
+RUN <<EOF_55f960f4ac15
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libgl1-mesa-dri libegl1-mesa libxtst6
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -89,22 +90,10 @@ source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_7c1864e7bb77
+EOF_55f960f4ac15
 
 
-RUN <<EOF_9ceaf64e6457
-#!/bin/bash
-set -euxo pipefail
-wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/884014/chrome-linux.zip -O /tmp/chromium.zip
-unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
-rm /tmp/chromium.zip
-mkdir -p /opt/chromium
-ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
-chmod -R 755 /opt/chromium-pinned
-EOF_9ceaf64e6457
-
-
-RUN <<EOF_16ba3c6a9f0b
+RUN <<EOF_614c647649a9
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -125,13 +114,13 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install
-sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
+npm install --ignore-scripts; REV=$(node -e "let r;try{r=require('puppeteer/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS}catch(e){};if(!r){try{r=require('puppeteer/lib/revisions.js').PUPPETEER_REVISIONS}catch(e){}};if(!r){try{const p=require('puppeteer/package.json');r=(p.puppeteer||{})}catch(e){r={}}};console.log(r.chromium||r.chromium_revision||r.chrome||'')" 2>/dev/null); if [ -z "$REV" ]; then echo 'ERROR: could not determine puppeteer Chromium revision' >&2; exit 1; fi; DEST=node_modules/puppeteer/.local-chromium/linux-${REV}; mkdir -p ${DEST}; wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/${REV}/chrome-linux.zip -O /tmp/chrome.zip; unzip -q /tmp/chrome.zip -d ${DEST}/; rm /tmp/chrome.zip; chmod -R 755 ${DEST}
+grep -q 'process.env.CHROME_BIN' test/karma.config.js || echo "process.env.CHROME_BIN = require('puppeteer').executablePath();" >> test/karma.config.js
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
-sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },\n    browsers: ['ChromeWebGL']/" test/browser/karma.config.cjs
+sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_16ba3c6a9f0b
+EOF_614c647649a9
 
 
 COPY src/image_assets/openlayers__openlayers-12467/ /swebench/image_assets/

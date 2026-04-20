@@ -246,109 +246,149 @@ SPECS_OPENLAYERS = {
         '8.1', '9.0', '9.1'
     ]},
 }
-# WebGL fix: all openlayers versions have a Heatmap/WebGL test that crashes
-# mocha when Chrome can't create a WebGL context (headless Docker default).
-# The crash aborts the entire test run, so tests alphabetically after
-# ol.layer.Heatmap never execute. Fix: install Mesa's llvmpipe software
-# rasterizer + replace Karma's Chrome launcher with SwiftShader-flagged custom.
-# Match all three browser config variants seen across versions:
-#   ['Chrome']                                        (v6.1, v6.2)
-#   [process.env.CI ? 'ChromeHeadless' : 'Chrome']    (v6.3, v6.5, v6.5.1, v6.6)
-#   ['ChromeHeadless']                                (v6.9+)
-_OL_WEBGL_LAUNCHER_REPL = (
-    "customLaunchers: { ChromeWebGL: { base: 'Chrome', flags: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader-webgl'] } },"
-    "\\n    browsers: ['ChromeWebGL']"
+# OpenLayers runs on the vintage Ubuntu 20.04 base (see _DOCKERFILE_BASE_JS_OL
+# in __init__.py). That base ships Mesa 21 — what Chromium 97-122's headless
+# WebGL software-rendering was tested against.
+#
+# The OL base sets PUPPETEER_SKIP_DOWNLOAD=true. The per-version pre_install
+# below wgets each project's puppeteer-pinned Chromium into the puppeteer cache
+# layout (/opt/puppeteer-cache/chrome/linux-{ver}/chrome-linux64/) so that
+# `puppeteer.executablePath()` returns it at runtime. Karma's CHROME_BIN —
+# unchanged from `require('puppeteer').executablePath()` — picks the same
+# binary. Both karma and rendering use one Chrome.
+
+# OL versions whose puppeteer dep is 20+ (Chrome-for-Testing era) — those
+# fork two parallel downloads (chrome + chrome-headless-shell) inside
+# install.mjs which deadlocks under BuildKit's heredoc stdout buffering.
+# (Tried PUPPETEER_SKIP_CHROME_HEADLESS_SHELL_DOWNLOAD=true — still hung.)
+# Workaround:
+#   1. npm install --ignore-scripts (skips ALL postinstall hooks → no hang)
+#   2. After install, read puppeteer's *actual* pinned Chrome buildId from
+#      node_modules/puppeteer-core/lib/cjs/puppeteer/revisions.js
+#   3. wget that exact buildId from chrome-for-testing-public into the
+#      puppeteer cache layout so puppeteer.executablePath() resolves it.
+# This handles per-instance puppeteer-patch differences (e.g., one v9.0
+# instance pins 21.7→Chrome119, another pins 21.9→Chrome121).
+_OL_BUILD_HOOK_HANGS = {'7.3', '7.4', '7.5', '8.1', '9.0', '9.1'}
+_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_CFT = (
+    "npm install --ignore-scripts && "
+    "BUILDID=$(node -e \"console.log(require('puppeteer-core/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS.chrome)\") && "
+    "test -n \"$BUILDID\" && "
+    "CACHE_DIR=/opt/puppeteer-cache/chrome/linux-${BUILDID} && "
+    "mkdir -p ${CACHE_DIR} && "
+    "wget -q https://storage.googleapis.com/chrome-for-testing-public/${BUILDID}/linux64/chrome-linux64.zip -O /tmp/chrome.zip && "
+    "unzip -q /tmp/chrome.zip -d ${CACHE_DIR}/ && "
+    "rm /tmp/chrome.zip && "
+    "chmod -R 755 ${CACHE_DIR}"
 )
-def _OL_WEBGL_SED(cfg: str) -> str:
+for _ol_v in _OL_BUILD_HOOK_HANGS:
+    if _ol_v in SPECS_OPENLAYERS:
+        install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
+        for i, step in enumerate(install_steps):
+            if step == 'npm install':
+                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_CFT
+                break
+        SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
+
+
+# OL versions with puppeteer 1.x-19.x (chromium-snapshots era). Their
+# install hooks silently no-op on Node 21 / Ubuntu 20.04, leaving an empty
+# .local-chromium dir → karma-chrome-launcher fails ("No binary for
+# ChromeHeadless"). Workaround: same pattern as the CFT versions, but
+# wget from the chromium-browser-snapshots bucket using the rev embedded
+# in puppeteer-core's revisions.js, into puppeteer's .local-chromium
+# layout so `require('puppeteer').executablePath()` resolves it.
+#
+# Puppeteer 1.x-19.x revisions.js exposes `.chromium` (a numeric
+# revision string), not `.chrome`. Layout: .local-chromium/linux-{rev}/chrome-linux/chrome.
+# Use semicolons + explicit exit-on-empty so set -e in the parent heredoc
+# actually trips. (`&&` chains in bash bypass `set -e` for non-final
+# commands — silently lets subsequent install steps run with empty cache.)
+_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_SNAPSHOT = (
+    "npm install --ignore-scripts; "
+    # Look up the snapshot revision in three places, in order:
+    # - puppeteer 8.x+: lib/cjs/puppeteer/revisions.js exports PUPPETEER_REVISIONS.chromium
+    # - puppeteer 2.x-7.x: lib/revisions.js exports PUPPETEER_REVISIONS.chromium
+    # - puppeteer 1.x: package.json's chromium_revision field
+    "REV=$(node -e \"let r;try{r=require('puppeteer/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS}catch(e){};if(!r){try{r=require('puppeteer/lib/revisions.js').PUPPETEER_REVISIONS}catch(e){}};if(!r){try{const p=require('puppeteer/package.json');r=(p.puppeteer||{})}catch(e){r={}}};console.log(r.chromium||r.chromium_revision||r.chrome||'')\" 2>/dev/null); "
+    "if [ -z \"$REV\" ]; then echo 'ERROR: could not determine puppeteer Chromium revision' >&2; exit 1; fi; "
+    "DEST=node_modules/puppeteer/.local-chromium/linux-${REV}; "
+    "mkdir -p ${DEST}; "
+    "wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/${REV}/chrome-linux.zip -O /tmp/chrome.zip; "
+    "unzip -q /tmp/chrome.zip -d ${DEST}/; "
+    "rm /tmp/chrome.zip; "
+    "chmod -R 755 ${DEST}"
+)
+# OL versions with puppeteer 1.x-19.x (chromium-snapshots era).
+# v4.6 / v5.1 don't ship puppeteer at all — handled separately above.
+_OL_OLDER_PUPPETEER = {
+    '5.3', '6.1', '6.2', '6.3', '6.4', '6.5', '6.5.1', '6.6',
+    '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
+    '7.0', '7.1', '7.2',
+}
+for _ol_v in _OL_OLDER_PUPPETEER:
+    if _ol_v in SPECS_OPENLAYERS:
+        install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
+        for i, step in enumerate(install_steps):
+            if step == 'npm install':
+                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_SNAPSHOT
+                break
+        SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
+
+# Set CHROME_BIN to puppeteer.executablePath() at the end of karma config for
+# OL versions whose original karma config doesn't read it from puppeteer (v5.3,
+# v6.1-v6.4 era). Append the line if not already present. The newer OL configs
+# (v6.5+) already do `process.env.CHROME_BIN = require('puppeteer').executablePath();`.
+_OL_KARMA_CHROME_BIN_FALLBACK = (
+    "grep -q 'process.env.CHROME_BIN' test/karma.config.js || "
+    "echo \"process.env.CHROME_BIN = require('puppeteer').executablePath();\" >> test/karma.config.js"
+)
+for _ol_v in _OL_OLDER_PUPPETEER:
+    if _ol_v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[_ol_v]['install'].append(_OL_KARMA_CHROME_BIN_FALLBACK)
+
+
+# v4.6 and v5.1 don't use puppeteer at all (karma-chrome-launcher relies on
+# CHROME_BIN finding a system Chromium). Install Google Chrome via the deb
+# repo and point CHROME_BIN at it. (Stays inside the OL-only image.)
+_OL_NO_PUPPETEER_CHROME_INSTALL = [
+    "wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -",
+    "echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' >> /etc/apt/sources.list.d/google-chrome.list",
+    "apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*",
+]
+for _ol_v in {'4.6', '5.1'}:
+    if _ol_v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[_ol_v]['pre_install'] = _OL_NO_PUPPETEER_CHROME_INSTALL
+        SPECS_OPENLAYERS[_ol_v].setdefault('docker_specs', {})['env'] = {
+            'CHROME_BIN': '/usr/bin/google-chrome-stable',
+        }
+#
+# Replacement for the original karma launcher:
+#   `[process.env.CI ? 'ChromeHeadless' : 'Chrome']`  (v6.3, v6.5, v6.5.1, v6.6)
+#   `['ChromeHeadless']`                              (v6.9+)
+#   `['Chrome']`                                      (v6.1, v6.2)
+# All become a custom ChromeNoSandbox launcher: ChromeHeadless + --no-sandbox.
+# (The SUID sandbox helper isn't available in containers; on GHA VMs it was.)
+_OL_NOSANDBOX_LAUNCHER_REPL = (
+    "customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },"
+    "\\n    browsers: ['ChromeNoSandbox']"
+)
+def _OL_NOSANDBOX_SED(cfg: str) -> str:
+    """Two-pronged sed:
+    1) For older configs that just use `browsers: [...]` without a customLauncher,
+       inject our ChromeNoSandbox launcher.
+    2) For v9.0+ which already define a customLauncher with `flags: ['--headless=new']`,
+       just append `--no-sandbox` to its flags array.
+    Sed treats each `;`-separated expression independently — only the matching
+    one fires per file."""
     return (
-        "sed -i \"s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/" + _OL_WEBGL_LAUNCHER_REPL + "/; "
-        "s/browsers: \\['ChromeHeadless'\\]/" + _OL_WEBGL_LAUNCHER_REPL + "/; "
-        "s/browsers: \\['Chrome'\\]/" + _OL_WEBGL_LAUNCHER_REPL + "/\" " + cfg
+        "sed -i \""
+        "s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
+        "s/browsers: \\['ChromeHeadless'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
+        "s/browsers: \\['Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
+        "s/flags: \\['--headless=new'\\]/flags: ['--headless=new', '--no-sandbox']/"
+        "\" " + cfg
     )
-for v in SPECS_OPENLAYERS:
-    # libxtst6 is needed by older puppeteer-bundled Chromium (v5.x-6.x era).
-    SPECS_OPENLAYERS[v]["apt-pkgs"] = XVFB_DEPS + ["libgl1-mesa-dri", "libegl1-mesa", "libxtst6"]
-# Pre-bake puppeteer's Chromium at the EXACT version the project's puppeteer
-# expects. Derived from each puppeteer version's own revisions.js / lock file
-# (read from npm registry + unpkg at the time of writing this config — see
-# `derive_puppeteer_chromium.py` for the script).
-#
-# We install into `/opt/chromium/chrome-linux[64]/chrome` at pre_install time
-# (base-image layer, cached across repo changes). A stable symlink
-# `/opt/chromium/chrome` points at the binary. Both karma (via CHROME_BIN) and
-# puppeteer (via PUPPETEER_EXECUTABLE_PATH) use this single path, which means:
-#   - no `npm install` download (PUPPETEER_SKIP_DOWNLOAD stays true)
-#   - pixel-exact parity with expected.png (era-matched Chromium)
-#   - one Chrome binary per image (not two), shared across karma + puppeteer
-#
-# Mapping:  puppeteer version -> ('rev', Chromium snapshot revision)
-#                              -> ('cft', chrome-for-testing version)
-_OL_CHROMIUM_PINS = {
-    '1.13.0': ('rev', '637110'),    # Chrome 73
-    '2.0.0':  ('rev', '706915'),    # Chrome 79
-    '2.1.0':  ('rev', '722234'),    # Chrome 81
-    '2.1.1':  ('rev', '722234'),
-    '5.3.1':  ('rev', '800071'),    # Chrome 88
-    '8.0.0':  ('rev', '856583'),    # Chrome 90
-    '10.0.0': ('rev', '884014'),    # Chrome 92
-    '10.2.0': ('rev', '901912'),    # Chrome 93
-    '12.0.0': ('rev', '938248'),    # Chrome 97
-    '13.0.1': ('rev', '938248'),
-    '13.5.1': ('rev', '970485'),    # Chrome 100
-    '15.3.2': ('rev', '1011831'),   # Chrome 103
-    '15.5.0': ('rev', '1022525'),   # Chrome 105
-    '17.1.1': ('rev', '1036745'),   # Chrome 107
-    '19.4.1': ('rev', '1069273'),   # Chrome 110
-    '20.3.0': ('cft', '113.0.5672.63'),
-    '20.9.0': ('cft', '115.0.5790.98'),
-    '21.1.1': ('cft', '116.0.5845.96'),
-    '21.2.1': ('cft', '116.0.5845.96'),
-    '21.9.0': ('cft', '121.0.6167.85'),
-    '22.5.0': ('cft', '122.0.6261.128'),
-}
-# OpenLayers version -> puppeteer version (from each project's package.json).
-_OL_PUPPETEER_VERSION = {
-    # v4.6 and v5.1 don't use puppeteer — karma-chrome-launcher only. Skip.
-    '5.3': '1.13.0',
-    '6.1': '2.0.0',  '6.2': '2.1.0',  '6.3': '2.1.1',
-    '6.4': '5.3.1',  '6.5': '8.0.0',
-    '6.5.1': '10.0.0', '6.6': '10.2.0',
-    '6.9': '12.0.0', '6.10': '13.0.1',
-    '6.11': '13.0.1', '6.12': '13.0.1',
-    '6.13': '13.5.1', '6.14': '15.3.2',
-    '7.0': '15.5.0', '7.1': '17.1.1', '7.2': '19.4.1',
-    '7.3': '20.3.0', '7.4': '20.9.0', '7.5': '21.1.1',
-    '8.1': '21.2.1', '9.0': '21.9.0', '9.1': '22.5.0',
-}
-def _ol_chromium_preinstall(puppeteer_version: str) -> list[str]:
-    """Commands to download + install Chromium at the puppeteer-pinned version
-    into /opt/chromium/, with a stable symlink at /opt/chromium/chrome."""
-    kind, rev_or_ver = _OL_CHROMIUM_PINS[puppeteer_version]
-    if kind == 'rev':
-        # Chromium snapshots: chrome-linux/chrome
-        url = f"https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev_or_ver}/chrome-linux.zip"
-        return [
-            f"wget -q {url} -O /tmp/chromium.zip",
-            "unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/",
-            "rm /tmp/chromium.zip",
-            "mkdir -p /opt/chromium",
-            "ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome",
-            "chmod -R 755 /opt/chromium-pinned",
-        ]
-    # chrome-for-testing: chrome-linux64/chrome
-    url = f"https://storage.googleapis.com/chrome-for-testing-public/{rev_or_ver}/linux64/chrome-linux64.zip"
-    return [
-        f"wget -q {url} -O /tmp/chromium.zip",
-        "unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/",
-        "rm /tmp/chromium.zip",
-        "mkdir -p /opt/chromium",
-        "ln -sf /opt/chromium-pinned/chrome-linux64/chrome /opt/chromium/chrome",
-        "chmod -R 755 /opt/chromium-pinned",
-    ]
-# Apply pre_install per openlayers version.
-for ol_version, pup_version in _OL_PUPPETEER_VERSION.items():
-    if ol_version in SPECS_OPENLAYERS:
-        SPECS_OPENLAYERS[ol_version]['pre_install'] = _ol_chromium_preinstall(pup_version)
 
 # v9.x rendering runner: Chromium 121+ renderer crashes with
 # `V8 process OOM (ExternalEntityTable::AllocateSegment)` after ~5 GeoTIFF
@@ -458,27 +498,10 @@ _OL_RENDERER_BROWSER_RESET_PATCH = (
 for v in ['9.1']:
     if v in SPECS_OPENLAYERS:
         SPECS_OPENLAYERS[v]['install'].append(_OL_RENDERER_BROWSER_RESET_PATCH)
-# Karma: use SYSTEM Chrome (`/usr/bin/google-chrome-stable`, currently 147+).
-# NOT the era-matched Chromium at /opt/chromium/chrome. Why two browsers?
-#
-#   - Karma's WebGL tests (ol.layer.Heatmap etc.) need modern Chrome's ANGLE
-#     flags (`--use-gl=angle --use-angle=swiftshader-webgl`) to software-render
-#     WebGL in headless Docker. Era-matched Chromium snapshots (2019–2022)
-#     don't have working ANGLE support → WebGL crashes, aborts mocha early.
-#   - Puppeteer rendering tests (test-rendering, ./cases/*) compare screenshots
-#     against expected.png pixel-for-pixel. They MUST use the era-matched
-#     Chromium — any version mismatch → pixel diff failures.
-#
-# So: karma → /usr/bin/google-chrome-stable, puppeteer → /opt/chromium/chrome.
-for v in [
-    '6.5.1', '6.6', '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
-    '7.0', '7.1', '7.2', '7.3', '7.4', '7.5', '8.1', '9.0', '9.1',
-]:
-    if v in SPECS_OPENLAYERS:
-        SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/browser/karma.config.cjs"))
-for v in ['6.0', '6.1', '6.2', '6.3', '6.4', '6.5']:
-    if v in SPECS_OPENLAYERS:
-        SPECS_OPENLAYERS[v]["install"].append(SET_PUPPETEER_PATH.format("test/karma.config.js"))
+# Karma + puppeteer both use the bundled puppeteer Chromium that `npm install`
+# downloads (the OL base image leaves PUPPETEER_SKIP_DOWNLOAD unset). No
+# karma CHROME_BIN sed needed — the original karma config calls
+# `puppeteer.executablePath()` which now resolves to the downloaded binary.
 # Install karma-json-reporter for structured JSON output.
 # OL has two config patterns: test/karma.config.js (≤6.5) and test/browser/karma.config.cjs (≥6.5.1).
 # Reporter lines vary: ['dots'], ['dots', 'coverage-istanbul'], ['progress'].
@@ -520,7 +543,7 @@ for v in SPECS_OPENLAYERS:
     else:
         cfg = "test/karma.config.js"
     SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_JSON_SED_JS.format(cfg))
-    SPECS_OPENLAYERS[v]['install'].append(_OL_WEBGL_SED(cfg))
+    SPECS_OPENLAYERS[v]['install'].append(_OL_NOSANDBOX_SED(cfg))
     SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_ALIAS_SED(cfg))
 
 
@@ -947,44 +970,36 @@ def _prism_test_cmds(instance: dict) -> list:
 
 
 def _openlayers_test_cmds(instance: dict) -> list:
-    # TWO Chrome binaries per image, used for different test phases:
-    #
-    #   KARMA_CHROME = /usr/bin/google-chrome-stable (modern, system-wide).
-    #     Karma WebGL tests (ol.layer.Heatmap) crash in era-matched Chromium
-    #     because 2019–2022 snapshots don't have working ANGLE/SwiftShader
-    #     support. Modern Chrome does, with customLaunchers flags.
-    #
-    #   RENDERING_CHROME = /opt/chromium/chrome (era-matched to this version's
-    #     puppeteer — see _OL_CHROMIUM_PINS above). Puppeteer rendering tests
-    #     compare screenshots against expected.png pixel-for-pixel; any
-    #     browser drift → pixel diff failures.
-    KARMA_CHROME = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
-    RENDERING_CHROME = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
+    # OL runs on the vintage Ubuntu 20.04 base (see _DOCKERFILE_BASE_JS_OL)
+    # so puppeteer's bundled Chromium drives both karma and rendering tests
+    # — no separate KARMA / RENDERING binaries, no PUPPETEER_EXECUTABLE_PATH
+    # override. Karma's customLaunchers (injected at install time, see
+    # _OL_NOSANDBOX_SED) adds --no-sandbox; puppeteer rendering passes
+    # CI=true which adds the same flag automatically.
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
     SSL_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
     cmds = []
     for test_path in get_test_paths(instance):
         test_type = test_path.split('/')[1] if '/' in test_path else ""
         if test_type == "browser":
-            cmds.append(f'{KARMA_CHROME} {XVFB} su chromeuser -c "npm run test-browser"')
+            cmds.append(f'{XVFB} su chromeuser -c "npm run test-browser"')
         elif test_type == "rendering":
             # CI=true activates puppeteer's --no-sandbox args (required in Docker).
             # --log-level=info emits "ok" lines for passing cases.
             # --force skips getOutdated() filter so ALL cases run.
-            PENV = f"CI=true {RENDERING_CHROME}"
             if instance.get("version") in ['7.4']:
                 # v7.4 needs a rollup build first (build-full) to produce ol.js.
                 cmds.append(
-                    f'{PENV} {XVFB} su chromeuser -c "'
-                    f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force --log-level=info"'
+                    f'CI=true {XVFB} su chromeuser -c "'
+                    f'CI=true npm run build-full && CI=true node test/rendering/test.js --force --log-level=info"'
                 )
             else:
                 cmds.append(
-                    f'{PENV} {XVFB} su chromeuser -c '
-                    f'"{PENV} npm run test-rendering -- --force --log-level=info"'
+                    f'CI=true {XVFB} su chromeuser -c '
+                    f'"CI=true npm run test-rendering -- --force --log-level=info"'
                 )
         elif test_type == "spec":
-            cmds.append(f'{KARMA_CHROME} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
+            cmds.append(f'{XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
         elif test_type == "node":
             # Use mocha's JSON reporter so parser picks up results (default
             # spec reporter tree with ✓/✗ isn't parsed).

@@ -8,6 +8,7 @@ build/
 *.DS_Store
 src/image_assets/
 src/caches/
+data/
 data_mm_test.json
 build_logs_v*/
 build_v*.sh

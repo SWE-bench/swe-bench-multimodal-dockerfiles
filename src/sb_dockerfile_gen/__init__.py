@@ -82,6 +82,81 @@ USER root
 """
 
 
+# OpenLayers needs an older Mesa (21.x) for headless WebGL software-rendering
+# to work with the era-matched Chromium versions its puppeteer pins to.
+# jammy ships Mesa 23.x which silently breaks Chromium 97-121 WebGL → tests
+# abort at ol/layer/Heatmap. Ubuntu 20.04's Mesa 21.2 has been verified to
+# run the full karma suite with just `--no-sandbox`. This template skips the
+# system Chrome install entirely and lets puppeteer download its own
+# Chromium during `npm install` (PUPPETEER_SKIP_DOWNLOAD intentionally unset).
+_DOCKERFILE_BASE_JS_OL = r"""
+FROM --platform=linux/amd64 ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV TZ=Etc/UTC
+
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libssl-dev \
+    software-properties-common \
+    wget \
+    gnupg \
+    jq \
+    ca-certificates \
+    dbus \
+    ffmpeg \
+    imagemagick \
+    unzip \
+    && apt-get -y autoclean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV NVM_DIR /usr/local/nvm
+
+RUN mkdir -p $NVM_DIR
+RUN curl --silent -o- https://raw.githubusercontent.com/creationix/nvm/v0.39.3/install.sh | bash
+RUN apt-get update && apt-get install -y \
+    procps \
+    xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable \
+    xfonts-cyrillic x11-apps \
+    libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 \
+    libgbm1 libgconf-2-4 libgdk-pixbuf2.0-0 libgtk-3-0 libnspr4 \
+    libnss3 libpango-1.0-0 libpangocairo-1.0-0 libxcomposite1 \
+    libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 libxss1 libxshmfence1 libglu1 \
+    libgl1-mesa-dri libegl1-mesa libxtst6 \
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
+    fonts-khmeros fonts-kacst fonts-freefont-ttf \
+    && apt-get -y autoclean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /run/dbus
+
+ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
+
+RUN dbus-daemon --system --fork
+
+ENV OPENSSL_CONF /etc/ssl
+
+# Puppeteer 19.7+ caches its bundled Chromium in $PUPPETEER_CACHE_DIR (defaults
+# to ~/.cache/puppeteer). Pin it to a shared, world-readable location so karma
+# (running as chromeuser) can use the same binary that npm install (root)
+# downloaded — without copying the cache across users.
+ENV PUPPETEER_CACHE_DIR=/opt/puppeteer-cache
+RUN mkdir -p /opt/puppeteer-cache && chmod 0777 /opt/puppeteer-cache
+
+RUN useradd -m chromeuser
+
+USER chromeuser
+
+WORKDIR /home/chromeuser
+
+USER root
+"""
+
+
 # ── Dockerfile generation ──────────────────────────────────────────────
 
 
@@ -231,7 +306,10 @@ def _get_dockerfile(instance) -> str:
     version = instance.get("version") or None
     base_commit = instance["base_commit"]
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
-    dockerfile = _DOCKERFILE_BASE_JS
+    # OpenLayers gets its own vintage base (Ubuntu 20.04, no system Chrome,
+    # puppeteer-bundled Chromium) so headless WebGL software-rendering works
+    # against era-matched Chromium. See _DOCKERFILE_BASE_JS_OL above.
+    dockerfile = _DOCKERFILE_BASE_JS_OL if repo == "openlayers/openlayers" else _DOCKERFILE_BASE_JS
     docker_specs = specs.get("docker_specs", {})
     node_version = docker_specs.get("node_version", "18.17.1")
     pnpm_version = docker_specs.get("pnpm_version", None)
@@ -242,6 +320,10 @@ def _get_dockerfile(instance) -> str:
         dockerfile += f"ENV PNPM_VERSION {pnpm_version}\n"
         dockerfile += "ENV PNPM_HOME /usr/local/pnpm\n"
         dockerfile += "ENV PATH $PNPM_HOME:$PATH\n"
+    # Per-spec ENV vars (e.g. PUPPETEER_SKIP_DOWNLOAD for OL puppeteer-21+ pins
+    # to avoid the BuildKit npm install hang on the puppeteer download hook).
+    for env_key, env_value in docker_specs.get("env", {}).items():
+        dockerfile += f"ENV {env_key}={env_value}\n"
     env_script = make_env_script_list(instance, specs)
     if env_script:
         dockerfile += f"\n{env_script}\n"
