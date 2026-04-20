@@ -120,7 +120,13 @@ def _lighthouse_test_cmds(instance: dict) -> list:
             else:
                 cmds.append(f"{ENV} yarn mocha {test_path}")
         elif '3.0' <= str(instance.get("version", "")) <= '8.6':
-            cmds.append(f"{ENV} yarn jest --no-colors {test_path}")
+            # Write JSON to file then cat — avoids docker-log truncation on
+            # large single-line stdout writes. See specs/carbon.py _jest_file_cmd.
+            out = f"/testbed/jest-{len(cmds)}.json"
+            cmds.append(
+                f"{ENV} yarn jest --no-colors --json --outputFile={out} {test_path} "
+                f"> /dev/null 2>&1 || true; cat {out} 2>/dev/null || true"
+            )
         else:
             cmds.append(f"{ENV} ./node_modules/.bin/mocha --reporter json {test_path}")
     return list(dict.fromkeys(cmds))

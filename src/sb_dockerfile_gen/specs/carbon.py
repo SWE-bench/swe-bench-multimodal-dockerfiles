@@ -5,6 +5,19 @@ import re
 from sb_dockerfile_gen.utils import get_test_paths
 
 
+def _jest_file_cmd(yarn_invocation: str, idx: int) -> str:
+    """Wrap a jest/yarn-test invocation so the --json blob is written to a
+    file instead of stdout, then cat'd back. This sidesteps a docker-log
+    line-length truncation seen with >64KB single-line stdout writes (scratch-gui
+    large jest JSON got cut mid-test). cat of a pre-written file is safe (chart.js
+    does the same with karma-results.json)."""
+    out = f"/testbed/jest-{idx}.json"
+    return (
+        f"{yarn_invocation} --outputFile={out} > /dev/null 2>&1 || true; "
+        f"cat {out} 2>/dev/null || true"
+    )
+
+
 SPECS_CARBON = {
     **{k: {
         "pre_install": ["npm i -g yarn"],
@@ -12,7 +25,7 @@ SPECS_CARBON = {
             "yarn install",
             "yarn build",
         ],
-        "test_cmd": "yarn test --json",
+        "test_cmd": _jest_file_cmd("yarn test --json", 0),
         "docker_specs": {
             "node_version": {
                 "20.14": "20.14.0", "20.12": "20.12.2", "20.11": "20.11.1", "20.9": "20.9.0",
@@ -88,7 +101,7 @@ def _carbon_test_cmds(instance: dict) -> list:
         # in, yarn install, then run jest with an inline config that
         # enables the automatic JSX runtime. Self-contained — skips dedup.
         if "cra-template/template/" in test_path:
-            standalone_cmds.append(
+            jest_inv = (
                 "node -e '"
                 'const p=require("./packages/cra-template/package.json");'
                 'p.dependencies={"@apollo/client":"3.7.4","react-router-dom":"6.6.2",'
@@ -101,6 +114,7 @@ def _carbon_test_cmds(instance: dict) -> list:
                 """--config '{"preset":"jest-config-carbon","transform":{"^.+\\\\.(js|jsx)$":["babel-jest",{"presets":["@babel/preset-env",["@babel/preset-react",{"runtime":"automatic"}]]}]}}' """
                 'packages/cra-template/template/src'
             )
+            standalone_cmds.append(_jest_file_cmd(jest_inv, f"s{len(standalone_cmds)}"))
             continue
         # .e2e.js isn't file-matched by `yarn test` — containing dir instead.
         if test_path.endswith(".e2e.js"):
@@ -120,7 +134,10 @@ def _carbon_test_cmds(instance: dict) -> list:
             continue
         kept.append(p)
 
-    yarn_cmds = [f"yarn test --json{max_workers} {p}" for p in kept]
+    yarn_cmds = [
+        _jest_file_cmd(f"yarn test --json{max_workers} {p}", i)
+        for i, p in enumerate(kept)
+    ]
     return list(dict.fromkeys(standalone_cmds + yarn_cmds))
 
 
