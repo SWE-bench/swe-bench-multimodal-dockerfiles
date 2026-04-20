@@ -99,7 +99,7 @@ npm i -g yarn
 EOF_85baa44a9cc3
 
 
-RUN <<EOF_c98f1433397f
+RUN <<EOF_8c5ff00a04e8
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/diegomura/react-pdf /testbed
@@ -107,7 +107,7 @@ cd /testbed
 git reset --hard 721113e72e73b308caa7dd82b0776418e76c491b
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 721113e72e73b308caa7dd82b0776418e76c491b)
@@ -121,7 +121,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 yarn install
-EOF_c98f1433397f
+EOF_8c5ff00a04e8
 
 
 COPY src/image_assets/diegomura__react-pdf-1306/ /swebench/image_assets/

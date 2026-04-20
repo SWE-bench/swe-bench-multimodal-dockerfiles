@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,33 +92,31 @@ python2 -V
 EOF_5b48db3d125f
 
 
-RUN <<EOF_76bbc10e6917
+RUN <<EOF_ed910b5d2a96
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 4e8168f998f4619a58251fb93fdc0683596399bc
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 4e8168f998f4619a58251fb93fdc0683596399bc)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 4e8168f998f4619a58251fb93fdc0683596399bc)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_76bbc10e6917
+EOF_ed910b5d2a96
 
 
-RUN <<EOF_7da1238e9e80
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/29975637-c3d4073a-8f3f-11e7-8108-400114d4adbf.gif' 'https://user-images.githubusercontent.com/5654161/29975637-c3d4073a-8f3f-11e7-8108-400114d4adbf.gif' || true
-EOF_7da1238e9e80
-
+COPY src/image_assets/Automattic__wp-calypso-23991/ /swebench/image_assets/
 
 WORKDIR /testbed

@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,35 +92,31 @@ python2 -V
 EOF_482a6bebee46
 
 
-RUN <<EOF_f324fc2dd3e4
+RUN <<EOF_c6263e210523
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard c73ce2eab8daebaeec5803c30427f2c91c8ef9c0
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c73ce2eab8daebaeec5803c30427f2c91c8ef9c0)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c73ce2eab8daebaeec5803c30427f2c91c8ef9c0)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_f324fc2dd3e4
+EOF_c6263e210523
 
 
-RUN <<EOF_8d43a9c2839c
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/44163026-1b62e180-a090-11e8-9378-79271c20464e.png' 'https://user-images.githubusercontent.com/2098816/44163026-1b62e180-a090-11e8-9378-79271c20464e.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/44163020-169e2d80-a090-11e8-9160-5b98596b09c1.png' 'https://user-images.githubusercontent.com/2098816/44163020-169e2d80-a090-11e8-9160-5b98596b09c1.png' || true
-EOF_8d43a9c2839c
-
+COPY src/image_assets/Automattic__wp-calypso-27090/ /swebench/image_assets/
 
 WORKDIR /testbed

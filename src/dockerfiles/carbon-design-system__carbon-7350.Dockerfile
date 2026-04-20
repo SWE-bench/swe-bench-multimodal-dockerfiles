@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,46 +89,41 @@ python2 -V
 EOF_995e847fbbdd
 
 
-RUN <<EOF_bb8523685228
+RUN <<EOF_85baa44a9cc3
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+EOF_85baa44a9cc3
+
+
+RUN <<EOF_7c6e0063e8ee
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/carbon-design-system/carbon /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard e70264b8c397315d810c36d82f3f0f6d0173891f
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct e70264b8c397315d810c36d82f3f0f6d0173891f)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct e70264b8c397315d810c36d82f3f0f6d0173891f)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
 yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
-EOF_bb8523685228
+echo 'ruleArchive: 12March2022' > .achecker.yml
+EOF_7c6e0063e8ee
 
 
-RUN <<EOF_599c173ffa86
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/93094235-efb4ea00-f6a1-11ea-8f59-0217a060c1c2.gif' 'https://user-images.githubusercontent.com/28265588/93094235-efb4ea00-f6a1-11ea-8f59-0217a060c1c2.gif' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/93094304-078c6e00-f6a2-11ea-9b1b-a6df302be3f0.gif' 'https://user-images.githubusercontent.com/28265588/93094304-078c6e00-f6a2-11ea-9b1b-a6df302be3f0.gif' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/93094364-1d9a2e80-f6a2-11ea-8ecd-ebf341dcf51c.gif' 'https://user-images.githubusercontent.com/28265588/93094364-1d9a2e80-f6a2-11ea-8ecd-ebf341dcf51c.gif' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/93094412-2db20e00-f6a2-11ea-8a9e-70a5e18656ab.gif' 'https://user-images.githubusercontent.com/28265588/93094412-2db20e00-f6a2-11ea-8a9e-70a5e18656ab.gif' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/93094522-4e7a6380-f6a2-11ea-849e-3eba4b52d581.gif' 'https://user-images.githubusercontent.com/28265588/93094522-4e7a6380-f6a2-11ea-849e-3eba4b52d581.gif' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/93094873-bfba1680-f6a2-11ea-9fa1-fde7e9590154.png' 'https://user-images.githubusercontent.com/28265588/93094873-bfba1680-f6a2-11ea-9fa1-fde7e9590154.png' || true
-EOF_599c173ffa86
-
+COPY src/image_assets/carbon-design-system__carbon-7350/ /swebench/image_assets/
 
 WORKDIR /testbed

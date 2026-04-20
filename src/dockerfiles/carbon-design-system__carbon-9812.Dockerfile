@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,38 +89,41 @@ python2 -V
 EOF_995e847fbbdd
 
 
-RUN <<EOF_7d511f96cf33
+RUN <<EOF_85baa44a9cc3
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+EOF_85baa44a9cc3
+
+
+RUN <<EOF_7b373becd618
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/carbon-design-system/carbon /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard c53e70818d9d01cb2e386c4e15c86d4371743141
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c53e70818d9d01cb2e386c4e15c86d4371743141)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c53e70818d9d01cb2e386c4e15c86d4371743141)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
 yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
-EOF_7d511f96cf33
+echo 'ruleArchive: 12March2022' > .achecker.yml
+EOF_7b373becd618
 
 
-RUN <<EOF_7021bdf28444
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/136046855-1cbc4a1b-22cf-4284-b72c-3c32d4e796f6.png' 'https://user-images.githubusercontent.com/3612533/136046855-1cbc4a1b-22cf-4284-b72c-3c32d4e796f6.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/136046876-52563993-f9c4-49ef-9d6a-f262eff0ac52.png' 'https://user-images.githubusercontent.com/3612533/136046876-52563993-f9c4-49ef-9d6a-f262eff0ac52.png' || true
-EOF_7021bdf28444
-
+COPY src/image_assets/carbon-design-system__carbon-9812/ /swebench/image_assets/
 
 WORKDIR /testbed

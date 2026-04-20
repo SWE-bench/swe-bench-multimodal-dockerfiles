@@ -92,7 +92,7 @@ python2 -V
 EOF_16a722167964
 
 
-RUN <<EOF_9b3b2b38c0ff
+RUN <<EOF_4cdca0ed4c84
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
@@ -100,7 +100,7 @@ cd /testbed
 git reset --hard 6324c6d30d4ece27eeb00faa3e7cc0aa1f817f83
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 6324c6d30d4ece27eeb00faa3e7cc0aa1f817f83)
@@ -118,7 +118,9 @@ npm install --unsafe-perm --ignore-scripts
 npm rebuild node-sass
 ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio
 npm run build-packages
-EOF_9b3b2b38c0ff
+./node_modules/.bin/lerna bootstrap || true
+for d in /testbed/node_modules/@automattic/* /testbed/node_modules/i18n-calypso /testbed/node_modules/photon; do  [ -L "$d" ] && target=$(readlink -f "$d") && rm "$d" && cp -a "$target" "$d"; done
+EOF_4cdca0ed4c84
 
 
 COPY src/image_assets/Automattic__wp-calypso-34597/ /swebench/image_assets/

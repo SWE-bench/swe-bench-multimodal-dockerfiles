@@ -124,7 +124,7 @@ pip3 install ipykernel
 EOF_e3e02d4ec4f6
 
 
-RUN <<EOF_79b59c229dca
+RUN <<EOF_e26e7b79d16a
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed
@@ -132,7 +132,7 @@ cd /testbed
 git reset --hard eb1aca6e4a7cf826b7ffa1e24a1075846747e344
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct eb1aca6e4a7cf826b7ffa1e24a1075846747e344)
@@ -152,7 +152,7 @@ cd tests
 sed -i 's/quarto install.*tinytex/true/' configure-test-env.sh 2>/dev/null || true
 ./configure-test-env.sh || true
 cd ..
-EOF_79b59c229dca
+EOF_e26e7b79d16a
 
 
 COPY src/image_assets/quarto-dev__quarto-cli-5292/ /swebench/image_assets/

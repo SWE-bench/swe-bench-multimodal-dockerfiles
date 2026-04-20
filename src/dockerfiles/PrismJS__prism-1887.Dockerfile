@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,35 +89,31 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_91113ab0d5ba
+RUN <<EOF_bd2433c29e46
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/PrismJS/prism /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard acceb3b56f0e8362a7ef274dbd85b17611df2ec4
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct acceb3b56f0e8362a7ef274dbd85b17611df2ec4)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct acceb3b56f0e8362a7ef274dbd85b17611df2ec4)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_91113ab0d5ba
+EOF_bd2433c29e46
 
 
-RUN <<EOF_b948587cf55d
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/57575047-635a3d80-7443-11e9-91ec-335cf7ac33b5.png' 'https://user-images.githubusercontent.com/6709544/57575047-635a3d80-7443-11e9-91ec-335cf7ac33b5.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/57575060-e085b280-7443-11e9-8361-dbc70ce965fd.png' 'https://user-images.githubusercontent.com/6709544/57575060-e085b280-7443-11e9-8361-dbc70ce965fd.png' || true
-EOF_b948587cf55d
-
+COPY src/image_assets/PrismJS__prism-1887/ /swebench/image_assets/
 
 WORKDIR /testbed

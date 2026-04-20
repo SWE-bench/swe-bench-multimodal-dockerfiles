@@ -92,7 +92,7 @@ python2 -V
 EOF_9dbe435fcb39
 
 
-RUN <<EOF_1e9a1be46d09
+RUN <<EOF_f6ec488bc578
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/diegomura/react-pdf /testbed
@@ -100,7 +100,7 @@ cd /testbed
 git reset --hard 23b89c2869f75f4f843522de5e348c2f92e87a67
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 23b89c2869f75f4f843522de5e348c2f92e87a67)
@@ -115,7 +115,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
-EOF_1e9a1be46d09
+EOF_f6ec488bc578
 
 
 COPY src/image_assets/diegomura__react-pdf-471/ /swebench/image_assets/

@@ -107,7 +107,7 @@ chmod -R 755 /opt/chromium-pinned
 EOF_d81c69792fd2
 
 
-RUN <<EOF_b2ef78e1aefe
+RUN <<EOF_62180ce08675
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -115,7 +115,7 @@ cd /testbed
 git reset --hard 56f9fa2b426e4212cb43f6d7f78d51c6c17becc8
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 56f9fa2b426e4212cb43f6d7f78d51c6c17becc8)
@@ -133,7 +133,7 @@ chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install cypress@13.14.2 --no-save
 CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress
-EOF_b2ef78e1aefe
+EOF_62180ce08675
 
 
 COPY src/image_assets/alibaba-fusion__next-4859/ /swebench/image_assets/

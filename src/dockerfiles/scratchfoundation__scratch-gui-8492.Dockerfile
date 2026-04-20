@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,34 +89,32 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_087929332923
+RUN <<EOF_adea1f8f81ec
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 0eb9ced9ae6d833a230c1c27dbf42dcb4e30bec4
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 0eb9ced9ae6d833a230c1c27dbf42dcb4e30bec4)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 0eb9ced9ae6d833a230c1c27dbf42dcb4e30bec4)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i 's/states: ."disabled", "enabled"./states: ["enabled", "disabled"]/' node_modules/web-audio-test-api/lib/utils/api.js
-EOF_087929332923
+EOF_adea1f8f81ec
 
 
-RUN <<EOF_572749ca8015
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/62747201-66a09d80-ba21-11e9-9112-da7e580554f1.gif' 'https://user-images.githubusercontent.com/3431616/62747201-66a09d80-ba21-11e9-9112-da7e580554f1.gif' || true
-EOF_572749ca8015
-
+COPY src/image_assets/scratchfoundation__scratch-gui-8492/ /swebench/image_assets/
 
 WORKDIR /testbed

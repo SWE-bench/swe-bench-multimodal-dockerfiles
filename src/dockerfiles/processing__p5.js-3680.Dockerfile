@@ -92,7 +92,7 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_5b1cc1ed6782
+RUN <<EOF_9d036240a592
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -100,12 +100,14 @@ wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linu
 unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
 rm /tmp/chromium.zip
 mkdir -p /opt/chromium
-ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
+printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
-EOF_5b1cc1ed6782
+EOF_9d036240a592
 
 
-RUN <<EOF_bb66c2186a92
+RUN <<EOF_56e286b7ec37
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/processing/p5.js /testbed
@@ -113,7 +115,7 @@ cd /testbed
 git reset --hard 9372b29ee28c35a44ca26e66551a0c9b03c02601
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 9372b29ee28c35a44ca26e66551a0c9b03c02601)
@@ -128,7 +130,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 ./node_modules/.bin/grunt yui
-EOF_bb66c2186a92
+EOF_56e286b7ec37
 
 
 COPY src/image_assets/processing__p5.js-3680/ /swebench/image_assets/

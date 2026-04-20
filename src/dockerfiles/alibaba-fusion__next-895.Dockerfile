@@ -107,7 +107,7 @@ chmod -R 755 /opt/chromium-pinned
 EOF_2774f4606118
 
 
-RUN <<EOF_11aa5ee7d033
+RUN <<EOF_d97817da3f02
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -115,7 +115,7 @@ cd /testbed
 git reset --hard 4b87e771f2e388c607dd96a474f5837e772f9826
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 4b87e771f2e388c607dd96a474f5837e772f9826)
@@ -137,7 +137,7 @@ npm show cheerio
 npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
 npm install karma-json-reporter@1.2.1 --no-save
 sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
-EOF_11aa5ee7d033
+EOF_d97817da3f02
 
 
 COPY src/image_assets/alibaba-fusion__next-895/ /swebench/image_assets/

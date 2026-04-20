@@ -89,7 +89,7 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_61f316823cb3
+RUN <<EOF_7d9c45a772d9
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -97,12 +97,14 @@ wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linu
 unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
 rm /tmp/chromium.zip
 mkdir -p /opt/chromium
-ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
+printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
-EOF_61f316823cb3
+EOF_7d9c45a772d9
 
 
-RUN <<EOF_8b1e0228dcbd
+RUN <<EOF_1168e5e924b8
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
@@ -110,7 +112,7 @@ cd /testbed
 git reset --hard 948c0d73bd9187b6d24ba01f930bd8334898fdb1
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 948c0d73bd9187b6d24ba01f930bd8334898fdb1)
@@ -126,7 +128,7 @@ source $NVM_DIR/nvm.sh
 npm install
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
-EOF_8b1e0228dcbd
+EOF_1168e5e924b8
 
 
 COPY src/image_assets/bpmn-io__bpmn-js-1928/ /swebench/image_assets/

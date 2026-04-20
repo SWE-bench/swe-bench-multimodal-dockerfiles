@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,36 +89,32 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_30e52d5f74db
+RUN <<EOF_b5bf42287ec3
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/highlightjs/highlight.js /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 006a478fb62b7b7928dbe9d2756cd76e56ee592c
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 006a478fb62b7b7928dbe9d2756cd76e56ee592c)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 006a478fb62b7b7928dbe9d2756cd76e56ee592c)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_30e52d5f74db
+EOF_b5bf42287ec3
 
 
-RUN <<EOF_2de566b59ca0
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/104169888-8d29eb80-5400-11eb-941d-d6c09069e805.png' 'https://user-images.githubusercontent.com/12143247/104169888-8d29eb80-5400-11eb-941d-d6c09069e805.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/104172642-e136cf00-5404-11eb-94b2-a1bcf93f7f34.png' 'https://user-images.githubusercontent.com/12143247/104172642-e136cf00-5404-11eb-94b2-a1bcf93f7f34.png' || true
-EOF_2de566b59ca0
-
+COPY src/image_assets/highlightjs__highlight.js-2958/ /swebench/image_assets/
 
 WORKDIR /testbed

@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,45 +89,33 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_3d77bfe0ecc2
+RUN <<EOF_9d55a430d84b
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard a9f1e2ee3ba5e8564066102d3827bd3f1be13f15
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct a9f1e2ee3ba5e8564066102d3827bd3f1be13f15)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct a9f1e2ee3ba5e8564066102d3827bd3f1be13f15)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
-EOF_3d77bfe0ecc2
+EOF_9d55a430d84b
 
 
-RUN <<EOF_d546981e2275
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/43903225-f375c00a-9bb9-11e8-82dc-791bd7f69589.png' 'https://user-images.githubusercontent.com/3409578/43903225-f375c00a-9bb9-11e8-82dc-791bd7f69589.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/43903229-f62d9872-9bb9-11e8-9aba-8451f78296dd.png' 'https://user-images.githubusercontent.com/3409578/43903229-f62d9872-9bb9-11e8-9aba-8451f78296dd.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/43903232-f8b14dfa-9bb9-11e8-83d4-500f64b6959b.png' 'https://user-images.githubusercontent.com/3409578/43903232-f8b14dfa-9bb9-11e8-83d4-500f64b6959b.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/43903038-874a49d2-9bb9-11e8-9bee-8b0ce095b94e.png' 'https://user-images.githubusercontent.com/3409578/43903038-874a49d2-9bb9-11e8-9bee-8b0ce095b94e.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/43903036-84fee502-9bb9-11e8-8940-0d2240fc472a.png' 'https://user-images.githubusercontent.com/3409578/43903036-84fee502-9bb9-11e8-8940-0d2240fc472a.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/43903035-834dc214-9bb9-11e8-95ae-0d777a4ba365.png' 'https://user-images.githubusercontent.com/3409578/43903035-834dc214-9bb9-11e8-95ae-0d777a4ba365.png' || true
-EOF_d546981e2275
-
+COPY src/image_assets/scratchfoundation__scratch-gui-3342/ /swebench/image_assets/
 
 WORKDIR /testbed

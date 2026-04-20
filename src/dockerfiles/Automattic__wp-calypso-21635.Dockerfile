@@ -92,7 +92,7 @@ python2 -V
 EOF_f4fd4a31eaa9
 
 
-RUN <<EOF_6fcced3839c3
+RUN <<EOF_54dc0c7fa5d4
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
@@ -100,7 +100,7 @@ cd /testbed
 git reset --hard 0bab036290b284735a7b5043cc11d194bd8ec37d
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 0bab036290b284735a7b5043cc11d194bd8ec37d)
@@ -115,7 +115,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
 npm install cpf@1.0.1 hoek@6.1.3 --no-save --no-prune --legacy-peer-deps || true
-EOF_6fcced3839c3
+EOF_54dc0c7fa5d4
 
 
 COPY src/image_assets/Automattic__wp-calypso-21635/ /swebench/image_assets/

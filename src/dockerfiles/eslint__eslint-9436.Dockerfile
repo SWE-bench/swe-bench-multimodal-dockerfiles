@@ -89,7 +89,7 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_dbe79445533d
+RUN <<EOF_172a0279ef18
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/eslint/eslint /testbed
@@ -97,7 +97,7 @@ cd /testbed
 git reset --hard ecac0fd51a40305a3d57a1d6ed5ad9509d64f231
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct ecac0fd51a40305a3d57a1d6ed5ad9509d64f231)
@@ -111,7 +111,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_dbe79445533d
+EOF_172a0279ef18
 
 
 COPY src/image_assets/eslint__eslint-9436/ /swebench/image_assets/

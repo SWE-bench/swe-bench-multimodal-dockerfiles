@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,34 +89,38 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_5f051029b004
+RUN <<EOF_85baa44a9cc3
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+EOF_85baa44a9cc3
+
+
+RUN <<EOF_8e1002184211
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/prettier/prettier /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 62ede8b710731228dddc8e900fe99e5d3cc487a8
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 62ede8b710731228dddc8e900fe99e5d3cc487a8)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 62ede8b710731228dddc8e900fe99e5d3cc487a8)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
 yarn
-EOF_5f051029b004
+EOF_8e1002184211
 
 
-RUN <<EOF_ad6470b45926
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/143863913-9ee29630-3ffe-4350-a4b9-9f004ff7ee57.png' 'https://user-images.githubusercontent.com/7814085/143863913-9ee29630-3ffe-4350-a4b9-9f004ff7ee57.png' || true
-EOF_ad6470b45926
-
+COPY src/image_assets/prettier__prettier-11884/ /swebench/image_assets/
 
 WORKDIR /testbed

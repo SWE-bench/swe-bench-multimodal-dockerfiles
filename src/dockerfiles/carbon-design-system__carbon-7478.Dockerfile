@@ -96,7 +96,7 @@ npm i -g yarn
 EOF_85baa44a9cc3
 
 
-RUN <<EOF_4b8fcf548b02
+RUN <<EOF_974e9ba72255
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/carbon-design-system/carbon /testbed
@@ -104,7 +104,7 @@ cd /testbed
 git reset --hard 07e3e1df3395403dc6b504aec14dfdc0da481971
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 07e3e1df3395403dc6b504aec14dfdc0da481971)
@@ -121,7 +121,7 @@ yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
 echo 'ruleArchive: 12March2022' > .achecker.yml
-EOF_4b8fcf548b02
+EOF_974e9ba72255
 
 
 COPY src/image_assets/carbon-design-system__carbon-7478/ /swebench/image_assets/

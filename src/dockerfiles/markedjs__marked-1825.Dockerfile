@@ -89,7 +89,7 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_fca3d92d848b
+RUN <<EOF_d024ecfa0b95
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/markedjs/marked /testbed
@@ -97,7 +97,7 @@ cd /testbed
 git reset --hard da071c9e408faceec944c0df4b8d4fac43c47d3d
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct da071c9e408faceec944c0df4b8d4fac43c47d3d)
@@ -112,7 +112,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 mkdir -p test/helpers && printf '%s\n' "jasmine.getEnv().addReporter({ specDone: function(r){ console.log('JASMINE_TEST: ' + r.status + ' :: ' + r.fullName); } });" > test/helpers/jasmine_names.js && python3 -c "import json; p='jasmine.json'; d=json.load(open(p)); h=d.get('helpers', []); (h.append('helpers/jasmine_names.js') if 'helpers/jasmine_names.js' not in h else None); d['helpers']=h; json.dump(d, open(p,'w'), indent=2)"
-EOF_fca3d92d848b
+EOF_d024ecfa0b95
 
 
 COPY src/image_assets/markedjs__marked-1825/ /swebench/image_assets/

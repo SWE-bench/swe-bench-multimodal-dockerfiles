@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,33 +92,31 @@ python2 -V
 EOF_9e43395224ce
 
 
-RUN <<EOF_ca15a504785c
+RUN <<EOF_cbd25c83ebf7
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 01c60033934bb2c7df5ac14e1153f7739696042e
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 01c60033934bb2c7df5ac14e1153f7739696042e)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 01c60033934bb2c7df5ac14e1153f7739696042e)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_ca15a504785c
+EOF_cbd25c83ebf7
 
 
-RUN <<EOF_7f9a8a588159
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/33783581-5a521520-dc2b-11e7-8742-b150bb089aeb.png' 'https://user-images.githubusercontent.com/191598/33783581-5a521520-dc2b-11e7-8742-b150bb089aeb.png' || true
-EOF_7f9a8a588159
-
+COPY src/image_assets/Automattic__wp-calypso-23377/ /swebench/image_assets/
 
 WORKDIR /testbed

@@ -97,7 +97,7 @@ apt-get update && apt-get install -y -t 'o=LP-PPA-mozillateam' firefox
 EOF_9025c28e31c3
 
 
-RUN <<EOF_79f1c92fba55
+RUN <<EOF_aa5ba7f1e00d
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
@@ -105,7 +105,7 @@ cd /testbed
 git reset --hard 37bcd070e8406a43a7316893c6b68debeaae5e26
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 37bcd070e8406a43a7316893c6b68debeaae5e26)
@@ -124,7 +124,7 @@ npm install karma-json-reporter@1.2.1 --no-save
 sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
-EOF_79f1c92fba55
+EOF_aa5ba7f1e00d
 
 
 COPY src/image_assets/bpmn-io__bpmn-js-1206/ /swebench/image_assets/

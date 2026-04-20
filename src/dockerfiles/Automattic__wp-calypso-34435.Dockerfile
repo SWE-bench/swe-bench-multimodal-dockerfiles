@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,33 +92,37 @@ python2 -V
 EOF_16a722167964
 
 
-RUN <<EOF_bfdf7bd00273
+RUN <<EOF_1661e8f20043
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/Automattic/wp-calypso /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard c04808de96782fb03d59914beff43e9bb1784b69
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c04808de96782fb03d59914beff43e9bb1784b69)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c04808de96782fb03d59914beff43e9bb1784b69)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install --unsafe-perm
-EOF_bfdf7bd00273
+sed -i 's/"color-studio": "1.0.5"/"@automattic\/color-studio": "1.0.6"/' package.json
+npm install --unsafe-perm --ignore-scripts
+npm rebuild node-sass
+ln -sf $(pwd)/node_modules/@automattic/color-studio node_modules/color-studio
+npm run build-packages
+./node_modules/.bin/lerna bootstrap || true
+for d in /testbed/node_modules/@automattic/* /testbed/node_modules/i18n-calypso /testbed/node_modules/photon; do  [ -L "$d" ] && target=$(readlink -f "$d") && rm "$d" && cp -a "$target" "$d"; done
+EOF_1661e8f20043
 
 
-RUN <<EOF_bccecaebea6a
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/60508757-07d65e80-9cd4-11e9-86a9-ebc26768983f.png' 'https://user-images.githubusercontent.com/8658164/60508757-07d65e80-9cd4-11e9-86a9-ebc26768983f.png' || true
-EOF_bccecaebea6a
-
+COPY src/image_assets/Automattic__wp-calypso-34435/ /swebench/image_assets/
 
 WORKDIR /testbed

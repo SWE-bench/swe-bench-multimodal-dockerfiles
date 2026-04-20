@@ -89,7 +89,7 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_7d36cf53dac4
+RUN <<EOF_59f418e956e0
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/highlightjs/highlight.js /testbed
@@ -97,7 +97,7 @@ cd /testbed
 git reset --hard 04f3904c9dd7e9fd338ad916044564d0f8fb13d2
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 04f3904c9dd7e9fd338ad916044564d0f8fb13d2)
@@ -112,7 +112,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_7d36cf53dac4
+EOF_59f418e956e0
 
 
 COPY src/image_assets/highlightjs__highlight.js-2740/ /swebench/image_assets/

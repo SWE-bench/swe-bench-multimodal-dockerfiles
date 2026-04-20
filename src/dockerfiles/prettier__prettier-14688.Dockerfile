@@ -89,7 +89,14 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_fb341fe53149
+RUN <<EOF_85baa44a9cc3
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+EOF_85baa44a9cc3
+
+
+RUN <<EOF_5b9eb2fce65a
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/prettier/prettier /testbed
@@ -97,7 +104,7 @@ cd /testbed
 git reset --hard fb948bb15f31ade3b35e66b720f8d44260de45f8
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct fb948bb15f31ade3b35e66b720f8d44260de45f8)
@@ -110,9 +117,8 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
 yarn
-EOF_fb341fe53149
+EOF_5b9eb2fce65a
 
 
 COPY src/image_assets/prettier__prettier-14688/ /swebench/image_assets/

@@ -117,7 +117,7 @@ cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 EOF_9bddf550224d
 
 
-RUN <<EOF_8eabcd351333
+RUN <<EOF_98ad2cbdedf2
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/chartjs/Chart.js /testbed
@@ -125,7 +125,7 @@ cd /testbed
 git reset --hard 201ddffa1d0d0bf61a4372ff1386dbcffd606850
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 201ddffa1d0d0bf61a4372ff1386dbcffd606850)
@@ -144,7 +144,7 @@ pnpm add karma-json-reporter@1.2.1 --save-dev -w
 sed -i -E "s#reporters: \['(spec|progress)'[^]]*\],#reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json' },#" karma.conf.cjs
 sed -i "s/frameworks: \['jasmine'\],/frameworks: ['jasmine'],\n    captureTimeout: 180000,\n    browserDisconnectTimeout: 120000,\n    browserDisconnectTolerance: 3,\n    browserNoActivityTimeout: 180000,/" karma.conf.cjs
 sed -i "s/--disable-renderer-backgrounding/--disable-renderer-backgrounding',\n          '--disable-dev-shm-usage/" karma.conf.cjs
-EOF_8eabcd351333
+EOF_98ad2cbdedf2
 
 
 COPY src/image_assets/chartjs__Chart.js-11352/ /swebench/image_assets/

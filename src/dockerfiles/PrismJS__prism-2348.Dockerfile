@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,33 +89,31 @@ python2 -V
 EOF_727a9afa5b25
 
 
-RUN <<EOF_19f6ee4b759b
+RUN <<EOF_8f89bcd07a62
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/PrismJS/prism /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard c93244768ec7031caa6359655289c1e756a90194
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c93244768ec7031caa6359655289c1e756a90194)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct c93244768ec7031caa6359655289c1e756a90194)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_19f6ee4b759b
+EOF_8f89bcd07a62
 
 
-RUN <<EOF_e3fb5cd75e99
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/80671677-2e744a00-8add-11ea-9f16-5d7a31d6c68c.png' 'https://user-images.githubusercontent.com/42088872/80671677-2e744a00-8add-11ea-9f16-5d7a31d6c68c.png' || true
-EOF_e3fb5cd75e99
-
+COPY src/image_assets/PrismJS__prism-2348/ /swebench/image_assets/
 
 WORKDIR /testbed
