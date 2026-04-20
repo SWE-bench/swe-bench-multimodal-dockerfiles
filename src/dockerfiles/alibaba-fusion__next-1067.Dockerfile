@@ -92,6 +92,21 @@ python2 -V
 EOF_4d2410c5ce08
 
 
+RUN <<EOF_2774f4606118
+#!/bin/bash
+set -euxo pipefail
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/599821/chrome-linux.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
+printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+chmod +x /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_2774f4606118
+
+
 RUN <<EOF_3b1e628ba0a8
 #!/bin/bash
 set -euxo pipefail

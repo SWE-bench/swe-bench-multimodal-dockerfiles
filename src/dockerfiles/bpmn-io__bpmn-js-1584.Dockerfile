@@ -89,18 +89,17 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_71683d3e4e95
+RUN <<EOF_694b3c9020cb
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
-wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/793478/chrome-linux.zip
-unzip -q chrome-linux.zip -d /opt/
-rm chrome-linux.zip
-rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
-printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
-chmod +x /usr/bin/google-chrome
-cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
-EOF_71683d3e4e95
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/884014/chrome-linux.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_694b3c9020cb
 
 
 RUN <<EOF_018b163e512f

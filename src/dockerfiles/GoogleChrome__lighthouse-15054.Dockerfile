@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,40 +89,48 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-COPY src/caches/lighthouse_yarn_cache.tar.gz /tmp/yarn_cache.tar.gz
-RUN tar xzf /tmp/yarn_cache.tar.gz -C / && rm /tmp/yarn_cache.tar.gz
+RUN <<EOF_fdd4b91c92f7
+#!/bin/bash
+set -euxo pipefail
+npm i -g yarn
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://storage.googleapis.com/chrome-for-testing-public/113.0.5672.63/linux64/chrome-linux64.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux64/chrome /opt/chromium/chrome-bin
+printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+chmod +x /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_fdd4b91c92f7
 
-RUN <<EOF_0022bc228714
+
+RUN <<EOF_c2c01e0e58e0
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 3ba11a87992fa3deaf02f867dd08515b43038998
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 3ba11a87992fa3deaf02f867dd08515b43038998)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct 3ba11a87992fa3deaf02f867dd08515b43038998)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm i -g yarn
-yarn --ignore-scripts
+yarn
 yarn build-all
-EOF_0022bc228714
+EOF_c2c01e0e58e0
 
 
-RUN <<EOF_8c53cbcce63e
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/232578805-bb4ca9e9-fe32-47ff-9050-af4281db6d1b.png' 'https://user-images.githubusercontent.com/316891/232578805-bb4ca9e9-fe32-47ff-9050-af4281db6d1b.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/232578915-0e1da09e-d91c-4d37-aeae-4345b446f344.png' 'https://user-images.githubusercontent.com/316891/232578915-0e1da09e-d91c-4d37-aeae-4345b446f344.png' || true
-EOF_8c53cbcce63e
-
+COPY src/image_assets/GoogleChrome__lighthouse-15054/ /swebench/image_assets/
 
 WORKDIR /testbed

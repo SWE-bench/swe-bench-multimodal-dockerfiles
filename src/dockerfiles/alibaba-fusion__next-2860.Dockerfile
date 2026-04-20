@@ -92,7 +92,22 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_f1032af1a007
+RUN <<EOF_aa1a41c86f46
+#!/bin/bash
+set -euxo pipefail
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/818858/chrome-linux.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
+printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+chmod +x /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_aa1a41c86f46
+
+
+RUN <<EOF_4b06719b9a28
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -113,7 +128,7 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
+sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/opt/chromium/chrome';|" scripts/test/karma.js
 chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install babel-preset-es2015
@@ -124,7 +139,7 @@ npm install puppeteer@19.11.1 --save-exact
 npm install highlight.js@10.7.3 --save-exact
 npm install karma-json-reporter@1.2.1 --no-save
 sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
-EOF_f1032af1a007
+EOF_4b06719b9a28
 
 
 COPY src/image_assets/alibaba-fusion__next-2860/ /swebench/image_assets/

@@ -52,6 +52,7 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,39 +92,45 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_eabea178de5b
+RUN <<EOF_7ef18fe7d605
+#!/bin/bash
+set -euxo pipefail
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1045629/chrome-linux.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+EOF_7ef18fe7d605
+
+
+RUN <<EOF_fddda32cbd8d
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/processing/p5.js /testbed
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard caa727cd577b71df22a4234aa62d3fa3de887655
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct caa727cd577b71df22a4234aa62d3fa3de887655)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+TARGET_EPOCH=$(git show -s --format=%ct caa727cd577b71df22a4234aa62d3fa3de887655)
+AFTER_EPOCH=$((TARGET_EPOCH + 1))
+AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
+chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js
 ./node_modules/.bin/grunt yui
-EOF_eabea178de5b
+EOF_fddda32cbd8d
 
 
-RUN <<EOF_54737d19f017
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/209168825-373f404d-216c-45d2-9b6e-4c632a42c1a8.png' 'https://user-images.githubusercontent.com/39549290/209168825-373f404d-216c-45d2-9b6e-4c632a42c1a8.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/209169526-55a8712b-ec32-4401-9353-da867f5a974b.png' 'https://user-images.githubusercontent.com/39549290/209169526-55a8712b-ec32-4401-9353-da867f5a974b.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/209170179-95220ff8-4976-4c7d-9651-3b6e736c22d8.png' 'https://user-images.githubusercontent.com/39549290/209170179-95220ff8-4976-4c7d-9651-3b6e736c22d8.png' || true
-EOF_54737d19f017
-
+COPY src/image_assets/processing__p5.js-5915/ /swebench/image_assets/
 
 WORKDIR /testbed
