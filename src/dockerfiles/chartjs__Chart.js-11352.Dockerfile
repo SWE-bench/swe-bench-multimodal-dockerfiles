@@ -72,11 +72,11 @@ ENV PNPM_VERSION 7.9.0
 ENV PNPM_HOME /usr/local/pnpm
 ENV PATH $PNPM_HOME:$PATH
 
-RUN <<EOF_b63450f00529
+RUN <<EOF_f7e0af49c0fc
 #!/bin/bash
 set -euxo pipefail
 apt-get update
-apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
+apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
 export NODE_VERSION=21.6.2
 source $NVM_DIR/nvm.sh
@@ -103,7 +103,7 @@ source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
 pnpm -v
-EOF_b63450f00529
+EOF_f7e0af49c0fc
 
 
 RUN <<EOF_9bddf550224d

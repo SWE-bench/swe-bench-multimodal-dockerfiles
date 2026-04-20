@@ -91,7 +91,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_544dd92d6f36
+RUN <<EOF_1dcfe72f60c0
 #!/bin/bash
 set -euxo pipefail
 npm i -g yarn
@@ -104,7 +104,9 @@ ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
 printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
 chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
-EOF_544dd92d6f36
+ln -sf /opt/chromium/chrome /usr/bin/google-chrome
+ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
+EOF_1dcfe72f60c0
 
 
 RUN <<EOF_c828d0582d9f

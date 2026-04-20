@@ -91,7 +91,7 @@ python2 -V
 EOF_727a9afa5b25
 
 
-RUN <<EOF_cfd1b125c621
+RUN <<EOF_d7f9f71cfc86
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -103,7 +103,9 @@ ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
 printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
 chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
-EOF_cfd1b125c621
+ln -sf /opt/chromium/chrome /usr/bin/google-chrome
+ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
+EOF_d7f9f71cfc86
 
 
 RUN <<EOF_563ded4da504

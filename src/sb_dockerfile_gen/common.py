@@ -17,7 +17,6 @@ XVFB_DEPS = [
     "xfonts-scalable",
     "xfonts-cyrillic",
     "x11-apps",
-    "firefox",
 ]
 X11_DEPS = [
     "libx11-xcb1",
@@ -116,6 +115,10 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
         'printf \'#!/bin/bash\\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\\n\' > /opt/chromium/chrome',
         "chmod +x /opt/chromium/chrome",
         "chmod -R 755 /opt/chromium-pinned",
+        # Symlink into /usr/bin so Cypress, chrome-launcher, and any tool
+        # that shells out to `google-chrome` finds the pinned binary.
+        "ln -sf /opt/chromium/chrome /usr/bin/google-chrome",
+        "ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable",
     ]
 
 
