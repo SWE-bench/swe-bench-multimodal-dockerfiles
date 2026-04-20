@@ -67,7 +67,14 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
         "rm /tmp/chromium.zip",
         "mkdir -p /opt/chromium",
         f"ln -sf /opt/chromium-pinned/{zip_subdir}/chrome /opt/chromium/chrome-bin",
-        'printf \'#!/bin/bash\\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\\n\' > /opt/chromium/chrome',
+        # Wrapper at /opt/chromium/chrome: adds --no-sandbox, and spoofs
+        # `--version` output as "Google Chrome N.N.N.N" (instead of the
+        # binary's native "Chromium N.N.N.N") so Cypress's `-b chrome`
+        # browser detection accepts it (chromium binaries are otherwise
+        # only discovered as `-b chromium`, and some test suites hard-
+        # code `chrome`). Any other invocation runs the real binary.
+        "VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+')",
+        'printf \'#!/bin/bash\\nif [ "$1" = "--version" ]; then echo "Google Chrome \'"$VER"\'"; exit 0; fi\\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\\n\' > /opt/chromium/chrome',
         "chmod +x /opt/chromium/chrome",
         "chmod -R 755 /opt/chromium-pinned",
         # Symlink into /usr/bin so Cypress, chrome-launcher, and any tool

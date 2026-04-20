@@ -91,7 +91,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_e33c0a890508
+RUN <<EOF_7f55493ea826
 #!/bin/bash
 set -euxo pipefail
 npm i -g yarn
@@ -101,12 +101,13 @@ unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
 rm /tmp/chromium.zip
 mkdir -p /opt/chromium
 ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
-printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+printf '#!/bin/bash\nif [ "$1" = "--version" ]; then echo "Google Chrome '"$VER"'"; exit 0; fi\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
 chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
-EOF_e33c0a890508
+EOF_7f55493ea826
 
 
 RUN <<EOF_76fdaf5b65c2

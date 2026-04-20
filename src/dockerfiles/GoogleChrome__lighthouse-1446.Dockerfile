@@ -91,7 +91,7 @@ python2 -V
 EOF_727a9afa5b25
 
 
-RUN <<EOF_bbd813fd4b74
+RUN <<EOF_6a59a134965e
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -100,12 +100,13 @@ unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
 rm /tmp/chromium.zip
 mkdir -p /opt/chromium
 ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
-printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+printf '#!/bin/bash\nif [ "$1" = "--version" ]; then echo "Google Chrome '"$VER"'"; exit 0; fi\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
 chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
-EOF_bbd813fd4b74
+EOF_6a59a134965e
 
 
 RUN <<EOF_7c85e2f9c165
