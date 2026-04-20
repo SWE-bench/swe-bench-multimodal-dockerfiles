@@ -219,77 +219,55 @@ SPECS_OPENLAYERS = {
 # unchanged from `require('puppeteer').executablePath()` — picks the same
 # binary. Both karma and rendering use one Chrome.
 
-# Puppeteer version → Chrome buildId (matches puppeteer's own revisions.js).
-# Older snapshot pins (rev 637110 etc.) are no longer used because puppeteer
-# 21+ migrated to Chrome-for-Testing build IDs.
-_OL_PUPPETEER_BUILDID = {
-    '1.13.0': '73.0.3683.0',
-    '2.0.0':  '79.0.3941.0',
-    '2.1.0':  '81.0.4044.0',
-    '2.1.1':  '81.0.4044.0',
-    '5.3.1':  '88.0.4324.0',
-    '8.0.0':  '90.0.4427.0',
-    '10.0.0': '92.0.4515.0',
-    '10.2.0': '93.0.4577.0',
-    '12.0.0': '97.0.4691.0',
-    '13.0.1': '97.0.4691.0',
-    '13.5.1': '100.0.4896.0',
-    '15.3.2': '103.0.5060.0',
-    '15.5.0': '105.0.5173.0',
-    '17.1.1': '107.0.5296.0',
-    '19.4.1': '110.0.5481.0',
-    '20.3.0': '113.0.5672.63',
-    '20.9.0': '115.0.5790.98',
-    '21.1.1': '116.0.5845.96',
-    '21.2.1': '116.0.5845.96',
-    '21.9.0': '121.0.6167.85',
-    '22.5.0': '122.0.6261.128',
-}
-# OpenLayers version -> puppeteer version (from each project's package.json).
-# v4.6 / v5.1 don't use puppeteer (karma-chrome-launcher only) — skip pre-bake.
-_OL_PUPPETEER_VERSION = {
-    '5.3': '1.13.0',
-    '6.1': '2.0.0',  '6.2': '2.1.0',  '6.3': '2.1.1',
-    '6.4': '5.3.1',  '6.5': '8.0.0',
-    '6.5.1': '10.0.0', '6.6': '10.2.0',
-    '6.9': '12.0.0', '6.10': '13.0.1',
-    '6.11': '13.0.1', '6.12': '13.0.1',
-    '6.13': '13.5.1', '6.14': '15.3.2',
-    '7.0': '15.5.0', '7.1': '17.1.1', '7.2': '19.4.1',
-    '7.3': '20.3.0', '7.4': '20.9.0', '7.5': '21.1.1',
-    '8.1': '21.2.1', '9.0': '21.9.0', '9.1': '22.5.0',
-}
-def _ol_puppeteer_chromium_preinstall(puppeteer_version: str) -> list[str]:
-    """wget Chrome-for-Testing into puppeteer's cache layout so
-    `puppeteer.executablePath()` resolves it (set
-    PUPPETEER_SKIP_DOWNLOAD=true on the SPEC's docker_specs.env so npm
-    install skips its own download — that download hook deadlocks under
-    BuildKit when puppeteer 21+ tries two parallel installs + heredoc
-    stdout buffering)."""
-    buildid = _OL_PUPPETEER_BUILDID[puppeteer_version]
-    cache_dir = f"/opt/puppeteer-cache/chrome/linux-{buildid}"
-    return [
-        f"mkdir -p {cache_dir}",
-        f"wget -q https://storage.googleapis.com/chrome-for-testing-public/{buildid}/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
-        f"unzip -q /tmp/chrome.zip -d {cache_dir}/",
-        "rm /tmp/chrome.zip",
-        f"chmod -R 755 {cache_dir}",
-    ]
-
-
 # OL versions whose puppeteer dep is 20+ (Chrome-for-Testing era) — those
 # fork two parallel downloads (chrome + chrome-headless-shell) inside
 # install.mjs which deadlocks under BuildKit's heredoc stdout buffering.
-# Pre-bake Chromium via wget and skip npm's puppeteer install hook with
-# PUPPETEER_SKIP_DOWNLOAD. Confirmed hung: v7.3 (puppeteer 20.3),
-# v7.4 (20.9), v7.5 (21.1), v8.1 (21.2), v9.0 (21.9), v9.1 (22.5).
+# (Tried PUPPETEER_SKIP_CHROME_HEADLESS_SHELL_DOWNLOAD=true — still hung.)
+# Workaround:
+#   1. npm install --ignore-scripts (skips ALL postinstall hooks → no hang)
+#   2. After install, read puppeteer's *actual* pinned Chrome buildId from
+#      node_modules/puppeteer-core/lib/cjs/puppeteer/revisions.js
+#   3. wget that exact buildId from chrome-for-testing-public into the
+#      puppeteer cache layout so puppeteer.executablePath() resolves it.
+# This handles per-instance puppeteer-patch differences (e.g., one v9.0
+# instance pins 21.7→Chrome119, another pins 21.9→Chrome121).
 _OL_BUILD_HOOK_HANGS = {'7.3', '7.4', '7.5', '8.1', '9.0', '9.1'}
-for _ol_v, _pup_v in _OL_PUPPETEER_VERSION.items():
-    if _ol_v in _OL_BUILD_HOOK_HANGS and _ol_v in SPECS_OPENLAYERS:
-        SPECS_OPENLAYERS[_ol_v]['pre_install'] = _ol_puppeteer_chromium_preinstall(_pup_v)
+_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH = (
+    "npm install --ignore-scripts && "
+    "BUILDID=$(node -e \"console.log(require('puppeteer-core/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS.chrome)\") && "
+    "test -n \"$BUILDID\" && "
+    "CACHE_DIR=/opt/puppeteer-cache/chrome/linux-${BUILDID} && "
+    "mkdir -p ${CACHE_DIR} && "
+    "wget -q https://storage.googleapis.com/chrome-for-testing-public/${BUILDID}/linux64/chrome-linux64.zip -O /tmp/chrome.zip && "
+    "unzip -q /tmp/chrome.zip -d ${CACHE_DIR}/ && "
+    "rm /tmp/chrome.zip && "
+    "chmod -R 755 ${CACHE_DIR}"
+)
+for _ol_v in _OL_BUILD_HOOK_HANGS:
+    if _ol_v in SPECS_OPENLAYERS:
+        # Replace the standard "npm install" step with the noscripts+fetch combo.
+        # Existing install steps for OL start with "npm install" — overwrite that.
+        install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
+        for i, step in enumerate(install_steps):
+            if step == 'npm install':
+                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH
+                break
+        SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
+
+
+# v4.6 and v5.1 don't use puppeteer at all (karma-chrome-launcher relies on
+# CHROME_BIN finding a system Chromium). Install Google Chrome via the deb
+# repo and point CHROME_BIN at it. (Stays inside the OL-only image.)
+_OL_NO_PUPPETEER_CHROME_INSTALL = [
+    "wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -",
+    "echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' >> /etc/apt/sources.list.d/google-chrome.list",
+    "apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*",
+]
+for _ol_v in {'4.6', '5.1'}:
+    if _ol_v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[_ol_v]['pre_install'] = _OL_NO_PUPPETEER_CHROME_INSTALL
         SPECS_OPENLAYERS[_ol_v].setdefault('docker_specs', {})['env'] = {
-            'PUPPETEER_SKIP_DOWNLOAD': 'true',
-            'PUPPETEER_SKIP_CHROMIUM_DOWNLOAD': 'true',
+            'CHROME_BIN': '/usr/bin/google-chrome-stable',
         }
 #
 # Replacement for the original karma launcher:

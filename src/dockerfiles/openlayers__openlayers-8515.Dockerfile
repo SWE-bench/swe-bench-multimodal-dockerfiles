@@ -67,6 +67,7 @@ USER root
 ENV NODE_VERSION 21.6.2
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+ENV CHROME_BIN=/usr/bin/google-chrome-stable
 
 RUN <<EOF_55f960f4ac15
 #!/bin/bash
@@ -91,6 +92,15 @@ source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
 EOF_55f960f4ac15
+
+
+RUN <<EOF_7b74f47f6050
+#!/bin/bash
+set -euxo pipefail
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' >> /etc/apt/sources.list.d/google-chrome.list
+apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt/lists/*
+EOF_7b74f47f6050
 
 
 RUN <<EOF_9dd48923532f
