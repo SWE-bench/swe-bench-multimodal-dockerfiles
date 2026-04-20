@@ -6,7 +6,14 @@ from sb_dockerfile_gen.utils import get_test_paths
 SPECS_SCRATCH = {
     **{k: {
         "install": ["npm install"],
-        "test_cmd": "./node_modules/.bin/jest --runInBand --no-colors --json --forceExit --testPathIgnorePatterns='test/integration' --testPathIgnorePatterns='vm-manager-hoc'",
+        # --outputFile + cat: see specs/carbon.py _jest_file_cmd for rationale.
+        "test_cmd": (
+            "./node_modules/.bin/jest --runInBand --no-colors --json --forceExit "
+            "--testPathIgnorePatterns='test/integration' "
+            "--testPathIgnorePatterns='vm-manager-hoc' "
+            "--outputFile=/testbed/jest-0.json > /dev/null 2>&1 || true; "
+            "cat /testbed/jest-0.json 2>/dev/null || true"
+        ),
         "docker_specs": {
             "node_version": {
                 "1": "20.16.0",
@@ -38,10 +45,16 @@ _SPECS_SCRATCH_STATIC_TEST_CMD = {v: SPECS_SCRATCH[v]["test_cmd"] for v in SPECS
 def _scratch_gui_test_cmds(instance: dict) -> list:
     test_prefix = _SPECS_SCRATCH_STATIC_TEST_CMD[instance["version"]]
     cmds = []
-    for test_path in get_test_paths(instance):
+    for i, test_path in enumerate(get_test_paths(instance)):
         if "__snapshots__" in test_path:
             test_path = test_path.split("__snapshots__")[0]
-        cmds.append(f"{test_prefix} {test_path}")
+        # Write JSON to file then cat — avoids docker-log truncation on large
+        # single-line stdout writes. See specs/carbon.py _jest_file_cmd.
+        out = f"/testbed/jest-{i}.json"
+        cmds.append(
+            f"{test_prefix} --outputFile={out} {test_path} > /dev/null 2>&1 || true; "
+            f"cat {out} 2>/dev/null || true"
+        )
     return list(dict.fromkeys(cmds))
 
 

@@ -6,9 +6,11 @@ SPECS_GROMMET = {
         "install": [
             "yarn install"
         ],
+        # Write JSON to file then cat — avoids a docker-log truncation seen
+        # on >64KB single-line stdout writes. See specs/carbon.py _jest_file_cmd.
         "test_cmd": [
             "yarn install",
-            "npx jest --runInBand --json",
+            "npx jest --runInBand --json --outputFile=/testbed/jest-0.json > /dev/null 2>&1 || true; cat /testbed/jest-0.json 2>/dev/null || true",
         ],
         "docker_specs": {
             "node_version": "21.6.2"

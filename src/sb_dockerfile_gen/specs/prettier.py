@@ -38,7 +38,7 @@ SPECS_PRETTIER['2.2'] = {
 
 def _prettier_test_cmds(instance: dict) -> list:
     cmds = []
-    for test_path in get_test_paths(instance):
+    for i, test_path in enumerate(get_test_paths(instance)):
         if "__snapshots__" in test_path:
             test_path = test_path.split("__snapshots__")[0]
         if test_path.endswith(".md"):
@@ -47,7 +47,13 @@ def _prettier_test_cmds(instance: dict) -> list:
         # (fixture .js, .ts, .css, .snap, etc.) needs the directory instead
         if not test_path.endswith("jsfmt.spec.js") and not "/__tests__/" in test_path and not test_path.endswith("/"):
             test_path = "/".join(test_path.split("/")[:-1])
-        cmds.append(f"yarn test {test_path}")
+        # Write JSON to file then cat — avoids docker-log truncation on large
+        # single-line stdout writes. See specs/carbon.py _jest_file_cmd.
+        out = f"/testbed/jest-{i}.json"
+        cmds.append(
+            f"yarn test --json --outputFile={out} {test_path} > /dev/null 2>&1 || true; "
+            f"cat {out} 2>/dev/null || true"
+        )
     return list(dict.fromkeys(cmds))
 
 
