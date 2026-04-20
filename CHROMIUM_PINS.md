@@ -21,9 +21,14 @@ Install kinds referenced in the tables:
 - `bundled-electron` — cypress ships its own Chromium inside Electron; no separate install needed
 - `none` — test suite does not launch a real browser (pure Node / jsdom)
 
-The OpenLayers rows below are the only ones currently wired into the generator
-(`_OL_CHROMIUM_PINS` / `_OL_PUPPETEER_VERSION` in `src/sb_dockerfile_gen/constants.py`).
-All other rows are research output — not yet applied to Dockerfiles.
+All puppeteer-based pins below are wired into the generator: per-repo
+`*_PINS` dicts in `src/sb_dockerfile_gen/specs/<repo>.py` map each version
+to a named `CHROMIUM_*` constant in `common.py`, and `chromium_preinstall()`
+pre-bakes the binary at `/opt/chromium/chrome` (with a `--no-sandbox`
+wrapper that also spoofs `--version` as "Google Chrome" for Cypress).
+OpenLayers uses a per-instance multi-pin pre-bake (`OL_PINS` +
+`_ol_prebake_chromium` in `specs/openlayers.py`) since one OL version may
+span multiple puppeteer patches.
 
 ---
 
@@ -302,9 +307,11 @@ All 11 sampled commits use `jasmine --config=jasmine.json`. Pure Node.
 
 ## openlayers/openlayers
 
-Already wired up in the generator (`_OL_CHROMIUM_PINS` and
-`_OL_PUPPETEER_VERSION` in `src/sb_dockerfile_gen/constants.py`). Reproduced
-here for completeness.
+Wired via `OL_PINS` in `src/sb_dockerfile_gen/specs/openlayers.py`. Each
+version maps to a list of `CHROMIUM_*` constants pre-baked into the
+puppeteer cache layout so any per-instance puppeteer patch resolves to a
+matching binary at runtime. v4.6 and v5.1 (no puppeteer dep) install
+`google-chrome-stable` via the deb repo and set `CHROME_BIN`.
 
 | version | puppeteer | kind | pin | chrome |
 |---|---|---|---|---|
@@ -333,10 +340,6 @@ here for completeness.
 | 8.1 | 21.2.1 | cft | 116.0.5845.96 | 116 |
 | 9.0 | 21.9.0 | cft | 121.0.6167.85 | 121 |
 | 9.1 | 22.5.0 | cft | 122.0.6261.128 | 122 |
-
-Note: OpenLayers 4.6 and 5.1 pre-date the `puppeteer` dep and are currently
-not pinned (the existing generator only applies `_ol_chromium_preinstall`
-to versions in `_OL_PUPPETEER_VERSION`).
 
 ---
 
@@ -427,72 +430,21 @@ Chrome 66–73; chromedriver 74+ matches Chrome major).
 | scratchfoundation/scratch-gui | 5 | 5 | system |
 | **Total** | **200** | **128** (incl. 11 runtime-only / smoke-only) | |
 
-## Action buckets
+## Status (post-cleanup)
 
-1. **No-chromium (67 rows across 6 repos)** — Automattic/wp-calypso, PrismJS,
-   diegomura/react-pdf, grommet/grommet, highlightjs/highlight.js,
-   markedjs/marked, prettier/prettier. Remove the `google-chrome-stable`
-   apt install from these Dockerfiles to shrink images.
-2. **Deterministic bundled Chromium (already-wired: openlayers; to wire:
-   alibaba-fusion/next 1.22+, bpmn-io/bpmn-js, carbon 16.15+, eslint 5.14–8.1,
-   lighthouse 2.9+, processing/p5.js 0.7+, quarto-cli)** — extend the
-   `_ol_chromium_preinstall` pattern to these repos and drop `google-chrome-stable`.
-3. **System chrome with no deterministic pin (chartjs, carbon 10–14,
-   alibaba-fusion/next <1.22, scratch-gui, lighthouse 1.x–2.8)** — continue
-   installing a system Chrome but pick an era-appropriate apt snapshot or
-   use `chrome-for-testing` matched to the commit date.
-4. **Cypress bundled Electron (carbon 14.17–16.14)** — cypress brings its own
-   Chromium; don't install a separate system Chrome.
+All four buckets above are now resolved:
 
----
+1. **No-chromium repos** — base image no longer installs `google-chrome-stable`;
+   only repos that pre-bake a Chromium via `chromium_preinstall` ship one.
+2. **Deterministic bundled Chromium** — bpmn-js, next 1.21+, lighthouse, p5.js,
+   chart.js (era-approximations) are all wired via per-repo `*_PINS` dicts +
+   `chromium_preinstall`. eslint/quarto-cli were not wired (their puppeteer
+   usage is for build-time/runtime tooling, not the test suites).
+3. **System-Chrome era-approximations** — chart.js + lighthouse 1.x–2.8 +
+   next 1.11–1.20 all use `chromium-snapshots` revs picked from the commit
+   date; no system Chrome dep remains.
+4. **Cypress bundled Electron** — carbon 14.17–16.14 still rely on Cypress's
+   bundled Electron; the wrapper at `/opt/chromium/chrome` spoofs `--version`
+   as "Google Chrome" so `cypress run -b chrome` accepts the pinned binary
+   for repos that need it (e.g. next 1.27).
 
-# Workarounds that proper pinning would eliminate or reshape
-
-Audit of the existing `constants.py` / `__init__.py` hacks and which would
-become redundant once every repo/version uses its puppeteer-derived Chromium
-(following the OpenLayers `_ol_chromium_preinstall` pattern).
-
-## Likely eliminable / simplified
-
-| Current workaround | Location | Why it exists | What proper pin fixes |
-|---|---|---|---|
-| 3-bucket era pins `_CHROMIUM_72_INSTALL` / `_CHROMIUM_85_INSTALL` / `_CHROME_120_INSTALL` | `constants.py:91–101` (used by bpmn-js, chart.js, next) | Blunt era-match to dodge Chrome 146 breakage | Replace with per-version puppeteer-derived pins: bpmn-js v3.4 → 641577, v4.0 → 669486, v5.x–7.3 → 672088, v7.4 → 818858, v8.3 → 856583, v8.8–9.3 → 884014, v11.x → 1069273, v13.2/15.2 → CfT. next v1.22–1.24 → 818858, v1.25–1.27 → 901912. chart.js has no puppeteer pin so buckets stay valid for those rows. |
-| bpmn-js 5.0 Firefox fallback | `constants.py:970–984` | Comment: "Chrome (72, 78, 146) all fail on label rendering" | Project's own puppeteer v1.18.1 pin (rev 672088, Chrome 76) was never tried. Worth testing before shipping Firefox. |
-| p5.js `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=''` override | `constants.py:306` | Forces puppeteer to download its bundled Chromium at install time, undoing the base-image `ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true` | Replace with OL pattern: pre-bake the pinned rev at `/opt/chromium/chrome` and set `PUPPETEER_EXECUTABLE_PATH`. Drops a ~150 MB runtime download. |
-| OL `--force` for rendering tests | `__init__.py:319,323` | Skips `getOutdated()` filter because pre-pin many cases failed | Less load-bearing once pixel parity is real; safe to keep but no longer essential. |
-| lighthouse has no pin today | `constants.py:1441+` | smokehouse uses system Chrome via `chrome-launcher`; viewer/extension tests use puppeteer-bundled | For deterministic pptr runs: v2.9 → 536395, v3.x → 555668, v4.0–5.2 → 599821, v5.6–7.0 → 674921, v8.3 → 869685, v8.6 → 901912, v9.5 → 1036745, v10.0 → 1083080, v10.2 → CfT 113. Smokehouse unaffected. |
-
-## Reshaped by pinning, not eliminated
-
-| Workaround | Why it must remain |
-|---|---|
-| `SET_PUPPETEER_PATH` sed rewriting `CHROME_BIN = require('puppeteer').executablePath()` | Still needed — target path changes to `/opt/chromium/chrome` (OL already does this via `_OL_KARMA_CHROME_BIN_SED`). |
-| `PUPPETEER_EXECUTABLE_PATH=...` env in test_cmd (bpmn-js, next) | Still needed; value flips to the pinned path. |
-| `--no-sandbox`, `--disable-setuid-sandbox`, `--disable-dev-shm-usage` (bpmn-js custom launcher) | Docker-env requirement, version-independent. |
-| `SYS_ADMIN` cap_add (OL, next, quarto) | Chromium sandbox under Docker. |
-| `libxtst6`, `libgl1-mesa-dri`, `libegl1-mesa` apt-pkgs | Old Chromium snapshots need these native libs; CfT bundles ship their own. |
-| XVFB wrapper in test_cmd | Headless Chrome still wants a display in some runs. |
-
-## Not chromium-related at all — leave alone
-
-| Workaround | Actual cause |
-|---|---|
-| `SET_OPENSSL_TO_LEGACY` for bpmn-js 3.0/3.3/3.4/4.0/5.1 (`constants.py:965–966`) | Node 17+ OpenSSL 3 incompatibility with old webpack. |
-| carbon `.achecker.yml` pin + matcher stub (`constants.py:1398,1409`) | IBM `able.ibm.com` rules API drift; no network in Docker for some tests. |
-| carbon `nwsapi@2.2.7` upgrade | jsdom CSS `:scope>*` selector bug. |
-| carbon v14.17/16.13/16.14 bundled Electron via Cypress | Cypress ships its own Chromium; external pin doesn't apply. |
-| next 1.27 `cypress@13.14.2` forced upgrade | Cypress reconnection bug fix (PR #29663). |
-| OL `ChromeWebGL` custom launcher with `--use-gl=angle --use-angle=swiftshader-webgl` (`constants.py:1032–1041`) | WebGL rasterizer issue in headless Chrome — not version-specific. |
-| karma-json-reporter installs + SED patches (bpmn-js, next, chart.js) | Parser log-format fix. |
-| marked/next `cheerio@1.0.0-rc.3`, `sass@1.36.0`, `babel-preset-es2015`, enzyme pins | Node module version drift. |
-| OL `--log-level=info`, `--reporter json` | Parser format needs. |
-
-## Recommended rollout
-
-1. **bpmn-js**: swap 3 era buckets for per-version puppeteer pins; retest v5.0 on puppeteer-1.18.1's real Chromium (rev 672088) before keeping the Firefox fallback. Biggest surface-area win.
-2. **next 1.22–1.27**: add puppeteer-pin pattern (mirrors OL); drop `_CHROMIUM_85_INSTALL` usage here.
-3. **p5.js**: wire OL-style pre-bake → remove `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=''` hack; shrink image by ~150 MB.
-4. **lighthouse 2.9+**: optional — pin bundled Chromium for viewer/extension reproducibility. Smokehouse (system Chrome) unchanged.
-5. **chart.js**: keep era buckets (no puppeteer pin available); consider tightening to per-version CfT versions.
-
-Everything in "Not chromium-related" should stay untouched — changing those would mask different root causes.
