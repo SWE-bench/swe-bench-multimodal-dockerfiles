@@ -330,6 +330,32 @@ for v in SPECS_OPENLAYERS:
     SPECS_OPENLAYERS[v]['install'].append(_OL_KARMA_ALIAS_SED(cfg))
 
 
+# Strict byte-level rendering comparison for instances whose F2P target is a
+# new rendering case added by the test_patch but whose gold vs nopatch pixel
+# delta falls within the runner's 0.5% tolerance — the tolerance check passes
+# both ways and the test is non-discriminating without byte-exact comparison.
+# Appended after the rendering command; emits a parser-recognised mismatch
+# line when actual.png and expected.png differ. Viable because per-version
+# Chromium pins make the rendering reproducible.
+_OL_STRICT_CMP_CASES = {
+    "openlayers__openlayers-12194": ["immediate-pixel-ratio"],
+    "openlayers__openlayers-13981": ["text-style-offset"],
+    "openlayers__openlayers-14932": ["text-style-linestring-nice"],
+}
+
+
+def _ol_strict_cmp_cmd(cases: list[str]) -> str:
+    parts = []
+    for case in cases:
+        path = f"test/rendering/cases/{case}"
+        parts.append(
+            f"if [ -f {path}/actual.png ] && [ -f {path}/expected.png ] "
+            f"&& ! cmp -s {path}/actual.png {path}/expected.png ; then "
+            f"printf \"case ./cases/{case}/main.js': mismatch (strict byte comparison)\\n\" ; fi"
+        )
+    return " ; ".join(parts)
+
+
 def _openlayers_test_cmds(instance: dict) -> list:
     # OL runs on the vintage Ubuntu 20.04 base (see _DOCKERFILE_BASE_JS_OL)
     # so puppeteer's bundled Chromium drives both karma and rendering tests
@@ -340,6 +366,7 @@ def _openlayers_test_cmds(instance: dict) -> list:
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
     SSL_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
     cmds = []
+    ran_rendering = False
     for test_path in get_test_paths(instance):
         test_type = test_path.split('/')[1] if '/' in test_path else ""
         if test_type == "browser":
@@ -359,6 +386,7 @@ def _openlayers_test_cmds(instance: dict) -> list:
                     f'CI=true {XVFB} su chromeuser -c '
                     f'"CI=true npm run test-rendering -- --force --log-level=info"'
                 )
+            ran_rendering = True
         elif test_type == "spec":
             cmds.append(f'{XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
         elif test_type == "node":
@@ -372,6 +400,9 @@ def _openlayers_test_cmds(instance: dict) -> list:
             '4.3', '4.4', '4.5', '4.6', '5.1', '5.2', '5.3'
         ]:
             cmds[-1] = f"{SSL_LEGACY} {cmds[-1]}"
+    strict_cases = _OL_STRICT_CMP_CASES.get(instance.get("instance_id", ""))
+    if strict_cases and ran_rendering:
+        cmds.append(_ol_strict_cmp_cmd(strict_cases))
     # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
     return list(dict.fromkeys(cmds))
 
