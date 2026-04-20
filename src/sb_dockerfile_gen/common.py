@@ -135,38 +135,67 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
 # (different puppeteer bundles). Per-repo pin tables live next to the
 # SPECS dicts in specs/test_split.py and specs/dev_split.py.
 #
-# OL is NOT listed here — it reads the project's own puppeteer
-# revisions.js at build time (per-instance puppeteer patch overrides).
 # chart.js uses a separate legacy table (no puppeteer dep to derive from).
 
-CHROMIUM_60      = ('rev', '474900')    # lighthouse v1.4 era-approx (target 474934 unavailable)
-CHROMIUM_61      = ('rev', '494755')    # lighthouse v1.5
-CHROMIUM_62      = ('rev', '499100')    # lighthouse v1.6/v2.1, p5.js v0.6 (target 499098 unavailable)
-CHROMIUM_63      = ('rev', '508578')    # lighthouse v2.4
-CHROMIUM_63_DEC  = ('rev', '513000')    # late Chrome 63 — lighthouse v2.5/v2.6 (target 515693 unavailable)
-CHROMIUM_64      = ('rev', '530400')    # lighthouse v2.8 (target 530368 unavailable)
-CHROMIUM_66      = ('rev', '536395')    # puppeteer 1.1.1 (lighthouse v2.9)
-CHROMIUM_68      = ('rev', '555668')    # puppeteer 1.4.0 (lighthouse v3.0/v3.1)
-CHROMIUM_71      = ('rev', '599821')    # puppeteer 1.10 / karma era (lighthouse v4–v5.2, next v1.11–v1.20)
-CHROMIUM_72      = ('rev', '624492')    # puppeteer 1.12.2 (p5.js v0.7/v0.8)
-CHROMIUM_73      = ('rev', '641577')    # puppeteer 1.14.0 (bpmn-js v3.4)
-CHROMIUM_76_A    = ('rev', '669486')    # puppeteer 1.18.0 (bpmn-js v4.0)
-CHROMIUM_76_B    = ('rev', '672088')    # puppeteer 1.18.1 (bpmn-js v5–v7.3, p5.js v0.10)
-CHROMIUM_76_P5   = ('rev', '686378')    # p5.js v1.0 puppeteer
-CHROMIUM_77      = ('rev', '674921')    # puppeteer 1.19.0 (lighthouse v5.6–v7.0)
-CHROMIUM_85      = ('rev', '793478')    # next v1.21, bpmn-js v9.0
-CHROMIUM_88      = ('rev', '818858')    # puppeteer 5.5.0 (bpmn-js v7.4, next v1.22–v1.24, p5.js v1.3)
-CHROMIUM_90      = ('rev', '856583')    # puppeteer 8.0.0 (bpmn-js v8.3)
-CHROMIUM_91      = ('rev', '869685')    # puppeteer 9.1.1 (lighthouse v8.3)
-CHROMIUM_92      = ('rev', '884014')    # puppeteer 10.0.0 (bpmn-js v8.8–v9.3)
-CHROMIUM_93      = ('rev', '901912')    # puppeteer 10.2.0 (next v1.25–v1.27, p5.js v1.4, lighthouse v8.6)
-CHROMIUM_107_A   = ('rev', '1036745')   # puppeteer 18.0.5 (lighthouse v9.5)
-CHROMIUM_107_B   = ('rev', '1045629')   # p5.js v1.5/v1.6
-CHROMIUM_110_A   = ('rev', '1069273')   # puppeteer 19.4.1 (bpmn-js v11.x)
-CHROMIUM_110_B   = ('rev', '1083080')   # puppeteer 19.6.0 (lighthouse v10.0)
-CHROMIUM_112     = ('rev', '1110000')   # bpmn-js v13.2 snapshot (CfT 112 unavailable)
-CHROMIUM_CFT_113 = ('cft', '113.0.5672.63')    # puppeteer 20.1.0 (lighthouse v10.2)
-CHROMIUM_CFT_117 = ('cft', '117.0.5938.149')   # puppeteer 21.3.8 (bpmn-js v15.2)
+CHROMIUM_60      = ('rev', '474900')    # target 474934 unavailable
+CHROMIUM_61      = ('rev', '494755')
+CHROMIUM_62      = ('rev', '499100')    # target 499098 unavailable
+CHROMIUM_63      = ('rev', '508578')
+CHROMIUM_63_DEC  = ('rev', '513000')    # late Chrome 63, target 515693 unavailable
+CHROMIUM_64      = ('rev', '530400')    # target 530368 unavailable
+CHROMIUM_66      = ('rev', '536395')    # puppeteer 1.1.1
+CHROMIUM_68      = ('rev', '555668')    # puppeteer 1.4.0
+CHROMIUM_71_A    = ('rev', '599821')    # puppeteer 1.10 / karma era
+CHROMIUM_71_B    = ('rev', '609904')    # puppeteer 1.11
+CHROMIUM_72_A    = ('rev', '624492')    # puppeteer 1.12.2
+CHROMIUM_72_B    = ('rev', '637110')    # puppeteer 1.13
+CHROMIUM_73      = ('rev', '641577')    # puppeteer 1.14.0
+CHROMIUM_76_A    = ('rev', '669486')    # puppeteer 1.18.0
+CHROMIUM_76_B    = ('rev', '672088')    # puppeteer 1.18.1
+CHROMIUM_76_P5   = ('rev', '686378')    # puppeteer 2.0
+CHROMIUM_77      = ('rev', '674921')    # puppeteer 1.19.0
+CHROMIUM_79      = ('rev', '706915')    # puppeteer 2.1.1
+CHROMIUM_81      = ('rev', '722234')    # puppeteer 2.1
+CHROMIUM_83      = ('rev', '737027')    # puppeteer 3.x
+CHROMIUM_85_A    = ('rev', '793478')
+CHROMIUM_85_B    = ('rev', '756035')    # puppeteer 5.2
+CHROMIUM_87      = ('rev', '782078')    # puppeteer 5.4
+CHROMIUM_88_A    = ('rev', '818858')    # puppeteer 5.5.0
+CHROMIUM_88_B    = ('rev', '800071')    # puppeteer 5.4.1
+CHROMIUM_90      = ('rev', '856583')    # puppeteer 8.0.0
+CHROMIUM_91      = ('rev', '869685')    # puppeteer 9.1.1
+CHROMIUM_92      = ('rev', '884014')    # puppeteer 10.0.0
+CHROMIUM_93      = ('rev', '901912')    # puppeteer 10.2.0
+CHROMIUM_97      = ('rev', '938248')    # puppeteer 13.0
+CHROMIUM_98      = ('rev', '950341')    # puppeteer 13.5
+CHROMIUM_100     = ('rev', '970485')    # puppeteer 14.0
+CHROMIUM_101     = ('rev', '982053')    # puppeteer 14.1
+CHROMIUM_104     = ('rev', '1011831')   # puppeteer 16.x
+CHROMIUM_106     = ('rev', '1022525')   # puppeteer 17.x
+CHROMIUM_107_A   = ('rev', '1036745')   # puppeteer 18.0.5
+CHROMIUM_107_B   = ('rev', '1045629')
+CHROMIUM_109     = ('rev', '1056772')   # puppeteer 18.2
+CHROMIUM_110_A   = ('rev', '1069273')   # puppeteer 19.4.1
+CHROMIUM_110_B   = ('rev', '1083080')   # puppeteer 19.6.0
+CHROMIUM_111     = ('rev', '1095492')   # puppeteer 19.7
+CHROMIUM_112_A   = ('rev', '1110000')   # snapshot (CfT 112 unavailable)
+CHROMIUM_112_B   = ('rev', '1108766')   # puppeteer 19.8
+CHROMIUM_CFT_113   = ('cft', '113.0.5672.63')    # puppeteer 20.1.0
+CHROMIUM_CFT_115_A = ('cft', '115.0.5790.98')    # puppeteer 20.8
+CHROMIUM_CFT_115_B = ('cft', '115.0.5790.102')   # puppeteer 21.0
+CHROMIUM_CFT_115_C = ('cft', '115.0.5790.170')   # puppeteer 21.1
+CHROMIUM_CFT_116   = ('cft', '116.0.5845.96')    # puppeteer 21.2
+CHROMIUM_CFT_117_A = ('cft', '117.0.5938.149')   # puppeteer 21.3.8
+CHROMIUM_CFT_117_B = ('cft', '117.0.5938.92')    # puppeteer 21.3.4
+CHROMIUM_CFT_118   = ('cft', '118.0.5993.70')    # puppeteer 21.4
+CHROMIUM_CFT_119   = ('cft', '119.0.6045.105')   # puppeteer 21.7
+CHROMIUM_CFT_121   = ('cft', '121.0.6167.85')    # puppeteer 21.9
+CHROMIUM_CFT_122_A = ('cft', '122.0.6261.69')    # puppeteer 22.0
+CHROMIUM_CFT_122_B = ('cft', '122.0.6261.128')   # puppeteer 22.1
+CHROMIUM_CFT_123_A = ('cft', '123.0.6312.58')    # puppeteer 22.2
+CHROMIUM_CFT_123_B = ('cft', '123.0.6312.122')   # puppeteer 22.3
+CHROMIUM_CFT_124_A = ('cft', '124.0.6367.78')    # puppeteer 22.4
+CHROMIUM_CFT_124_B = ('cft', '124.0.6367.91')    # puppeteer 22.5
 # Switch Karma from 'spec' to 'json' reporter for structured test output.
 # The config file has an explicit plugins array so we must register the plugin.
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).

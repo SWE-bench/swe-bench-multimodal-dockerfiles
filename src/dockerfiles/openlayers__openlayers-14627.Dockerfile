@@ -93,7 +93,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_bd50d628fe7e
+RUN <<EOF_41d3a96b442d
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -101,7 +101,7 @@ cd /testbed
 git reset --hard 309ca077a36338c8bfc4874b437ce794afd48dcb
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 309ca077a36338c8bfc4874b437ce794afd48dcb)
@@ -114,12 +114,16 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install --ignore-scripts && BUILDID=$(node -e "console.log(require('puppeteer-core/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS.chrome)") && test -n "$BUILDID" && CACHE_DIR=/opt/puppeteer-cache/chrome/linux-${BUILDID} && mkdir -p ${CACHE_DIR} && wget -q https://storage.googleapis.com/chrome-for-testing-public/${BUILDID}/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d ${CACHE_DIR}/ && rm /tmp/chrome.zip && chmod -R 755 ${CACHE_DIR}
+npm install --ignore-scripts
+mkdir -p node_modules/puppeteer/.local-chromium/linux-1095492 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1095492/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1095492/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1095492
+mkdir -p node_modules/puppeteer/.local-chromium/linux-1108766 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1108766/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1108766/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1108766
+mkdir -p /opt/puppeteer-cache/chrome/linux-113.0.5672.63 && wget -q https://storage.googleapis.com/chrome-for-testing-public/113.0.5672.63/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d /opt/puppeteer-cache/chrome/linux-113.0.5672.63/ && rm /tmp/chrome.zip && chmod -R 755 /opt/puppeteer-cache/chrome/linux-113.0.5672.63
+grep -q 'process.env.CHROME_BIN' test/karma.config.js || echo "process.env.CHROME_BIN = require('puppeteer').executablePath();" >> test/karma.config.js
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_bd50d628fe7e
+EOF_41d3a96b442d
 
 
 COPY src/image_assets/openlayers__openlayers-14627/ /swebench/image_assets/

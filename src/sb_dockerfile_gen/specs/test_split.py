@@ -29,11 +29,24 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_85_INSTALL,
     _CHROME_120_INSTALL,
     chromium_preinstall,
-    CHROMIUM_71, CHROMIUM_73, CHROMIUM_76_A, CHROMIUM_76_B,
-    CHROMIUM_77, CHROMIUM_85, CHROMIUM_88, CHROMIUM_90,
+    CHROMIUM_71_A, CHROMIUM_71_B, CHROMIUM_72_B, CHROMIUM_73,
+    CHROMIUM_76_A, CHROMIUM_76_B, CHROMIUM_76_P5, CHROMIUM_77,
+    CHROMIUM_79, CHROMIUM_81, CHROMIUM_83,
+    CHROMIUM_85_A, CHROMIUM_85_B, CHROMIUM_87,
+    CHROMIUM_88_A, CHROMIUM_88_B, CHROMIUM_90,
     CHROMIUM_91, CHROMIUM_92, CHROMIUM_93,
-    CHROMIUM_107_A, CHROMIUM_110_A, CHROMIUM_110_B, CHROMIUM_112,
-    CHROMIUM_CFT_113, CHROMIUM_CFT_117,
+    CHROMIUM_97, CHROMIUM_98, CHROMIUM_100, CHROMIUM_101,
+    CHROMIUM_104, CHROMIUM_106,
+    CHROMIUM_107_A, CHROMIUM_109,
+    CHROMIUM_110_A, CHROMIUM_110_B,
+    CHROMIUM_111, CHROMIUM_112_A, CHROMIUM_112_B,
+    CHROMIUM_CFT_113,
+    CHROMIUM_CFT_115_A, CHROMIUM_CFT_115_B, CHROMIUM_CFT_115_C,
+    CHROMIUM_CFT_116, CHROMIUM_CFT_117_A, CHROMIUM_CFT_117_B,
+    CHROMIUM_CFT_118, CHROMIUM_CFT_119, CHROMIUM_CFT_121,
+    CHROMIUM_CFT_122_A, CHROMIUM_CFT_122_B,
+    CHROMIUM_CFT_123_A, CHROMIUM_CFT_123_B,
+    CHROMIUM_CFT_124_A, CHROMIUM_CFT_124_B,
     CHROMIUM_60, CHROMIUM_61, CHROMIUM_62, CHROMIUM_63, CHROMIUM_63_DEC,
     CHROMIUM_64, CHROMIUM_66, CHROMIUM_68,
 )
@@ -160,7 +173,7 @@ for v in ['3.0', '3.3', '3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
 # Per-version Chromium pins. Constants live in common.py. v5.0 intentionally
 # absent — stays on Firefox (see Firefox block below; Chrome 76 regresses
-# bpmn-js-1203's copy-paste reattach F2P). v9.0 pinned to CHROMIUM_85 because
+# bpmn-js-1203's copy-paste reattach F2P). v9.0 pinned to CHROMIUM_85_A because
 # puppeteer 10.0.0's Chrome 92 regresses bpmn-js-1570 (pre-existing F2P name
 # format issue unrelated to rev). Non-dataset versions (0.27, 0.9, 2.3–2.5,
 # 3.0, 3.3, 14.0) keep the legacy era buckets (not exercised by any dataset).
@@ -172,18 +185,18 @@ BPMN_PINS = {
     '6.3':  CHROMIUM_76_B,
     '7.2':  CHROMIUM_76_B,
     '7.3':  CHROMIUM_76_B,
-    '7.4':  CHROMIUM_88,
+    '7.4':  CHROMIUM_88_A,
     '8.3':  CHROMIUM_90,
     '8.8':  CHROMIUM_92,
     '8.9':  CHROMIUM_92,
-    '9.0':  CHROMIUM_85,
+    '9.0':  CHROMIUM_85_A,
     '9.1':  CHROMIUM_92,
     '9.2':  CHROMIUM_92,
     '9.3':  CHROMIUM_92,
     '11.1': CHROMIUM_110_A,
     '11.3': CHROMIUM_110_A,
-    '13.2': CHROMIUM_112,
-    '15.2': CHROMIUM_CFT_117,
+    '13.2': CHROMIUM_112_A,
+    '15.2': CHROMIUM_CFT_117_A,
 }
 for _v, (_kind, _rev) in BPMN_PINS.items():
     SPECS_BPMN_JS[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
@@ -245,102 +258,92 @@ SPECS_OPENLAYERS = {
 }
 # OpenLayers runs on the vintage Ubuntu 20.04 base (see _DOCKERFILE_BASE_JS_OL
 # in __init__.py). That base ships Mesa 21 — what Chromium 97-122's headless
-# WebGL software-rendering was tested against.
+# WebGL software-rendering was tested against. PUPPETEER_SKIP_DOWNLOAD=true
+# is set in the base; per-version pre-bake below writes Chromium variants
+# into the cache layout puppeteer resolves at runtime.
 #
-# The OL base sets PUPPETEER_SKIP_DOWNLOAD=true. The per-version pre_install
-# below wgets each project's puppeteer-pinned Chromium into the puppeteer cache
-# layout (/opt/puppeteer-cache/chrome/linux-{ver}/chrome-linux64/) so that
-# `puppeteer.executablePath()` returns it at runtime. Karma's CHROME_BIN —
-# unchanged from `require('puppeteer').executablePath()` — picks the same
-# binary. Both karma and rendering use one Chrome.
-
-# OL versions whose puppeteer dep is 20+ (Chrome-for-Testing era) — those
-# fork two parallel downloads (chrome + chrome-headless-shell) inside
-# install.mjs which deadlocks under BuildKit's heredoc stdout buffering.
-# (Tried PUPPETEER_SKIP_CHROME_HEADLESS_SHELL_DOWNLOAD=true — still hung.)
-# Workaround:
-#   1. npm install --ignore-scripts (skips ALL postinstall hooks → no hang)
-#   2. After install, read puppeteer's *actual* pinned Chrome buildId from
-#      node_modules/puppeteer-core/lib/cjs/puppeteer/revisions.js
-#   3. wget that exact buildId from chrome-for-testing-public into the
-#      puppeteer cache layout so puppeteer.executablePath() resolves it.
-# This handles per-instance puppeteer-patch differences (e.g., one v9.0
-# instance pins 21.7→Chrome119, another pins 21.9→Chrome121).
-_OL_BUILD_HOOK_HANGS = {'7.3', '7.4', '7.5', '8.1', '9.0', '9.1'}
-_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_CFT = (
-    "npm install --ignore-scripts && "
-    "BUILDID=$(node -e \"console.log(require('puppeteer-core/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS.chrome)\") && "
-    "test -n \"$BUILDID\" && "
-    "CACHE_DIR=/opt/puppeteer-cache/chrome/linux-${BUILDID} && "
-    "mkdir -p ${CACHE_DIR} && "
-    "wget -q https://storage.googleapis.com/chrome-for-testing-public/${BUILDID}/linux64/chrome-linux64.zip -O /tmp/chrome.zip && "
-    "unzip -q /tmp/chrome.zip -d ${CACHE_DIR}/ && "
-    "rm /tmp/chrome.zip && "
-    "chmod -R 755 ${CACHE_DIR}"
-)
-for _ol_v in _OL_BUILD_HOOK_HANGS:
-    if _ol_v in SPECS_OPENLAYERS:
-        install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
-        for i, step in enumerate(install_steps):
-            if step == 'npm install':
-                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_CFT
-                break
-        SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
-
-
-# OL versions with puppeteer 1.x-19.x (chromium-snapshots era). Their
-# install hooks silently no-op on Node 21 / Ubuntu 20.04, leaving an empty
-# .local-chromium dir → karma-chrome-launcher fails ("No binary for
-# ChromeHeadless"). Workaround: same pattern as the CFT versions, but
-# wget from the chromium-browser-snapshots bucket using the rev embedded
-# in puppeteer-core's revisions.js, into puppeteer's .local-chromium
-# layout so `require('puppeteer').executablePath()` resolves it.
+# Each OL version's pin list covers every distinct Chromium observed across
+# its instances — we pre-bake ALL of them so `puppeteer.executablePath()`
+# finds a matching binary regardless of which puppeteer patch an individual
+# instance pinned. Snapshot revs go under
+# `node_modules/puppeteer/.local-chromium/linux-{rev}/chrome-linux/` (the path
+# puppeteer 1.x-19.x hardcodes). CfT buildIds go under
+# `/opt/puppeteer-cache/chrome/linux-{buildId}/chrome-linux64/` (puppeteer 20+
+# with PUPPETEER_CACHE_DIR=/opt/puppeteer-cache from the base).
 #
-# Puppeteer 1.x-19.x revisions.js exposes `.chromium` (a numeric
-# revision string), not `.chrome`. Layout: .local-chromium/linux-{rev}/chrome-linux/chrome.
-# Use semicolons + explicit exit-on-empty so set -e in the parent heredoc
-# actually trips. (`&&` chains in bash bypass `set -e` for non-final
-# commands — silently lets subsequent install steps run with empty cache.)
-_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_SNAPSHOT = (
-    "npm install --ignore-scripts; "
-    # Look up the snapshot revision in three places, in order:
-    # - puppeteer 8.x+: lib/cjs/puppeteer/revisions.js exports PUPPETEER_REVISIONS.chromium
-    # - puppeteer 2.x-7.x: lib/revisions.js exports PUPPETEER_REVISIONS.chromium
-    # - puppeteer 1.x: package.json's chromium_revision field
-    "REV=$(node -e \"let r;try{r=require('puppeteer/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS}catch(e){};if(!r){try{r=require('puppeteer/lib/revisions.js').PUPPETEER_REVISIONS}catch(e){}};if(!r){try{const p=require('puppeteer/package.json');r=(p.puppeteer||{})}catch(e){r={}}};console.log(r.chromium||r.chromium_revision||r.chrome||'')\" 2>/dev/null); "
-    "if [ -z \"$REV\" ]; then echo 'ERROR: could not determine puppeteer Chromium revision' >&2; exit 1; fi; "
-    "DEST=node_modules/puppeteer/.local-chromium/linux-${REV}; "
-    "mkdir -p ${DEST}; "
-    "wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/${REV}/chrome-linux.zip -O /tmp/chrome.zip; "
-    "unzip -q /tmp/chrome.zip -d ${DEST}/; "
-    "rm /tmp/chrome.zip; "
-    "chmod -R 755 ${DEST}"
-)
-# OL versions with puppeteer 1.x-19.x (chromium-snapshots era).
-# v4.6 / v5.1 don't ship puppeteer at all — handled separately above.
-_OL_OLDER_PUPPETEER = {
-    '5.3', '6.1', '6.2', '6.3', '6.4', '6.5', '6.5.1', '6.6',
-    '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
-    '7.0', '7.1', '7.2',
+# `npm install --ignore-scripts` skips ALL postinstall hooks. For puppeteer
+# 20+ this avoids install.mjs's parallel-download deadlock under BuildKit
+# heredoc stdout buffering; for 1.x-19.x the install hook was already a
+# silent no-op on Node 21 / Ubuntu 20.04 anyway.
+OL_PINS = {
+    '5.3':   [CHROMIUM_71_B, CHROMIUM_72_B, CHROMIUM_73, CHROMIUM_76_P5],
+    '6.1':   [CHROMIUM_79],
+    '6.2':   [CHROMIUM_81],
+    '6.3':   [CHROMIUM_81, CHROMIUM_83, CHROMIUM_85_B],
+    '6.4':   [CHROMIUM_87, CHROMIUM_88_B],
+    '6.5':   [CHROMIUM_90],
+    '6.5.1': [CHROMIUM_92],
+    '6.6':   [CHROMIUM_93],
+    '6.9':   [CHROMIUM_93, CHROMIUM_97],
+    '6.10':  [CHROMIUM_97],
+    '6.11':  [CHROMIUM_97],
+    '6.12':  [CHROMIUM_97, CHROMIUM_98],
+    '6.13':  [CHROMIUM_100],
+    '6.14':  [CHROMIUM_100, CHROMIUM_101, CHROMIUM_104],
+    '7.0':   [CHROMIUM_104, CHROMIUM_106],
+    '7.1':   [CHROMIUM_106, CHROMIUM_107_A, CHROMIUM_109],
+    '7.2':   [CHROMIUM_110_A],
+    '7.3':   [CHROMIUM_111, CHROMIUM_112_B, CHROMIUM_CFT_113],
+    '7.4':   [CHROMIUM_CFT_115_A],
+    '7.5':   [CHROMIUM_CFT_115_B, CHROMIUM_CFT_115_C],
+    '8.1':   [CHROMIUM_CFT_116, CHROMIUM_CFT_117_B, CHROMIUM_CFT_118],
+    '9.0':   [CHROMIUM_CFT_119, CHROMIUM_CFT_121, CHROMIUM_CFT_122_A],
+    '9.1':   [CHROMIUM_CFT_122_B, CHROMIUM_CFT_123_A, CHROMIUM_CFT_123_B,
+              CHROMIUM_CFT_124_A, CHROMIUM_CFT_124_B],
 }
-for _ol_v in _OL_OLDER_PUPPETEER:
-    if _ol_v in SPECS_OPENLAYERS:
-        install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
-        for i, step in enumerate(install_steps):
-            if step == 'npm install':
-                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_SNAPSHOT
-                break
-        SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
 
-# Set CHROME_BIN to puppeteer.executablePath() at the end of karma config for
-# OL versions whose original karma config doesn't read it from puppeteer (v5.3,
-# v6.1-v6.4 era). Append the line if not already present. The newer OL configs
-# (v6.5+) already do `process.env.CHROME_BIN = require('puppeteer').executablePath();`.
+
+def _ol_prebake_chromium(kind: str, rev_or_ver: str) -> str:
+    """Pre-bake one Chromium variant into the path puppeteer expects at runtime."""
+    if kind == 'rev':
+        url = f"https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev_or_ver}/chrome-linux.zip"
+        dest = f"node_modules/puppeteer/.local-chromium/linux-{rev_or_ver}"
+    elif kind == 'cft':
+        url = f"https://storage.googleapis.com/chrome-for-testing-public/{rev_or_ver}/linux64/chrome-linux64.zip"
+        dest = f"/opt/puppeteer-cache/chrome/linux-{rev_or_ver}"
+    else:
+        raise ValueError(f"_ol_prebake_chromium: unknown kind {kind!r}")
+    return (
+        f"mkdir -p {dest} && "
+        f"wget -q {url} -O /tmp/chrome.zip && "
+        f"unzip -q /tmp/chrome.zip -d {dest}/ && "
+        f"rm /tmp/chrome.zip && "
+        f"chmod -R 755 {dest}"
+    )
+
+
+for _ol_v, _pins in OL_PINS.items():
+    if _ol_v not in SPECS_OPENLAYERS:
+        continue
+    new_steps = []
+    for step in SPECS_OPENLAYERS[_ol_v]['install']:
+        if step == 'npm install':
+            new_steps.append('npm install --ignore-scripts')
+            for _kind, _rev in _pins:
+                new_steps.append(_ol_prebake_chromium(_kind, _rev))
+        else:
+            new_steps.append(step)
+    SPECS_OPENLAYERS[_ol_v]['install'] = new_steps
+
+
+# Pre-6.5 karma configs don't read CHROME_BIN from puppeteer. Append the line
+# if missing (grep guard keeps this idempotent for versions where it's already there).
 _OL_KARMA_CHROME_BIN_FALLBACK = (
     "grep -q 'process.env.CHROME_BIN' test/karma.config.js || "
     "echo \"process.env.CHROME_BIN = require('puppeteer').executablePath();\" >> test/karma.config.js"
 )
-for _ol_v in _OL_OLDER_PUPPETEER:
+_OL_SNAPSHOT_VERSIONS = {v for v, pins in OL_PINS.items() if any(p[0] == 'rev' for p in pins)}
+for _ol_v in _OL_SNAPSHOT_VERSIONS:
     if _ol_v in SPECS_OPENLAYERS:
         SPECS_OPENLAYERS[_ol_v]['install'].append(_OL_KARMA_CHROME_BIN_FALLBACK)
 
@@ -623,18 +626,18 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
 # karma-chrome-launcher era rev (no puppeteer to derive from); v1.21–1.27
 # follow each commit's puppeteer dep.
 NEXT_PINS = {
-    '1.11': CHROMIUM_71,
-    '1.14': CHROMIUM_71,
-    '1.15': CHROMIUM_71,
-    '1.16': CHROMIUM_71,
-    '1.17': CHROMIUM_71,
-    '1.18': CHROMIUM_71,
-    '1.19': CHROMIUM_71,
-    '1.20': CHROMIUM_71,
-    '1.21': CHROMIUM_85,
-    '1.22': CHROMIUM_88,
-    '1.23': CHROMIUM_88,
-    '1.24': CHROMIUM_88,
+    '1.11': CHROMIUM_71_A,
+    '1.14': CHROMIUM_71_A,
+    '1.15': CHROMIUM_71_A,
+    '1.16': CHROMIUM_71_A,
+    '1.17': CHROMIUM_71_A,
+    '1.18': CHROMIUM_71_A,
+    '1.19': CHROMIUM_71_A,
+    '1.20': CHROMIUM_71_A,
+    '1.21': CHROMIUM_85_A,
+    '1.22': CHROMIUM_88_A,
+    '1.23': CHROMIUM_88_A,
+    '1.24': CHROMIUM_88_A,
     '1.25': CHROMIUM_93,
     '1.26': CHROMIUM_93,
     '1.27': CHROMIUM_93,
@@ -811,11 +814,11 @@ LIGHTHOUSE_PINS = {
     '2.9': CHROMIUM_66,
     '3.0': CHROMIUM_68,
     '3.1': CHROMIUM_68,
-    '4.0': CHROMIUM_71,
-    '4.1': CHROMIUM_71,
-    '5.0': CHROMIUM_71,
-    '5.1': CHROMIUM_71,
-    '5.2': CHROMIUM_71,
+    '4.0': CHROMIUM_71_A,
+    '4.1': CHROMIUM_71_A,
+    '5.0': CHROMIUM_71_A,
+    '5.1': CHROMIUM_71_A,
+    '5.2': CHROMIUM_71_A,
     '5.6': CHROMIUM_77,
     '6.0': CHROMIUM_77,
     '6.1': CHROMIUM_77,

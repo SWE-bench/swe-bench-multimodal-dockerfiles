@@ -93,7 +93,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_de08ed575914
+RUN <<EOF_e49dec7cd1fc
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -101,7 +101,7 @@ cd /testbed
 git reset --hard 30d27a1d59113617cc0247dd862cdc763ca76216
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 30d27a1d59113617cc0247dd862cdc763ca76216)
@@ -114,13 +114,15 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install --ignore-scripts; REV=$(node -e "let r;try{r=require('puppeteer/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS}catch(e){};if(!r){try{r=require('puppeteer/lib/revisions.js').PUPPETEER_REVISIONS}catch(e){}};if(!r){try{const p=require('puppeteer/package.json');r=(p.puppeteer||{})}catch(e){r={}}};console.log(r.chromium||r.chromium_revision||r.chrome||'')" 2>/dev/null); if [ -z "$REV" ]; then echo 'ERROR: could not determine puppeteer Chromium revision' >&2; exit 1; fi; DEST=node_modules/puppeteer/.local-chromium/linux-${REV}; mkdir -p ${DEST}; wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/${REV}/chrome-linux.zip -O /tmp/chrome.zip; unzip -q /tmp/chrome.zip -d ${DEST}/; rm /tmp/chrome.zip; chmod -R 755 ${DEST}
+npm install --ignore-scripts
+mkdir -p node_modules/puppeteer/.local-chromium/linux-938248 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/938248/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-938248/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-938248
+mkdir -p node_modules/puppeteer/.local-chromium/linux-950341 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/950341/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-950341/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-950341
 grep -q 'process.env.CHROME_BIN' test/karma.config.js || echo "process.env.CHROME_BIN = require('puppeteer').executablePath();" >> test/karma.config.js
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_de08ed575914
+EOF_e49dec7cd1fc
 
 
 COPY src/image_assets/openlayers__openlayers-13269/ /swebench/image_assets/

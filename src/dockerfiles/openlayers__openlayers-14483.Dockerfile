@@ -93,7 +93,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_ca3c15e9cac2
+RUN <<EOF_89bc65ee3565
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -101,7 +101,7 @@ cd /testbed
 git reset --hard 3b7c1817f1823463919422ff41739a15c36796b1
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct 3b7c1817f1823463919422ff41739a15c36796b1)
@@ -114,12 +114,14 @@ chmod -R 777 /testbed
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
-npm install --ignore-scripts && BUILDID=$(node -e "console.log(require('puppeteer-core/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS.chrome)") && test -n "$BUILDID" && CACHE_DIR=/opt/puppeteer-cache/chrome/linux-${BUILDID} && mkdir -p ${CACHE_DIR} && wget -q https://storage.googleapis.com/chrome-for-testing-public/${BUILDID}/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d ${CACHE_DIR}/ && rm /tmp/chrome.zip && chmod -R 755 ${CACHE_DIR}
+npm install --ignore-scripts
+mkdir -p /opt/puppeteer-cache/chrome/linux-115.0.5790.102 && wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.102/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d /opt/puppeteer-cache/chrome/linux-115.0.5790.102/ && rm /tmp/chrome.zip && chmod -R 755 /opt/puppeteer-cache/chrome/linux-115.0.5790.102
+mkdir -p /opt/puppeteer-cache/chrome/linux-115.0.5790.170 && wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.170/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d /opt/puppeteer-cache/chrome/linux-115.0.5790.170/ && rm /tmp/chrome.zip && chmod -R 755 /opt/puppeteer-cache/chrome/linux-115.0.5790.170
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_ca3c15e9cac2
+EOF_89bc65ee3565
 
 
 COPY src/image_assets/openlayers__openlayers-14483/ /swebench/image_assets/

@@ -18,8 +18,8 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_110_INSTALL,
     _CHROME_120_INSTALL,
     chromium_preinstall,
-    CHROMIUM_62, CHROMIUM_72, CHROMIUM_76_B, CHROMIUM_76_P5,
-    CHROMIUM_88, CHROMIUM_93, CHROMIUM_107_B,
+    CHROMIUM_62, CHROMIUM_72_A, CHROMIUM_76_B, CHROMIUM_76_P5,
+    CHROMIUM_88_A, CHROMIUM_93, CHROMIUM_107_B,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -362,11 +362,11 @@ SPECS_P5_JS = {
 # puppeteer dep; uses a karma-chrome-launcher era snapshot.
 P5_JS_PINS = {
     "0.6":  CHROMIUM_62,
-    "0.7":  CHROMIUM_72,
-    "0.8":  CHROMIUM_72,
+    "0.7":  CHROMIUM_72_A,
+    "0.8":  CHROMIUM_72_A,
     "0.10": CHROMIUM_76_B,
     "1.0":  CHROMIUM_76_P5,
-    "1.3":  CHROMIUM_88,
+    "1.3":  CHROMIUM_88_A,
     "1.4":  CHROMIUM_93,
     "1.5":  CHROMIUM_107_B,
     "1.6":  CHROMIUM_107_B,

@@ -103,7 +103,7 @@ apt-get update && apt-get install -y google-chrome-stable && rm -rf /var/lib/apt
 EOF_7b74f47f6050
 
 
-RUN <<EOF_9dd48923532f
+RUN <<EOF_2aecbb8268f1
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -111,7 +111,7 @@ cd /testbed
 git reset --hard a94dff2c0635cce72f2ca6de32fe6805d26c0444
 git remote remove origin
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
+git tag -l | while read tag; do   git merge-base --is-ancestor "$tag" HEAD 2>/dev/null || git tag -d "$tag" >/dev/null; done
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 TARGET_EPOCH=$(git show -s --format=%ct a94dff2c0635cce72f2ca6de32fe6805d26c0444)
@@ -129,7 +129,7 @@ npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
 sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/karma.config.js
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/karma.config.js
 if grep -q 'resolve:' test/karma.config.js; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/karma.config.js; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/karma.config.js; fi
-EOF_9dd48923532f
+EOF_2aecbb8268f1
 
 
 COPY src/image_assets/openlayers__openlayers-8515/ /swebench/image_assets/
