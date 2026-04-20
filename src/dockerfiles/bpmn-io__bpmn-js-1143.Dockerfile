@@ -109,7 +109,7 @@ ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
 EOF_8e598e1e5f9b
 
 
-RUN <<EOF_a48d563c6285
+RUN <<EOF_18d12c9825ab
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
@@ -132,8 +132,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
-sed -i "s/reporters: \[ 'progress' \].concat(coverage ? 'coverage' : \[\])/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/config/karma.unit.js
-EOF_a48d563c6285
+EOF_18d12c9825ab
 
 
 COPY src/image_assets/bpmn-io__bpmn-js-1143/ /swebench/image_assets/
