@@ -127,6 +127,109 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
         "chmod +x /opt/chromium/chrome",
         "chmod -R 755 /opt/chromium-pinned",
     ]
+
+
+# ── Per-repo Chromium pins ────────────────────────────────────────────
+# Version -> (kind, rev_or_ver) tuples consumed by `chromium_preinstall()`.
+# Each pin matches the puppeteer version declared in the repo's package.json
+# at that commit (derived from CHROMIUM_PINS.md). Era-approximations used
+# where the exact target rev 404s in the snapshot bucket.
+#
+# OL is NOT listed here — it reads the project's own puppeteer revisions.js
+# at build time (see `_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_*` in test_split.py)
+# because some OL instances have per-instance puppeteer patch overrides.
+#
+# chart.js uses a separate table (`_CHART_JS_CHROME_PINS`) that stores full
+# install command lists built from the legacy `_CHROMIUM_*_INSTALL` helpers —
+# different structure because chart.js has no puppeteer dep to derive from.
+
+BPMN_PINS = {
+    '3.4':  ('rev', '641577'),    # puppeteer 1.14.0, Chrome 73
+    '4.0':  ('rev', '669486'),    # puppeteer 1.18.0, Chrome 76
+    # v5.0 intentionally absent — stays on Firefox (Chrome 76 regresses 1203).
+    '5.1':  ('rev', '672088'),    # puppeteer 1.18.1, Chrome 76
+    '6.0':  ('rev', '672088'),
+    '6.3':  ('rev', '672088'),
+    '7.2':  ('rev', '672088'),
+    '7.3':  ('rev', '672088'),
+    '7.4':  ('rev', '818858'),    # puppeteer 5.5.0, Chrome 88
+    '8.3':  ('rev', '856583'),    # puppeteer 8.0.0, Chrome 90
+    '8.8':  ('rev', '884014'),    # puppeteer 10.0.0, Chrome 92
+    '8.9':  ('rev', '884014'),
+    # v9.0 pinned to Chrome 85 rev 793478 (old _CHROMIUM_85_INSTALL value) —
+    # puppeteer 10.0.0's Chrome 92 regresses 1570, and 1570 is a pre-existing
+    # F2P name-format issue unrelated to the rev.
+    '9.0':  ('rev', '793478'),
+    '9.1':  ('rev', '884014'),
+    '9.2':  ('rev', '884014'),
+    '9.3':  ('rev', '884014'),
+    '11.1': ('rev', '1069273'),   # puppeteer 19.4.1, Chrome 110
+    '11.3': ('rev', '1069273'),
+    # CfT bucket starts at 113 — use snapshot rev for Chrome 112 (puppeteer 20.0.0).
+    '13.2': ('rev', '1110000'),   # ~Chromium 112 (CfT 112.0.5615.121 unavailable)
+    '15.2': ('cft', '117.0.5938.149'),  # puppeteer 21.3.8
+}
+
+NEXT_PINS = {
+    '1.11': ('rev', '599821'),    # karma-chrome-launcher era (no puppeteer)
+    '1.14': ('rev', '599821'),
+    '1.15': ('rev', '599821'),
+    '1.16': ('rev', '599821'),
+    '1.17': ('rev', '599821'),
+    '1.18': ('rev', '599821'),
+    '1.19': ('rev', '599821'),
+    '1.20': ('rev', '599821'),
+    '1.21': ('rev', '793478'),    # Chrome 85
+    '1.22': ('rev', '818858'),    # puppeteer 5.5.0, Chrome 88
+    '1.23': ('rev', '818858'),
+    '1.24': ('rev', '818858'),
+    '1.25': ('rev', '901912'),    # puppeteer 10.2.0, Chrome 93
+    '1.26': ('rev', '901912'),
+    '1.27': ('rev', '901912'),    # puppeteer 10.4.0, Chrome 93
+}
+
+LIGHTHOUSE_PINS = {
+    # v1.x–v2.8 have no puppeteer dep — era-approximations.
+    '1.4': ('rev', '474900'),    # ~Chrome 60 (Jul 2017); target 474934 unavailable
+    '1.5': ('rev', '494755'),    # ~Chrome 61 (Aug 2017)
+    '1.6': ('rev', '499100'),    # ~Chrome 62 (Sep 2017); target 499098 unavailable
+    '2.1': ('rev', '499100'),
+    '2.4': ('rev', '508578'),    # Chrome 63 (Nov 2017)
+    '2.5': ('rev', '513000'),    # ~Chrome 63 (Dec 2017); target 515693 unavailable
+    '2.6': ('rev', '513000'),
+    '2.8': ('rev', '530400'),    # ~Chrome 64 (Jan 2018); target 530368 unavailable
+    '2.9': ('rev', '536395'),    # puppeteer 1.1.1, Chrome 66
+    '3.0': ('rev', '555668'),    # puppeteer 1.4.0, Chrome 68
+    '3.1': ('rev', '555668'),
+    '4.0': ('rev', '599821'),    # puppeteer 1.10.0, Chrome 71
+    '4.1': ('rev', '599821'),
+    '5.0': ('rev', '599821'),
+    '5.1': ('rev', '599821'),
+    '5.2': ('rev', '599821'),
+    '5.6': ('rev', '674921'),    # puppeteer 1.19.0, Chrome 77
+    '6.0': ('rev', '674921'),
+    '6.1': ('rev', '674921'),
+    '6.4': ('rev', '674921'),
+    '6.5': ('rev', '674921'),
+    '7.0': ('rev', '674921'),
+    '8.3': ('rev', '869685'),    # puppeteer 9.1.1, Chrome 91
+    '8.6': ('rev', '901912'),    # puppeteer 10.2.0, Chrome 93
+    '9.5': ('rev', '1036745'),   # puppeteer 18.0.5, Chrome 107
+    '10.0': ('rev', '1083080'),  # puppeteer 19.6.0, Chrome 110
+    '10.2': ('cft', '113.0.5672.63'),  # puppeteer 20.1.0
+}
+
+P5_JS_PINS = {
+    '0.6':  ('rev', '499100'),   # Chrome 62 era (karma-chrome-launcher only); 499098 404s
+    '0.7':  ('rev', '624492'),   # Chrome 72
+    '0.8':  ('rev', '624492'),
+    '0.10': ('rev', '672088'),   # Chrome 73
+    '1.0':  ('rev', '686378'),   # Chrome 76
+    '1.3':  ('rev', '818858'),   # Chrome 88
+    '1.4':  ('rev', '901912'),   # Chrome 93
+    '1.5':  ('rev', '1045629'),  # Chrome 107
+    '1.6':  ('rev', '1045629'),
+}
 # Switch Karma from 'spec' to 'json' reporter for structured test output.
 # The config file has an explicit plugins array so we must register the plugin.
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).

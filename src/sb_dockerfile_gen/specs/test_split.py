@@ -29,6 +29,9 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_85_INSTALL,
     _CHROME_120_INSTALL,
     chromium_preinstall,
+    BPMN_PINS,
+    NEXT_PINS,
+    LIGHTHOUSE_PINS,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -151,44 +154,12 @@ for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', 
 # Set OpenSSL to legacy provider for certain versions
 for v in ['3.0', '3.3', '3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
-# Per-version Chromium pins derived from each commit's puppeteer dep (CHROMIUM_PINS.md).
-# v5.0 stays on Firefox (see Firefox block below). Chrome 76 (rev 672088, puppeteer
-# 1.18.1's pin) handles 11/12 v5.0 instances but fails bpmn-js-1203's copy-paste
-# reattach F2P — Firefox preserves 12/12.
-# v9.0 pinned to Chrome 85: puppeteer 10.0.0's Chrome 92 (rev 884014) passes all
-# v9.1–9.3 instances but rev 793478 (Chrome 85) matches the old era-bucket behavior
-# and the current v9.0 pin — same result either way (see comment below).
-# Non-dataset versions (0.27, 0.9, 2.3–2.5, 3.0, 3.3, 14.0) kept on era buckets;
-# they aren't exercised by any dataset so per-version pinning is unwarranted.
-_BPMN_PINS = {
-    '3.4':  ('rev', '641577'),    # puppeteer 1.14.0, Chrome 73
-    '4.0':  ('rev', '669486'),    # puppeteer 1.18.0, Chrome 76
-    # v5.0 intentionally absent — see Firefox block below.
-    '5.1':  ('rev', '672088'),    # puppeteer 1.18.1, Chrome 76
-    '6.0':  ('rev', '672088'),
-    '6.3':  ('rev', '672088'),
-    '7.2':  ('rev', '672088'),
-    '7.3':  ('rev', '672088'),
-    '7.4':  ('rev', '818858'),    # puppeteer 5.5.0, Chrome 88
-    '8.3':  ('rev', '856583'),    # puppeteer 8.0.0, Chrome 90
-    '8.8':  ('rev', '884014'),    # puppeteer 10.0.0, Chrome 92
-    '8.9':  ('rev', '884014'),
-    # v9.0 pinned to Chrome 85 (rev 793478, old _CHROMIUM_85_INSTALL value) — stays
-    # compatible with the historical pre-stage baseline. Both rev 793478 and rev
-    # 884014 fail bpmn-js-1570, which is a pre-existing F2P name data issue in the
-    # parquet (trailing whitespace that karma output doesn't reproduce) — not a
-    # Chrome-rev bug. Keeping per-version-pin pattern via chromium_preinstall.
-    '9.0':  ('rev', '793478'),
-    '9.1':  ('rev', '884014'),
-    '9.2':  ('rev', '884014'),
-    '9.3':  ('rev', '884014'),
-    '11.1': ('rev', '1069273'),   # puppeteer 19.4.1, Chrome 110
-    '11.3': ('rev', '1069273'),
-    # CfT bucket starts at 113 — use snapshot rev for Chrome 112 (puppeteer 20.0.0).
-    '13.2': ('rev', '1110000'),   # ~Chromium 112 (CfT 112.0.5615.121 unavailable)
-    '15.2': ('cft', '117.0.5938.149'),  # puppeteer 21.3.8
-}
-for _v, (_kind, _rev) in _BPMN_PINS.items():
+# Per-version Chromium pins live in common.BPMN_PINS. v5.0 intentionally
+# absent — stays on Firefox (see Firefox block below; Chrome 76 regresses
+# bpmn-js-1203's copy-paste reattach F2P). Non-dataset versions (0.27, 0.9,
+# 2.3–2.5, 3.0, 3.3, 14.0) keep the legacy era buckets (no puppeteer dep
+# to derive per-version pins, not exercised by any dataset).
+for _v, (_kind, _rev) in BPMN_PINS.items():
     SPECS_BPMN_JS[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
 
 # v5.0 Firefox fallback: Chrome 76 (rev 672088) handles 11/12 v5.0 instances but
@@ -622,30 +593,10 @@ for v in ['1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19', '1.20']:
     SPECS_NEXT[v]['install'].extend([
         "npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact",
     ])
-# Per-version Chromium pins derived from each commit's puppeteer dep (CHROMIUM_PINS.md).
-# v1.11–1.20 pinned to rev 599821 (Chrome 72) for uniformity — CHROMIUM_PINS.md marks
-# these as karma-chrome-launcher + system-Chrome, but per user direction we pin all
-# versions to an era-appropriate rev rather than relying on base-image Chrome.
-# v1.21 → rev 793478 (Chrome 85); v1.22–1.24 → rev 818858 (puppeteer 5.5.0 Chrome 88);
-# v1.25–1.27 → rev 901912 (puppeteer 10.2.0/10.4.0 Chrome 93).
-_NEXT_PINS = {
-    '1.11': ('rev', '599821'),
-    '1.14': ('rev', '599821'),
-    '1.15': ('rev', '599821'),
-    '1.16': ('rev', '599821'),
-    '1.17': ('rev', '599821'),
-    '1.18': ('rev', '599821'),
-    '1.19': ('rev', '599821'),
-    '1.20': ('rev', '599821'),
-    '1.21': ('rev', '793478'),
-    '1.22': ('rev', '818858'),
-    '1.23': ('rev', '818858'),
-    '1.24': ('rev', '818858'),
-    '1.25': ('rev', '901912'),
-    '1.26': ('rev', '901912'),
-    '1.27': ('rev', '901912'),
-}
-for _v, (_kind, _rev) in _NEXT_PINS.items():
+# Per-version Chromium pins live in common.NEXT_PINS (v1.11–1.20 use a
+# karma-chrome-launcher era rev since there's no puppeteer to derive from;
+# v1.21–1.27 follow each commit's puppeteer dep).
+for _v, (_kind, _rev) in NEXT_PINS.items():
     SPECS_NEXT[_v]['pre_install'] = chromium_preinstall(_kind, _rev)
 # v1.27 uses Cypress for e2e tests — npm install only gets the Node wrapper,
 # the actual Electron binary must be installed separately.
@@ -803,40 +754,9 @@ for v in ['1.0', '1.1', '1.2', '1.4', '1.5', '1.6']:
         "npm install",
         "npm run install-all",
     ]
-# Per-version Chromium pins (from CHROMIUM_PINS.md + era-approximations for
-# v1.x-v2.8 which lack a puppeteer dep). Per user direction, every version is
-# pinned — no reliance on the base-image system Chrome. Revs that 404'd in the
-# snapshot bucket were replaced with nearest available.
-_LIGHTHOUSE_PINS = {
-    '1.4': ('rev', '474900'),    # ~Chrome 60 (Jul 2017); target 474934 unavailable
-    '1.5': ('rev', '494755'),    # ~Chrome 61 (Aug 2017)
-    '1.6': ('rev', '499100'),    # ~Chrome 62 (Sep 2017); target 499098 unavailable
-    '2.1': ('rev', '499100'),
-    '2.4': ('rev', '508578'),    # Chrome 63 (Nov 2017)
-    '2.5': ('rev', '513000'),    # ~Chrome 63 (Dec 2017); target 515693 unavailable
-    '2.6': ('rev', '513000'),
-    '2.8': ('rev', '530400'),    # ~Chrome 64 (Jan 2018); target 530368 unavailable
-    '2.9': ('rev', '536395'),    # puppeteer 1.1.1, Chrome 66
-    '3.0': ('rev', '555668'),    # puppeteer 1.4.0, Chrome 68
-    '3.1': ('rev', '555668'),
-    '4.0': ('rev', '599821'),    # puppeteer 1.10.0, Chrome 71
-    '4.1': ('rev', '599821'),
-    '5.0': ('rev', '599821'),
-    '5.1': ('rev', '599821'),
-    '5.2': ('rev', '599821'),
-    '5.6': ('rev', '674921'),    # puppeteer 1.19.0, Chrome 77
-    '6.0': ('rev', '674921'),
-    '6.1': ('rev', '674921'),
-    '6.4': ('rev', '674921'),
-    '6.5': ('rev', '674921'),
-    '7.0': ('rev', '674921'),
-    '8.3': ('rev', '869685'),    # puppeteer 9.1.1, Chrome 91
-    '8.6': ('rev', '901912'),    # puppeteer 10.2.0, Chrome 93
-    '9.5': ('rev', '1036745'),   # puppeteer 18.0.5, Chrome 107
-    '10.0': ('rev', '1083080'),  # puppeteer 19.6.0, Chrome 110
-    '10.2': ('cft', '113.0.5672.63'),  # puppeteer 20.1.0
-}
-for _v, (_kind, _rev) in _LIGHTHOUSE_PINS.items():
+# Per-version Chromium pins live in common.LIGHTHOUSE_PINS (v1.x–v2.8 use
+# era-approximations since there's no puppeteer dep to derive from).
+for _v, (_kind, _rev) in LIGHTHOUSE_PINS.items():
     # Append chromium install so yarn install from earlier pre_install isn't lost.
     SPECS_LIGHTHOUSE[_v]['pre_install'] = (
         list(SPECS_LIGHTHOUSE[_v].get('pre_install') or []) + chromium_preinstall(_kind, _rev)

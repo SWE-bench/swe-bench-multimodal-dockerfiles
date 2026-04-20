@@ -18,6 +18,7 @@ from sb_dockerfile_gen.common import (
     _CHROMIUM_110_INSTALL,
     _CHROME_120_INSTALL,
     chromium_preinstall,
+    P5_JS_PINS,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -356,20 +357,9 @@ SPECS_P5_JS = {
         ]
     },
 }
-# Per-puppeteer-version Chromium pins (from CHROMIUM_PINS.md). v0.6 keeps a
-# Chromium 62-era snapshot for karma-chrome-launcher (no puppeteer dep).
-_P5_CHROMIUM_PINS = {
-    "0.6":  ("rev", "499100"),   # Chrome 62 era (karma-chrome-launcher only); 499098 404s
-    "0.7":  ("rev", "624492"),   # Chrome 72
-    "0.8":  ("rev", "624492"),
-    "0.10": ("rev", "672088"),   # Chrome 73
-    "1.0":  ("rev", "686378"),   # Chrome 76
-    "1.3":  ("rev", "818858"),   # Chrome 88
-    "1.4":  ("rev", "901912"),   # Chrome 93
-    "1.5":  ("rev", "1045629"),  # Chrome 107
-    "1.6":  ("rev", "1045629"),
-}
-for _v, (_kind, _rev) in _P5_CHROMIUM_PINS.items():
+# Per-puppeteer-version Chromium pins live in common.P5_JS_PINS (v0.6 has no
+# puppeteer dep; uses a karma-chrome-launcher era snapshot).
+for _v, (_kind, _rev) in P5_JS_PINS.items():
     SPECS_P5_JS[_v]["pre_install"] = chromium_preinstall(_kind, _rev)
 
 
