@@ -70,13 +70,24 @@ _SPECS_QUARTOCLI_STATIC_TEST_CMD = {v: SPECS_QUARTOCLI[v]["test_cmd"] for v in S
 def _quarto_test_cmds(instance: dict) -> list:
     """Quarto: direct-render for 5292, tufte-pdf removal for all others."""
     if instance["instance_id"] == "quarto-dev__quarto-cli-5292":
-        def _render_block(label: str) -> str:
+        def _render_block(label: str) -> str | None:
             m = re.match(r"\[smoke\] > quarto render (\S+) --to (\S+)", label)
-            assert m, f"unrecognised 5292 test label: {label}"
+            if not m:
+                return None  # [unit] labels handled by the full test suite below
             target = "tests/" + m.group(1)
             fmt = m.group(2)
+            # Post-render discriminator for 5286.qmd → latex (F2P): the gold patch
+            # removes `\textless{}1\textgreater{}` code-annotation markers. Without
+            # this grep, the render succeeds either way and the F2P is non-discriminating.
+            # See MULTIMODAL_FIXES.md §2.4.
+            if target == "tests/docs/smoke-all/2023/04/24/5286.qmd" and fmt == "latex":
+                output = "tests/docs/smoke-all/2023/04/24/5286.tex"
+                forbidden = r"\textless{}1\textgreater{}"
+                extra = f" && ! grep -Fq '{forbidden}' {output}"
+            else:
+                extra = ""
             return (
-                f"cd /testbed && if quarto render {target} --to {fmt} 2>/dev/null ; "
+                f"cd /testbed && if timeout 300 quarto render {target} --to {fmt} 2>/dev/null{extra} ; "
                 f"then printf '{label} ... \\033[32mok\\033[0m\\n' ; "
                 f"else printf '{label} ... \\033[31mFAILED\\033[0m\\n' ; fi"
             )
@@ -87,8 +98,8 @@ def _quarto_test_cmds(instance: dict) -> list:
         if isinstance(p2p_list, str):
             p2p_list = json.loads(p2p_list)
         parts = ["rm -f tests/docs/page-layout/tufte-pdf.qmd"]
-        parts.extend(_render_block(t) for t in f2p_list)
-        parts.extend(_render_block(t) for t in p2p_list)
+        parts.extend(b for b in (_render_block(t) for t in f2p_list) if b)
+        parts.extend(b for b in (_render_block(t) for t in p2p_list) if b)
         return parts
 
     # All other quarto instances: prepend tufte-pdf removal to standard test_cmd
