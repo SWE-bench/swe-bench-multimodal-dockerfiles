@@ -39,12 +39,16 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
-        fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
-        --no-install-recommends \
+# Fonts + dbus bits previously piggy-backed onto the google-chrome-stable
+# install. CJK fonts are required for pixel-diff rendering tests that compare
+# against pre-rendered PNGs containing non-Latin glyphs. Each repo that needs
+# a browser pins its own Chromium via chromium_preinstall or analogous
+# pre_install step (bpmn-js, next, lighthouse, p5.js, openlayers, chart.js).
+RUN apt-get update && apt-get install -y \
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
+    fonts-khmeros fonts-kacst fonts-freefont-ttf \
+    libxss1 dbus-x11 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV NVM_DIR /usr/local/nvm
@@ -60,8 +64,6 @@ RUN apt-get update && apt-get install -y \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHROME_BIN /usr/bin/google-chrome
-RUN echo "CHROME_BIN=$CHROME_BIN" >> /etc/environment
 RUN mkdir -p /run/dbus
 
 ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
