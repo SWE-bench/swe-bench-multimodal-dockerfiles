@@ -6,27 +6,23 @@ preact, axios) live in `swe-bench-multilingual-dockerfiles` and are intentionall
 omitted here.
 """
 
-from sb_dockerfile_gen.specs.dev_split import (
-    SPECS_CALYPSO,
-    SPECS_CHART_JS,
-    SPECS_MARKED,
-    SPECS_P5_JS,
-    SPECS_REACT_PDF,
-)
-from sb_dockerfile_gen.specs.test_split import (
-    SPECS_BPMN_JS,
-    SPECS_CARBON,
-    SPECS_ESLINT,
-    SPECS_GROMMET,
-    SPECS_HIGHLIGHTJS,
-    SPECS_LIGHTHOUSE,
-    SPECS_NEXT,
-    SPECS_OPENLAYERS,
-    SPECS_PRETTIER,
-    SPECS_PRISM,
-    SPECS_QUARTOCLI,
-    SPECS_SCRATCH,
-)
+from sb_dockerfile_gen.specs.bpmn_js import SPECS_BPMN_JS
+from sb_dockerfile_gen.specs.carbon import SPECS_CARBON
+from sb_dockerfile_gen.specs.chartjs import SPECS_CHART_JS
+from sb_dockerfile_gen.specs.eslint import SPECS_ESLINT
+from sb_dockerfile_gen.specs.grommet import SPECS_GROMMET
+from sb_dockerfile_gen.specs.highlightjs import SPECS_HIGHLIGHTJS
+from sb_dockerfile_gen.specs.lighthouse import SPECS_LIGHTHOUSE
+from sb_dockerfile_gen.specs.marked import SPECS_MARKED
+from sb_dockerfile_gen.specs.next import SPECS_NEXT
+from sb_dockerfile_gen.specs.openlayers import SPECS_OPENLAYERS
+from sb_dockerfile_gen.specs.p5_js import SPECS_P5_JS
+from sb_dockerfile_gen.specs.prettier import SPECS_PRETTIER
+from sb_dockerfile_gen.specs.prism import SPECS_PRISM
+from sb_dockerfile_gen.specs.quartocli import SPECS_QUARTOCLI
+from sb_dockerfile_gen.specs.react_pdf import SPECS_REACT_PDF
+from sb_dockerfile_gen.specs.scratch import SPECS_SCRATCH
+from sb_dockerfile_gen.specs.wp_calypso import SPECS_CALYPSO
 
 MAP_REPO_VERSION_TO_SPECS_JS = {
     # Dev split

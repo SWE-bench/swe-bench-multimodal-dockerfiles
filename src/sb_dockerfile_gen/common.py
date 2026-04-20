@@ -44,7 +44,7 @@ SET_PUPPETEER_PATH_OPT = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer
 def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
     """Pre-bake Chromium at /opt/chromium/chrome for a repo's puppeteer pin.
 
-    Mirrors `_ol_chromium_preinstall` in specs/test_split.py so non-OL repos
+    Mirrors `_ol_prebake_chromium` in specs/openlayers.py so non-OL repos
     share one install pattern. `kind` is 'rev' (chromium-snapshots bucket) or
     'cft' (chrome-for-testing). `/opt/chromium/chrome` is a shell wrapper
     that adds `--no-sandbox` (required to launch Chromium inside Docker
@@ -88,7 +88,7 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
 # Each constant is a distinct Chromium build used by one or more repos.
 # Suffixes disambiguate multiple revs mapping to the same Chrome major
 # (different puppeteer bundles). Per-repo pin tables live next to the
-# SPECS dicts in specs/test_split.py and specs/dev_split.py.
+# SPECS dicts in specs/<repo>.py.
 #
 # chart.js uses a separate legacy table (no puppeteer dep to derive from).
 
