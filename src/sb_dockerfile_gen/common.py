@@ -92,6 +92,41 @@ _CHROME_120_INSTALL = _chrome_for_testing_install("120.0.6099.109")
 SET_OPENSSL_TO_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
 SET_PUPPETEER_ENV_VAR = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
 SET_PUPPETEER_PATH = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|\" {}"
+# Retargets `CHROME_BIN` to the pre-baked /opt/chromium/chrome path (see
+# chromium_preinstall). Used by p5.js / bpmn-js / next / lighthouse pins.
+SET_PUPPETEER_PATH_OPT = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/opt/chromium/chrome';|\" {}"
+
+
+def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
+    """Pre-bake Chromium at /opt/chromium/chrome for a repo's puppeteer pin.
+
+    Mirrors `_ol_chromium_preinstall` in specs/test_split.py so non-OL repos
+    share one install pattern. `kind` is 'rev' (chromium-snapshots bucket) or
+    'cft' (chrome-for-testing). `/opt/chromium/chrome` is a shell wrapper
+    that adds `--no-sandbox` (required to launch Chromium inside Docker
+    without CAP_SYS_ADMIN). Callers set PUPPETEER_EXECUTABLE_PATH and/or
+    CHROME_BIN to /opt/chromium/chrome in test_cmd and (where needed) use
+    SET_PUPPETEER_PATH_OPT to rewrite karma configs."""
+    if kind == "rev":
+        url = f"https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev_or_ver}/chrome-linux.zip"
+        zip_subdir = "chrome-linux"
+    elif kind == "cft":
+        url = f"https://storage.googleapis.com/chrome-for-testing-public/{rev_or_ver}/linux64/chrome-linux64.zip"
+        zip_subdir = "chrome-linux64"
+    else:
+        raise ValueError(f"chromium_preinstall: unknown kind {kind!r} (expected 'rev' or 'cft')")
+    return [
+        # libxtst6 needed by older Chromium snapshots; harmless for CfT.
+        "apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*",
+        f"wget -q {url} -O /tmp/chromium.zip",
+        "unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/",
+        "rm /tmp/chromium.zip",
+        "mkdir -p /opt/chromium",
+        f"ln -sf /opt/chromium-pinned/{zip_subdir}/chrome /opt/chromium/chrome-bin",
+        'printf \'#!/bin/bash\\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\\n\' > /opt/chromium/chrome',
+        "chmod +x /opt/chromium/chrome",
+        "chmod -R 755 /opt/chromium-pinned",
+    ]
 # Switch Karma from 'spec' to 'json' reporter for structured test output.
 # The config file has an explicit plugins array so we must register the plugin.
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).

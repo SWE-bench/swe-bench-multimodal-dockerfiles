@@ -55,12 +55,14 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
-        # Unconditionally delete all non-HEAD branches and ALL tags. Timestamp-gated
-        # tag deletion misses tags pointing to commits that predate base_commit but sit
-        # on branches whose tips are after base_commit — those tags keep future commits
-        # reachable (see multilingual d2cf82d / swe-bench issue #465).
+        # Delete all non-HEAD branches, and delete tags NOT reachable from HEAD.
+        # Tags reachable from HEAD are safe (their commits are ancestors of base_commit)
+        # and some build scripts depend on `git describe` working (e.g. lighthouse's
+        # yarn build-all calls `git describe`). Future tags still get pruned.
         "git branch | grep -v '^\\*' | xargs -r git branch -D || true",
-        "git tag -l | xargs -r git tag -d",
+        "git tag -l | while read tag; do "
+        "  git merge-base --is-ancestor \"$tag\" HEAD 2>/dev/null || git tag -d \"$tag\" >/dev/null; "
+        "done",
         "git reflog expire --expire=now --all",
         # Prune unreachable objects so future commits cannot be recovered via
         # `git fsck --lost-found` or `git cat-file -p <sha>`.
