@@ -1,0 +1,100 @@
+"""p5.js spec."""
+
+import re
+
+from sb_dockerfile_gen.common import (
+    X11_DEPS,
+    chromium_preinstall,
+    CHROMIUM_62, CHROMIUM_72_A, CHROMIUM_76_B, CHROMIUM_76_P5,
+    CHROMIUM_88_A, CHROMIUM_93, CHROMIUM_107_B,
+)
+from sb_dockerfile_gen.utils import get_test_paths
+
+
+SPECS_P5_JS = {
+    **{
+        k: {
+            "apt-pkgs": X11_DEPS,
+            "install": [
+                "npm install",
+                "./node_modules/.bin/grunt yui",
+            ],
+            # Pre-baked Chromium at /opt/chromium/chrome (see _P5_CHROMIUM_PINS).
+            # PUPPETEER_EXECUTABLE_PATH routes puppeteer at it; CHROME_BIN routes
+            # karma-chrome-launcher at it (v0.4–v0.6 path).
+            "test_cmd": (
+                """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
+                "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome "
+                "CHROME_BIN=/opt/chromium/chrome "
+                "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
+            ),
+            "docker_specs": {
+                "node_version": "14.17.3",
+            },
+        }
+        for k in [
+            "0.10",
+            "0.2",
+            "0.4",
+            "0.5",
+            "0.6",
+            "0.7",
+            "0.8",
+            "0.9",
+            "1.0",
+            "1.1",
+            "1.2",
+            "1.3",
+            "1.4",
+            "1.5",
+            "1.6",
+            "1.7",
+            "1.8",
+            "1.9",
+        ]
+    },
+}
+# Per-puppeteer-version Chromium pins. Constants in common.py. v0.6 has no
+# puppeteer dep; uses a karma-chrome-launcher era snapshot.
+P5_JS_PINS = {
+    "0.6":  CHROMIUM_62,
+    "0.7":  CHROMIUM_72_A,
+    "0.8":  CHROMIUM_72_A,
+    "0.10": CHROMIUM_76_B,
+    "1.0":  CHROMIUM_76_P5,
+    "1.3":  CHROMIUM_88_A,
+    "1.4":  CHROMIUM_93,
+    "1.5":  CHROMIUM_107_B,
+    "1.6":  CHROMIUM_107_B,
+}
+for _v, (_kind, _rev) in P5_JS_PINS.items():
+    SPECS_P5_JS[_v]["pre_install"] = chromium_preinstall(_kind, _rev)
+
+
+_SPECS_P5_JS_STATIC_TEST_CMD = {v: SPECS_P5_JS[v]["test_cmd"] for v in SPECS_P5_JS}
+
+
+def _p5js_test_cmds(instance: dict) -> list:
+    """Conditionally re-run yuidoc before tests.
+
+    Only needed when the gold patch touches docs/preprocessor.js (e.g. 4561
+    adds parameterData.json generation). Running yuidoc unconditionally
+    regenerates doc data and changes which doc-example tests exist, causing
+    spurious P2P drift on other instances.
+    """
+    test_cmd = _SPECS_P5_JS_STATIC_TEST_CMD[instance["version"]]
+    cmds = list(test_cmd) if isinstance(test_cmd, list) else [test_cmd]
+    all_paths = get_test_paths(instance) + re.findall(
+        r"diff --git a/.* b/(.*)", instance.get("patch", "")
+    )
+    if any("docs/preprocessor" in p for p in all_paths):
+        # Need PUPPETEER_EXECUTABLE_PATH for the mochaChrome:yui subtask
+        cmds.insert(0,
+            "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome "
+            "./node_modules/.bin/grunt yui --force || true"
+        )
+    return cmds
+
+
+for v in SPECS_P5_JS:
+    SPECS_P5_JS[v]["test_cmd"] = _p5js_test_cmds

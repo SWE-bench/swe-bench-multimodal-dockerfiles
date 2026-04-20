@@ -39,12 +39,16 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
-        fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
-        --no-install-recommends \
+# Fonts + dbus bits previously piggy-backed onto the google-chrome-stable
+# install. CJK fonts are required for pixel-diff rendering tests that compare
+# against pre-rendered PNGs containing non-Latin glyphs. Each repo that needs
+# a browser pins its own Chromium via chromium_preinstall or analogous
+# pre_install step (bpmn-js, next, lighthouse, p5.js, openlayers, chart.js).
+RUN apt-get update && apt-get install -y \
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
+    fonts-khmeros fonts-kacst fonts-freefont-ttf \
+    libxss1 dbus-x11 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV NVM_DIR /usr/local/nvm
@@ -60,8 +64,6 @@ RUN apt-get update && apt-get install -y \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CHROME_BIN /usr/bin/google-chrome
-RUN echo "CHROME_BIN=$CHROME_BIN" >> /etc/environment
 RUN mkdir -p /run/dbus
 
 ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
@@ -69,7 +71,83 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
+
+RUN useradd -m chromeuser
+
+USER chromeuser
+
+WORKDIR /home/chromeuser
+
+USER root
+"""
+
+
+# OpenLayers needs an older Mesa (21.x) for headless WebGL software-rendering
+# to work with the era-matched Chromium versions its puppeteer pins to.
+# jammy ships Mesa 23.x which silently breaks Chromium 97-121 WebGL → tests
+# abort at ol/layer/Heatmap. Ubuntu 20.04's Mesa 21.2 has been verified to
+# run the full karma suite with just `--no-sandbox`. This template skips the
+# system Chrome install entirely and lets puppeteer download its own
+# Chromium during `npm install` (PUPPETEER_SKIP_DOWNLOAD intentionally unset).
+_DOCKERFILE_BASE_JS_OL = r"""
+FROM --platform=linux/amd64 ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV TZ=Etc/UTC
+
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libssl-dev \
+    software-properties-common \
+    wget \
+    gnupg \
+    jq \
+    ca-certificates \
+    dbus \
+    ffmpeg \
+    imagemagick \
+    unzip \
+    && apt-get -y autoclean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV NVM_DIR /usr/local/nvm
+
+RUN mkdir -p $NVM_DIR
+RUN curl --silent -o- https://raw.githubusercontent.com/creationix/nvm/v0.39.3/install.sh | bash
+RUN apt-get update && apt-get install -y \
+    procps \
+    xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable \
+    xfonts-cyrillic x11-apps \
+    libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 \
+    libgbm1 libgconf-2-4 libgdk-pixbuf2.0-0 libgtk-3-0 libnspr4 \
+    libnss3 libpango-1.0-0 libpangocairo-1.0-0 libxcomposite1 \
+    libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 libxss1 libxshmfence1 libglu1 \
+    libgl1-mesa-dri libegl1-mesa libxtst6 \
+    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
+    fonts-khmeros fonts-kacst fonts-freefont-ttf \
+    && apt-get -y autoclean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /run/dbus
+
+ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
+
+RUN dbus-daemon --system --fork
+
+ENV OPENSSL_CONF /etc/ssl
+
+# Puppeteer 19.7+ caches its bundled Chromium in $PUPPETEER_CACHE_DIR (defaults
+# to ~/.cache/puppeteer). Pin it to a shared, world-readable location so karma
+# (running as chromeuser) can use the same binary that npm install (root)
+# downloaded — without copying the cache across users.
+ENV PUPPETEER_CACHE_DIR=/opt/puppeteer-cache
+RUN mkdir -p /opt/puppeteer-cache && chmod 0777 /opt/puppeteer-cache
 
 RUN useradd -m chromeuser
 
@@ -137,6 +215,20 @@ def make_env_script_list(instance, specs):
     return make_heredoc_run_command(commands)
 
 
+def make_pre_install_script(specs):
+    """Generate a RUN block for pre_install commands (cached across instances).
+
+    Commands in specs["pre_install"] run in their own Docker layer before
+    git clone, so they are shared across all instances of the same repo/version.
+    Use this for expensive, repo-independent installs (TinyTeX, R packages, etc.).
+    """
+    pre_install = specs.get("pre_install")
+    if not pre_install:
+        return ""
+    commands = list(pre_install) if isinstance(pre_install, list) else [pre_install]
+    return make_heredoc_run_command(commands)
+
+
 def make_repo_script_list(specs, repo, base_commit):
     commands = [
         *git_clone_timesafe(repo, base_commit, CONTAINER_WORKDIR),
@@ -185,58 +277,41 @@ def _strip_binary_diffs(patch_text: str) -> tuple[str, list[str]]:
         if not skip_until_next_diff:
             cleaned.append(line)
 
-    return "\n".join(cleaned), binary_files
+    result = "\n".join(cleaned)
+    if result and not result.endswith("\n"):
+        result += "\n"
+    return result, binary_files
 
 
 def _make_image_download_script(instance: dict) -> str:
-    """Generate a RUN block to download image_assets into staging dirs at build time."""
+    """Generate a COPY instruction to bring in pre-downloaded image_assets."""
     image_assets = instance.get("image_assets")
     if not image_assets:
         return ""
     if isinstance(image_assets, str):
         image_assets = json.loads(image_assets) if image_assets else {}
 
-    commands = ["mkdir -p /swebench/image_assets"]
-
-    # test_patch images → /swebench/image_assets/test_patch/{repo_relative_path}
-    test_patch_assets = image_assets.get("test_patch", [])
-    if hasattr(test_patch_assets, "tolist"):
-        test_patch_assets = test_patch_assets.tolist()
-    for item in test_patch_assets:
-        if isinstance(item, str):
-            item = json.loads(item)
-        path = item.get("path", "")
-        url = item.get("url", "")
-        if path and url:
-            dest = f"/swebench/image_assets/test_patch/{path}"
-            commands.append(f"mkdir -p $(dirname '{dest}')")
-            commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
-
-    # problem_statement images → /swebench/image_assets/problem_statement/
-    ps_assets = image_assets.get("problem_statement", [])
-    if hasattr(ps_assets, "tolist"):
-        ps_assets = ps_assets.tolist()
-    seen_urls = set()
-    for url in ps_assets:
-        if not isinstance(url, str) or not url or url in seen_urls:
-            continue
-        seen_urls.add(url)
-        fname = url.rstrip("/").split("/")[-1]
-        dest = f"/swebench/image_assets/problem_statement/{fname}"
-        commands.append("mkdir -p /swebench/image_assets/problem_statement")
-        commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
-
-    if len(commands) <= 1:
+    has_assets = (
+        image_assets.get("test_patch")
+        or image_assets.get("problem_statement")
+        or image_assets.get("patch")
+    )
+    if not has_assets:
         return ""
-    return make_heredoc_run_command(commands)
+
+    instance_id = instance["instance_id"]
+    return f"COPY src/image_assets/{instance_id}/ /swebench/image_assets/"
 
 
 def _get_dockerfile(instance) -> str:
     repo = instance["repo"]
-    version = instance.get("version")
+    version = instance.get("version") or None
     base_commit = instance["base_commit"]
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
-    dockerfile = _DOCKERFILE_BASE_JS
+    # OpenLayers gets its own vintage base (Ubuntu 20.04, no system Chrome,
+    # puppeteer-bundled Chromium) so headless WebGL software-rendering works
+    # against era-matched Chromium. See _DOCKERFILE_BASE_JS_OL above.
+    dockerfile = _DOCKERFILE_BASE_JS_OL if repo == "openlayers/openlayers" else _DOCKERFILE_BASE_JS
     docker_specs = specs.get("docker_specs", {})
     node_version = docker_specs.get("node_version", "18.17.1")
     pnpm_version = docker_specs.get("pnpm_version", None)
@@ -247,9 +322,16 @@ def _get_dockerfile(instance) -> str:
         dockerfile += f"ENV PNPM_VERSION {pnpm_version}\n"
         dockerfile += "ENV PNPM_HOME /usr/local/pnpm\n"
         dockerfile += "ENV PATH $PNPM_HOME:$PATH\n"
+    # Per-spec ENV vars (e.g. PUPPETEER_SKIP_DOWNLOAD for OL puppeteer-21+ pins
+    # to avoid the BuildKit npm install hang on the puppeteer download hook).
+    for env_key, env_value in docker_specs.get("env", {}).items():
+        dockerfile += f"ENV {env_key}={env_value}\n"
     env_script = make_env_script_list(instance, specs)
     if env_script:
         dockerfile += f"\n{env_script}\n"
+    pre_install_script = make_pre_install_script(specs)
+    if pre_install_script:
+        dockerfile += f"\n{pre_install_script}\n"
     repo_script = make_repo_script_list(specs, repo, base_commit)
     if repo_script:
         dockerfile += f"\n{repo_script}\n"
@@ -261,224 +343,29 @@ def _get_dockerfile(instance) -> str:
     return dockerfile
 
 
-# ── Per-instance test command generators ──────────────────────────────
-# Ported from SWE-bench/private test_spec/javascript.py.
-# JS test frameworks often need specific test paths/patterns rather than
-# running the entire suite.
+# Per-instance test command generation has moved into the per-repo SPECS
+# modules under sb_dockerfile_gen/specs/. A SPECS_X[v]["test_cmd"] entry is
+# either a string, a list[str], or a callable(instance) -> list[str] —
+# `_get_test_commands` below handles all three.
 
-try:
-    from unidiff import PatchSet
-except ImportError:
-    PatchSet = None
-
-
-def _get_test_paths(instance: dict) -> list[str]:
-    """Extract test file paths from test_patch."""
-    test_patch = instance.get("test_patch", "")
-    if not test_patch:
-        return []
-    if PatchSet is not None:
-        return [x.path for x in PatchSet(test_patch)]
-    return re.findall(r"diff --git a/.* b/(.*)", test_patch)
-
-
-def _get_test_cmds_prism(instance: dict) -> list:
-    test_cmd = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance["version"]]["test_cmd"]
-    directives = []
-    for test_path in _get_test_paths(instance):
-        if test_path.startswith("tests/languages"):
-            directives.append(test_cmd + f" --language {test_path.split('/')[2]}")
-        elif test_path == "tests/core/greedy.js":
-            directives.append("./node_modules/.bin/mocha tests/core/**/*.js --reporter json")
-        elif test_path == "test.html":
-            continue
-    return sorted(list(set(directives)))
-
-
-def _get_test_cmds_openlayers(instance: dict) -> list:
-    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
-    XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
-    SSL_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
-    cmds = []
-    for test_path in _get_test_paths(instance):
-        test_type = test_path.split('/')[1] if '/' in test_path else ""
-        if test_type == "browser":
-            if instance.get("version") in ['6.9', '6.12', '6.14', '7.0', '7.1', '7.2', '7.3', '7.5']:
-                cmds.append(f'su chromeuser -c "npm run test-browser"')
-            else:
-                cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-browser"')
-        elif test_type == "rendering":
-            # v7.4: use Puppeteer's bundled Chromium 115 via Xvfb (not --headless,
-            # which uses SwiftShader and hangs in Docker). --force continues past failures.
-            if instance.get("version") in ['7.4']:
-                PENV = "CI=true PUPPETEER_CACHE_DIR=/home/chromeuser/.cache/puppeteer"
-                cmds.append(
-                    f'{PENV} {XVFB} su chromeuser -c "'
-                    f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force"'
-                )
-            else:
-                cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-rendering"')
-        elif test_type == "spec":
-            cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
-        elif test_type == "node":
-            cmds.append("npm run test-node")
-        else:
-            cmds.append("npm run test")
-        if test_type in ['spec', 'rendering', 'browser'] and instance.get('version') in [
-            '6.1', '6.2', '6.3', '6.4', '6.5', '6.5.1', '6.6',
-            '4.3', '4.4', '4.5', '4.6', '5.1', '5.2', '5.3'
-        ]:
-            cmds[-1] = f"{SSL_LEGACY} {cmds[-1]}"
-    return list(set(cmds))
-
-
-def _get_test_cmds_next(instance: dict) -> list:
-    SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
-    XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
-    return list(set([
-        f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
-        f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
-        for test_path in _get_test_paths(instance)
-    ]))
-
-
-def _get_test_cmds_carbon(instance: dict) -> list:
-    cmds = []
-    max_workers = " --maxWorkers=1" if instance.get("version") == "12" else ""
-    for test_path in _get_test_paths(instance):
-        if re.search(r"__snapshots__/(.*).js.snap$", test_path):
-            test_path = "/".join(test_path.split("/")[:-2])
-        if "__tests__" in test_path:
-            test_path = test_path.split("__tests__")[0]
-        # For paths under packages/*/src/components/*/next/ or packages/cra-template/,
-        # Jest won't match the specific file. Target the component directory instead.
-        if "/next/" in test_path and "/components/" in test_path:
-            test_path = test_path.split("/next/")[0]
-        # cra-template is created by the gold patch as a standalone CRA template.
-        # It needs: (1) react-router-dom installed, (2) automatic JSX transform
-        # (template files don't import React), (3) bypass modulePathIgnorePatterns.
-        if "cra-template/template/" in test_path:
-            # cra-template is created by gold patch as a CRA template. Its deps
-            # (react-router-dom, @apollo/client, etc.) are listed in template.json
-            # but not in package.json. Copy them over and yarn install so PnP can
-            # resolve them. Then run jest with automatic JSX runtime.
-            cmds.append(
-                "node -e '"
-                'const p=require("./packages/cra-template/package.json");'
-                'p.dependencies={"@apollo/client":"3.7.4","react-router-dom":"6.6.2",'
-                '"@testing-library/react":"12.1.5","@testing-library/jest-dom":"5.16.5",'
-                '"@testing-library/user-event":"12.8.3","graphql":"16.6.0",'
-                '"react":"17.0.1","react-dom":"17.0.1"};'
-                'require("fs").writeFileSync("packages/cra-template/package.json",JSON.stringify(p,null,2));'
-                "' && yarn install 2>&1 | tail -3 ; "
-                'npx jest --no-colors '
-                """--config '{"preset":"jest-config-carbon","transform":{"^.+\\\\.(js|jsx)$":["babel-jest",{"presets":["@babel/preset-env",["@babel/preset-react",{"runtime":"automatic"}]]}]}}' """
-                'packages/cra-template/template/src'
-            )
-            continue
-        # e2e test files (.e2e.js) are not matched by Jest — target the component directory
-        if test_path.endswith(".e2e.js"):
-            test_path = "/".join(test_path.split("/")[:-1])
-        cmds.append(f"yarn test{max_workers} {test_path}")
-    return list(set(cmds))
-
-
-def _get_test_cmds_scratch_gui(instance: dict) -> list:
-    test_prefix = MAP_REPO_VERSION_TO_SPECS_JS[instance['repo']][instance['version']]["test_cmd"]
-    cmds = []
-    for test_path in _get_test_paths(instance):
-        if "__snapshots__" in test_path:
-            test_path = test_path.split("__snapshots__")[0]
-        cmds.append(f"{test_prefix} {test_path}")
-    return list(set(cmds))
-
-
-def _get_test_cmds_lighthouse(instance: dict) -> list:
-    cmds = []
-    SUBDIRS = ["report", "cli", "report", "treemap", "viewer"]
-    LH_PREFIX = "lighthouse-"
-    for test_path in _get_test_paths(instance):
-        if any(test_path.endswith(ext) for ext in [".html", ".json", ".md", ".txt"]) or "smokehouse" in test_path:
-            continue
-        # Skip snapshot files — target the directory instead
-        if "__snapshots__" in test_path:
-            test_path = test_path.split("__snapshots__")[0].rstrip("/")
-        # Skip non-test helper files (e.g. fake-driver.js) — target the directory
-        if not test_path.endswith("-test.js") and not test_path.endswith("-test.ts") and test_path.endswith(".js"):
-            test_path = "/".join(test_path.split("/")[:-1])
-        parent_folder = test_path.split("/")[0]
-        if instance.get("version") in ['9.5', '10.0', '10.2']:
-            if parent_folder == "flow-report":
-                cmds.append("yarn unit-flow")
-            elif parent_folder in SUBDIRS + [LH_PREFIX + x for x in SUBDIRS]:
-                if parent_folder.startswith(LH_PREFIX):
-                    parent_folder = parent_folder[len(LH_PREFIX):]
-                cmds.append(f"yarn unit-{parent_folder} {test_path}")
-            else:
-                cmds.append(f"yarn mocha {test_path}")
-        elif '3.0' <= str(instance.get("version", "")) <= '8.6':
-            cmds.append(f"yarn jest --no-colors {test_path}")
-        else:
-            cmds.append(f"./node_modules/.bin/mocha --reporter json {test_path}")
-    return list(set(cmds))
-
-
-def _get_test_cmds_prettier(instance: dict) -> list:
-    cmds = []
-    for test_path in _get_test_paths(instance):
-        if "__snapshots__" in test_path:
-            test_path = test_path.split("__snapshots__")[0]
-        if test_path.endswith(".md"):
-            test_path = "/".join(test_path.split("/")[:-1])
-        # Only jsfmt.spec.js and __tests__/*.js are actual specs — everything else
-        # (fixture .js, .ts, .css, .snap, etc.) needs the directory instead
-        if not test_path.endswith("jsfmt.spec.js") and not "/__tests__/" in test_path and not test_path.endswith("/"):
-            test_path = "/".join(test_path.split("/")[:-1])
-        cmds.append(f"yarn test {test_path}")
-    return list(set(cmds))
-
-
-def _get_test_cmds_react_pdf(instance: dict) -> list:
-    test_prefix = MAP_REPO_VERSION_TO_SPECS_JS[instance['repo']][instance['version']]["test_cmd"]
-    cmds = []
-    for test_path in _get_test_paths(instance):
-        if test_path.endswith(".png"):
-            continue
-        elif test_path.startswith("packages/"):
-            test_path = "/".join(test_path.split("/")[:2])
-            cmds.append(f"{test_prefix} {test_path}")
-        elif test_path.startswith("tests/"):
-            cmds.append(test_prefix)
-    return list(set(cmds))
-
-
-_MAP_REPO_TO_TEST_CMDS = {
-    "alibaba-fusion/next": _get_test_cmds_next,
-    "carbon-design-system/carbon": _get_test_cmds_carbon,
-    "GoogleChrome/lighthouse": _get_test_cmds_lighthouse,
-    "openlayers/openlayers": _get_test_cmds_openlayers,
-    "prettier/prettier": _get_test_cmds_prettier,
-    "PrismJS/prism": _get_test_cmds_prism,
-    # scratch-gui: static test_cmd runs all jest tests, works fine.
-    # Per-instance cmd is too narrow (misses F2P tests not in test_patch).
-    "diegomura/react-pdf": _get_test_cmds_react_pdf,
-}
 
 
 def _get_test_commands(instance: dict, specs: dict) -> str:
-    """Get test command(s) for an instance. Uses per-repo handler if available."""
-    repo = instance["repo"]
-    if repo in _MAP_REPO_TO_TEST_CMDS and instance.get("test_patch"):
-        cmds = _MAP_REPO_TO_TEST_CMDS[repo](instance)
-        if cmds:
-            # Use ; instead of && so all test commands run even if one fails.
-            # We need output from ALL tests for correct F2P/P2P grading.
-            return " ; ".join(cmds)
-    # Fallback to static test_cmd from specs
+    """Resolve a spec's test_cmd to a single shell string.
+
+    `test_cmd` may be a string, a list[str], or a callable(instance) -> list[str].
+    Multi-command results are joined with `;` so all test runs execute even if
+    one fails (we need output from every test for F2P/P2P grading).
+    """
     test_cmd = specs["test_cmd"]
+    if callable(test_cmd):
+        cmds = test_cmd(instance)
+        return " ; ".join(cmds) if cmds else ""
     if isinstance(test_cmd, list):
         return " ; ".join(test_cmd)
     return test_cmd
+
+
 
 
 # ── Eval script generation ─────────────────────────────────────────────
@@ -487,7 +374,7 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
 def _get_eval_script(instance: dict) -> str:
     """Generate the eval.sh script for a multimodal instance."""
     repo = instance["repo"]
-    version = instance.get("version")
+    version = instance.get("version") or None
     base_commit = instance["base_commit"]
     test_patch = instance.get("test_patch", "")
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
@@ -500,27 +387,27 @@ def _get_eval_script(instance: dict) -> str:
         f"cd {CONTAINER_WORKDIR}",
         f"git config --global --add safe.directory {CONTAINER_WORKDIR}",
         "source $NVM_DIR/nvm.sh",
-        "git status",
-        "git show",
-        f"git -c core.fileMode=false diff {base_commit}",
+        "git status > /dev/null 2>&1",
+        "git show > /tmp/git_show.log 2>&1",
+        f"git -c core.fileMode=false diff {base_commit} > /tmp/git_diff.log 2>&1",
     ]
 
-    # Carbon: accessibility-checker races on mkdir for engine dir when parallel workers
-    # all try to download rules simultaneously. Pre-create the dir to avoid EEXIST.
-    if repo == "carbon-design-system/carbon":
-        eval_commands.append("mkdir -p node_modules/accessibility-checker/lib/engine 2>/dev/null || true")
-    # Carbon: gold patch modifies source files — rebuild so tests use updated code.
-    # The image's yarn build output is stale after the gold patch is applied.
-    _CARBON_POST_PATCH_BUILD = {"16.16", "18.14"}
-    if repo == "carbon-design-system/carbon" and version in _CARBON_POST_PATCH_BUILD:
-        eval_commands.append("yarn build 2>&1 | tail -5 || true")
+    # Per-repo/version eval setup from specs. May be a list[str] or a
+    # callable(instance) -> list[str] for instance-conditional setup.
+    eval_setup = specs.get("eval_setup", [])
+    if callable(eval_setup):
+        eval_setup = eval_setup(instance)
+    eval_commands.extend(eval_setup)
 
     if test_patch:
         # Strip binary diffs — they can't be applied via heredoc
         clean_test_patch, binary_files = _strip_binary_diffs(test_patch)
 
-        test_files = re.findall(r"diff --git a/.* b/(.*)", test_patch)
-        # Separate existing files (can git checkout) from new files (need rm)
+        # Extract both a/ and b/ sides of each diff header
+        a_sides = re.findall(r"diff --git a/(.*) b/.*", test_patch)
+        b_sides = re.findall(r"diff --git a/.* b/(.*)", test_patch)
+
+        # Detect new files (need rm, not checkout)
         new_file_markers = set()
         lines = test_patch.split("\n")
         for i, line in enumerate(lines):
@@ -530,14 +417,28 @@ def _get_eval_script(instance: dict) -> str:
                     if m:
                         new_file_markers.add(m.group(1))
                         break
-        existing_files = [f for f in test_files if f not in new_file_markers]
-        new_files = [f for f in test_files if f in new_file_markers]
+
+        # Build reset command handling renames correctly:
+        # - Regular files (a == b): git checkout a/ side
+        # - Renames (a != b): git checkout a/ side + rm b/ side
+        # - New files: rm b/ side
+        checkout_files = []
+        rm_files = list(new_file_markers)
+        for a, b in zip(a_sides, b_sides):
+            if b in new_file_markers:
+                continue  # already handled
+            if a != b:
+                # Rename: restore old name, remove new name
+                checkout_files.append(a)
+                rm_files.append(b)
+            else:
+                checkout_files.append(a)
 
         reset_parts = []
-        if existing_files:
-            reset_parts.append(f"git checkout {base_commit} {' '.join(existing_files)}")
-        if new_files:
-            reset_parts.append(f"rm -f {' '.join(new_files)}")
+        if checkout_files:
+            reset_parts.append(f"git checkout {base_commit} {' '.join(checkout_files)}")
+        if rm_files:
+            reset_parts.append(f"rm -f {' '.join(rm_files)}")
         reset_tests_command = " && ".join(reset_parts) if reset_parts else "true"
 
         eval_commands.append(reset_tests_command)
@@ -550,41 +451,27 @@ def _get_eval_script(instance: dict) -> str:
             )
             eval_commands.append(apply_test_patch_command)
 
-        # Restore binary files from build-time staging dir
+        # Restore binary files from build-time staging dir.
+        # `cp -a` copies attributes from the staging source (typically 775 root:root),
+        # clobbering the image's 777 perms on any overlapping dirs. That breaks
+        # non-root users (chromeuser, uid 1000) writing siblings (e.g. Puppeteer's
+        # actual.png). Restore world-writable after cp.
         if binary_files:
             eval_commands.append(
                 "test -d /swebench/image_assets/test_patch && "
                 "cp -a /swebench/image_assets/test_patch/. /testbed/ 2>/dev/null || true"
             )
-
-    # Lighthouse v1.x: gold patch may add new modules that need linking
-    if repo == "GoogleChrome/lighthouse" and version and version.startswith("1."):
-        eval_commands.append("npm run install-all 2>/dev/null || true")
-
-    # Next v1.27: Cypress/Vite tests run as chromeuser; ensure writable dirs
-    if repo == "alibaba-fusion/next" and version == "1.27":
-        eval_commands.append("chmod -R a+w /testbed/node_modules 2>/dev/null || true")
-
-    # OL v7.4: rendering tests need Puppeteer's bundled Chromium (115.0.5790.98)
-    # for pixel-exact match with expected.png. Download directly (install.js hangs).
-    # Puppeteer 20.9.0 expects: $CACHE/chrome/linux-115.0.5790.98/chrome-linux64/chrome
-    if repo == "openlayers/openlayers" and version == "7.4":
-        cache = "/home/chromeuser/.cache/puppeteer"
-        chrome_dir = f"{cache}/chrome/linux-115.0.5790.98"
-        eval_commands.extend([
-            f"mkdir -p {chrome_dir}",
-            f"wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.98/linux64/chrome-linux64.zip -O /tmp/chrome.zip",
-            f"python3 -c \"import zipfile; zipfile.ZipFile('/tmp/chrome.zip').extractall('{chrome_dir}')\"",
-            "rm /tmp/chrome.zip",
-            f"chmod -R 755 {chrome_dir}/chrome-linux64",
-            f"chown -R chromeuser:chromeuser {cache}",
-        ])
+            eval_commands.append("chmod -R a+rwX /testbed 2>/dev/null || true")
 
     eval_commands += [
         f": '{START_TEST_OUTPUT}'",
         test_command,
-        f": '{END_TEST_OUTPUT}'",
     ]
+    # Force stdout flush before the END marker. Without this, buffered test
+    # output (e.g. mocha JSON at 9MB+) can arrive after END and be cut off by
+    # the grader's START/END slice. Hits eslint, quarto, and any large suite.
+    eval_commands.append("{ set +x ; } 2>/dev/null ; sync ; sleep 0.1 ; set -x")
+    eval_commands.append(f": '{END_TEST_OUTPUT}'")
 
     if test_patch:
         eval_commands.append(reset_tests_command)

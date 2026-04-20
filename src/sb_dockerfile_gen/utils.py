@@ -2,9 +2,23 @@
 Inlined utilities from swebench — makes this package fully standalone.
 """
 
+import re
 from hashlib import blake2b
 
-from sb_dockerfile_gen.constants import REPO_BASE_COMMIT_BRANCH
+try:
+    from unidiff import PatchSet
+except ImportError:
+    PatchSet = None
+
+
+def get_test_paths(instance: dict) -> list[str]:
+    """Extract test file paths from an instance's test_patch."""
+    test_patch = instance.get("test_patch", "")
+    if not test_patch:
+        return []
+    if PatchSet is not None:
+        return [x.path for x in PatchSet(test_patch)]
+    return re.findall(r"diff --git a/.* b/(.*)", test_patch)
 
 
 def generate_heredoc_delimiter(content: str) -> str:
@@ -27,6 +41,8 @@ def make_heredoc_run_command(commands: list[str]) -> str:
 
 def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
     """Generate shell commands to clone a repo and remove references to future information."""
+    # Imported lazily to avoid a circular import: constants → specs → utils.
+    from sb_dockerfile_gen.constants import REPO_BASE_COMMIT_BRANCH
     branch = REPO_BASE_COMMIT_BRANCH.get(repo, {}).get(base_commit, "")
     if branch:
         clone_cmd = f"git clone -o origin --branch {branch} --single-branch https://github.com/{repo} {workdir}"
@@ -36,24 +52,35 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         clone_cmd = f"git clone -o origin https://github.com/{repo} {workdir}"
     return [
         clone_cmd,
-        f"chmod -R 777 {workdir}",
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
-        # Remove tags newer than base commit (prevents future info leakage)
-        f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
-        'git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done',
-        # Delete all branches except the detached HEAD at base_commit
-        'git branch -D $(git branch | grep -v "^\\*") 2>/dev/null || true',
+        # Delete all non-HEAD branches, and delete tags NOT reachable from HEAD.
+        # Tags reachable from HEAD are safe (their commits are ancestors of base_commit)
+        # and some build scripts depend on `git describe` working (e.g. lighthouse's
+        # yarn build-all calls `git describe`). Future tags still get pruned.
+        "git branch | grep -v '^\\*' | xargs -r git branch -D || true",
+        "git tag -l | while read tag; do "
+        "  git merge-base --is-ancestor \"$tag\" HEAD 2>/dev/null || git tag -d \"$tag\" >/dev/null; "
+        "done",
         "git reflog expire --expire=now --all",
+        # Prune unreachable objects so future commits cannot be recovered via
+        # `git fsck --lost-found` or `git cat-file -p <sha>`.
+        "git gc --prune=now --aggressive",
+        # Verify no future commits remain reachable.
+        f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
+        'AFTER_EPOCH=$((TARGET_EPOCH + 1))',
+        'AFTER_TIMESTAMP=$(date -u -d "@$AFTER_EPOCH" "+%Y-%m-%d %H:%M:%S")',
+        'COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)',
+        '[ "$COMMIT_COUNT" -eq 0 ] || exit 1',
         "cd - || true",
+        # chmod after git reset so permissions aren't reverted by git
+        f"chmod -R 777 {workdir}",
     ]
 
 
 def get_modified_files(patch: str) -> list[str]:
     """Get the list of modified files in a patch."""
-    from unidiff import PatchSet
-
     source_files = [
         f.source_file for f in PatchSet(patch) if f.source_file != "/dev/null"
     ]
