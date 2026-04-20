@@ -232,7 +232,7 @@ SPECS_OPENLAYERS = {
 # This handles per-instance puppeteer-patch differences (e.g., one v9.0
 # instance pins 21.7→Chrome119, another pins 21.9→Chrome121).
 _OL_BUILD_HOOK_HANGS = {'7.3', '7.4', '7.5', '8.1', '9.0', '9.1'}
-_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH = (
+_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_CFT = (
     "npm install --ignore-scripts && "
     "BUILDID=$(node -e \"console.log(require('puppeteer-core/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS.chrome)\") && "
     "test -n \"$BUILDID\" && "
@@ -245,14 +245,69 @@ _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH = (
 )
 for _ol_v in _OL_BUILD_HOOK_HANGS:
     if _ol_v in SPECS_OPENLAYERS:
-        # Replace the standard "npm install" step with the noscripts+fetch combo.
-        # Existing install steps for OL start with "npm install" — overwrite that.
         install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
         for i, step in enumerate(install_steps):
             if step == 'npm install':
-                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH
+                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_CFT
                 break
         SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
+
+
+# OL versions with puppeteer 1.x-19.x (chromium-snapshots era). Their
+# install hooks silently no-op on Node 21 / Ubuntu 20.04, leaving an empty
+# .local-chromium dir → karma-chrome-launcher fails ("No binary for
+# ChromeHeadless"). Workaround: same pattern as the CFT versions, but
+# wget from the chromium-browser-snapshots bucket using the rev embedded
+# in puppeteer-core's revisions.js, into puppeteer's .local-chromium
+# layout so `require('puppeteer').executablePath()` resolves it.
+#
+# Puppeteer 1.x-19.x revisions.js exposes `.chromium` (a numeric
+# revision string), not `.chrome`. Layout: .local-chromium/linux-{rev}/chrome-linux/chrome.
+# Use semicolons + explicit exit-on-empty so set -e in the parent heredoc
+# actually trips. (`&&` chains in bash bypass `set -e` for non-final
+# commands — silently lets subsequent install steps run with empty cache.)
+_OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_SNAPSHOT = (
+    "npm install --ignore-scripts; "
+    # Look up the snapshot revision in three places, in order:
+    # - puppeteer 8.x+: lib/cjs/puppeteer/revisions.js exports PUPPETEER_REVISIONS.chromium
+    # - puppeteer 2.x-7.x: lib/revisions.js exports PUPPETEER_REVISIONS.chromium
+    # - puppeteer 1.x: package.json's chromium_revision field
+    "REV=$(node -e \"let r;try{r=require('puppeteer/lib/cjs/puppeteer/revisions.js').PUPPETEER_REVISIONS}catch(e){};if(!r){try{r=require('puppeteer/lib/revisions.js').PUPPETEER_REVISIONS}catch(e){}};if(!r){try{const p=require('puppeteer/package.json');r=(p.puppeteer||{})}catch(e){r={}}};console.log(r.chromium||r.chromium_revision||r.chrome||'')\" 2>/dev/null); "
+    "if [ -z \"$REV\" ]; then echo 'ERROR: could not determine puppeteer Chromium revision' >&2; exit 1; fi; "
+    "DEST=node_modules/puppeteer/.local-chromium/linux-${REV}; "
+    "mkdir -p ${DEST}; "
+    "wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/${REV}/chrome-linux.zip -O /tmp/chrome.zip; "
+    "unzip -q /tmp/chrome.zip -d ${DEST}/; "
+    "rm /tmp/chrome.zip; "
+    "chmod -R 755 ${DEST}"
+)
+# OL versions with puppeteer 1.x-19.x (chromium-snapshots era).
+# v4.6 / v5.1 don't ship puppeteer at all — handled separately above.
+_OL_OLDER_PUPPETEER = {
+    '5.3', '6.1', '6.2', '6.3', '6.4', '6.5', '6.5.1', '6.6',
+    '6.9', '6.10', '6.11', '6.12', '6.13', '6.14',
+    '7.0', '7.1', '7.2',
+}
+for _ol_v in _OL_OLDER_PUPPETEER:
+    if _ol_v in SPECS_OPENLAYERS:
+        install_steps = SPECS_OPENLAYERS[_ol_v].get('install', [])
+        for i, step in enumerate(install_steps):
+            if step == 'npm install':
+                install_steps[i] = _OL_NPM_NOSCRIPTS_AND_CHROME_FETCH_SNAPSHOT
+                break
+        SPECS_OPENLAYERS[_ol_v]['install'] = install_steps
+
+# Set CHROME_BIN to puppeteer.executablePath() at the end of karma config for
+# OL versions whose original karma config doesn't read it from puppeteer (v5.3,
+# v6.1-v6.4 era). Append the line if not already present. The newer OL configs
+# (v6.5+) already do `process.env.CHROME_BIN = require('puppeteer').executablePath();`.
+_OL_KARMA_CHROME_BIN_FALLBACK = (
+    "grep -q 'process.env.CHROME_BIN' test/karma.config.js || "
+    "echo \"process.env.CHROME_BIN = require('puppeteer').executablePath();\" >> test/karma.config.js"
+)
+for _ol_v in _OL_OLDER_PUPPETEER:
+    if _ol_v in SPECS_OPENLAYERS:
+        SPECS_OPENLAYERS[_ol_v]['install'].append(_OL_KARMA_CHROME_BIN_FALLBACK)
 
 
 # v4.6 and v5.1 don't use puppeteer at all (karma-chrome-launcher relies on
