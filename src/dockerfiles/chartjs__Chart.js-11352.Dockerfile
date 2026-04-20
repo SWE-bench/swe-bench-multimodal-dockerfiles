@@ -106,17 +106,21 @@ pnpm -v
 EOF_f7e0af49c0fc
 
 
-RUN <<EOF_9bddf550224d
+RUN <<EOF_1ec4be989c5a
 #!/bin/bash
 set -euxo pipefail
-wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip
-unzip -q chrome-linux64.zip -d /opt/
-rm chrome-linux64.zip
-rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
-printf '#!/bin/bash\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
-chmod +x /usr/bin/google-chrome
-cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
-EOF_9bddf550224d
+apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
+wget -q https://storage.googleapis.com/chrome-for-testing-public/120.0.6099.109/linux64/chrome-linux64.zip -O /tmp/chromium.zip
+unzip -q /tmp/chromium.zip -d /opt/chromium-pinned/
+rm /tmp/chromium.zip
+mkdir -p /opt/chromium
+ln -sf /opt/chromium-pinned/chrome-linux64/chrome /opt/chromium/chrome-bin
+printf '#!/bin/bash\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+chmod +x /opt/chromium/chrome
+chmod -R 755 /opt/chromium-pinned
+ln -sf /opt/chromium/chrome /usr/bin/google-chrome
+ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
+EOF_1ec4be989c5a
 
 
 RUN <<EOF_98ad2cbdedf2

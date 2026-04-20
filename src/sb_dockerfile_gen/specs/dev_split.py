@@ -13,13 +13,10 @@ from sb_dockerfile_gen.common import (
     TEST_XVFB_PREFIX,
     XVFB_DEPS,
     X11_DEPS,
-    _CHROMIUM_85_INSTALL,
-    _CHROMIUM_90_INSTALL,
-    _CHROMIUM_110_INSTALL,
-    _CHROME_120_INSTALL,
     chromium_preinstall,
     CHROMIUM_62, CHROMIUM_72_A, CHROMIUM_76_B, CHROMIUM_76_P5,
-    CHROMIUM_88_A, CHROMIUM_93, CHROMIUM_107_B,
+    CHROMIUM_85_A, CHROMIUM_88_A, CHROMIUM_90, CHROMIUM_93, CHROMIUM_107_B,
+    CHROMIUM_110_A, CHROMIUM_CFT_120,
 )
 from sb_dockerfile_gen.utils import get_test_paths
 
@@ -239,31 +236,33 @@ for v in ["4.0", "4.1", "4.2", "4.3", "4.4"]:
         SETUP_KARMA_TIMEOUTS_CHART.format("karma.conf.cjs"),
         SETUP_CHROME_SHM_FIX_CHART.format("karma.conf.cjs"),
     ])
-# Pin era-appropriate Chrome versions for chart.js. System Chrome (147+) breaks
-# xhr fixture loading in karma's file server; visual tests also fail on Chrome
-# version drift. Pins follow CHROMIUM_PINS.md (system Chrome recommendations
-# mapped to closest available snapshot/CfT build).
+# Pin era-appropriate Chrome versions for chart.js. Constants in common.py.
+# System Chrome (147+) breaks xhr fixture loading in karma's file server; visual
+# tests also fail on Chrome version drift. Chart.js has no puppeteer dep so pins
+# are picked era-appropriate rather than derived (empirically tuned: rev 97
+# disconnected under xvfb for v3.5-3.8, rev 107 likewise for v4.0-4.1, CfT 113
+# disconnects for v4.3/4.4 — so we land on 110/CfT120 for those).
 _CHART_JS_CHROME_PINS = {
     # v2.x, v3.0-3.3 -> Chromium 85/90 era
-    "2.0": _CHROMIUM_85_INSTALL, "2.1": _CHROMIUM_85_INSTALL,
-    "2.2": _CHROMIUM_85_INSTALL, "2.3": _CHROMIUM_85_INSTALL,
-    "2.4": _CHROMIUM_85_INSTALL, "2.5": _CHROMIUM_85_INSTALL,
-    "2.6": _CHROMIUM_85_INSTALL, "2.7": _CHROMIUM_85_INSTALL,
-    "2.8": _CHROMIUM_85_INSTALL, "2.9": _CHROMIUM_85_INSTALL,
-    "3.0": _CHROMIUM_90_INSTALL, "3.1": _CHROMIUM_90_INSTALL,
-    "3.2": _CHROMIUM_90_INSTALL, "3.3": _CHROMIUM_90_INSTALL,
-    "3.4": _CHROMIUM_90_INSTALL,
+    "2.0": CHROMIUM_85_A, "2.1": CHROMIUM_85_A,
+    "2.2": CHROMIUM_85_A, "2.3": CHROMIUM_85_A,
+    "2.4": CHROMIUM_85_A, "2.5": CHROMIUM_85_A,
+    "2.6": CHROMIUM_85_A, "2.7": CHROMIUM_85_A,
+    "2.8": CHROMIUM_85_A, "2.9": CHROMIUM_85_A,
+    "3.0": CHROMIUM_90,   "3.1": CHROMIUM_90,
+    "3.2": CHROMIUM_90,   "3.3": CHROMIUM_90,
+    "3.4": CHROMIUM_90,
     # v3.5-3.8 -> Chromium 110 (was 97; 97 disconnected under xvfb)
-    "3.5": _CHROMIUM_110_INSTALL, "3.6": _CHROMIUM_110_INSTALL,
-    "3.7": _CHROMIUM_110_INSTALL, "3.8": _CHROMIUM_110_INSTALL,
+    "3.5": CHROMIUM_110_A, "3.6": CHROMIUM_110_A,
+    "3.7": CHROMIUM_110_A, "3.8": CHROMIUM_110_A,
     # v4.0-4.1 -> Chromium 110 (was 107; 107 disconnected instantly)
-    "4.0": _CHROMIUM_110_INSTALL, "4.1": _CHROMIUM_110_INSTALL,
+    "4.0": CHROMIUM_110_A, "4.1": CHROMIUM_110_A,
     # v4.2 -> Chrome 110, v4.3-4.4 -> CfT 120 (was CfT 113; 113 disconnects)
-    "4.2": _CHROMIUM_110_INSTALL,
-    "4.3": _CHROME_120_INSTALL, "4.4": _CHROME_120_INSTALL,
+    "4.2": CHROMIUM_110_A,
+    "4.3": CHROMIUM_CFT_120, "4.4": CHROMIUM_CFT_120,
 }
-for v, install in _CHART_JS_CHROME_PINS.items():
-    SPECS_CHART_JS[v]["pre_install"] = install
+for _v, (_kind, _rev) in _CHART_JS_CHROME_PINS.items():
+    SPECS_CHART_JS[_v]["pre_install"] = chromium_preinstall(_kind, _rev)
 
 
 # ============================================================

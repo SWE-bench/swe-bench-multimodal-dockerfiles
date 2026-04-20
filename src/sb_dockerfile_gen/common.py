@@ -35,51 +35,6 @@ X11_DEPS = [
     "x11-utils",
 ]
 
-# Chrome 146 has breaking changes for older tests (floating-point precision,
-# disconnect timeouts, MessagePort errors, rendering differences).
-# Use Chromium snapshots for era-appropriate versions.
-# Snapshots are at: https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev}/chrome-linux.zip
-# Wrap the binary in a shell script that adds --no-sandbox (needed in Docker).
-def _chromium_snapshot_install(revision: str) -> list[str]:
-    """Install a specific Chromium snapshot revision, replacing system Chrome."""
-    return [
-        # libxtst6 is needed by old Chromium but not pulled by the APT Chrome package
-        "apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*",
-        f"wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{revision}/chrome-linux.zip",
-        "unzip -q chrome-linux.zip -d /opt/",
-        "rm chrome-linux.zip",
-        # Replace symlinks with a wrapper script that adds --no-sandbox
-        # (Chromium snapshots don't include the SUID sandbox helper)
-        "rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable",
-        'printf \'#!/bin/bash\\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\\n\' > /usr/bin/google-chrome',
-        "chmod +x /usr/bin/google-chrome",
-        "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
-    ]
-
-# Legacy install-command-list helpers kept for chart.js only (sets up
-# /usr/bin/google-chrome wrapper at a specific Chromium rev). Everyone else
-# uses the `CHROMIUM_*` constants + `chromium_preinstall` pattern below.
-_CHROMIUM_85_INSTALL = _chromium_snapshot_install("793478")
-_CHROMIUM_90_INSTALL = _chromium_snapshot_install("856583")   # Chrome 90
-
-
-def _chrome_for_testing_install(version: str) -> list[str]:
-    """Install a specific Chrome-for-Testing version, replacing system Chrome."""
-    return [
-        f"wget -q https://storage.googleapis.com/chrome-for-testing-public/{version}/linux64/chrome-linux64.zip",
-        "unzip -q chrome-linux64.zip -d /opt/",
-        "rm chrome-linux64.zip",
-        "rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable",
-        'printf \'#!/bin/bash\\nexec /opt/chrome-linux64/chrome --no-sandbox "$@"\\n\' > /usr/bin/google-chrome',
-        "chmod +x /usr/bin/google-chrome",
-        "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
-    ]
-
-
-_CHROMIUM_110_INSTALL = _chromium_snapshot_install("1069273")  # Chrome 110
-_CHROME_120_INSTALL = _chrome_for_testing_install("120.0.6099.109")
-
-
 SET_OPENSSL_TO_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
 # Retargets `CHROME_BIN` to the pre-baked /opt/chromium/chrome path (see
 # chromium_preinstall). Used by p5.js / bpmn-js / next / lighthouse pins.
@@ -189,6 +144,8 @@ CHROMIUM_CFT_123_A = ('cft', '123.0.6312.58')    # puppeteer 22.2
 CHROMIUM_CFT_123_B = ('cft', '123.0.6312.122')   # puppeteer 22.3
 CHROMIUM_CFT_124_A = ('cft', '124.0.6367.78')    # puppeteer 22.4
 CHROMIUM_CFT_124_B = ('cft', '124.0.6367.91')    # puppeteer 22.5
+# Additional era-appropriate pins for chart.js (no puppeteer dep to derive from)
+CHROMIUM_CFT_120 = ('cft', '120.0.6099.109')     # chart.js v4.3/v4.4
 # Switch Karma from 'spec' to 'json' reporter for structured test output.
 # The config file has an explicit plugins array so we must register the plugin.
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).
