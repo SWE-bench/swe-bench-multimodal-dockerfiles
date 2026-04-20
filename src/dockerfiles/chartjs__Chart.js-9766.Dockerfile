@@ -92,21 +92,21 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_2d725f92f9b8
+RUN <<EOF_bb3d5099ae9d
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
-wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/938248/chrome-linux.zip
+wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1069273/chrome-linux.zip
 unzip -q chrome-linux.zip -d /opt/
 rm chrome-linux.zip
 rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
 printf '#!/bin/bash\nexec /opt/chrome-linux/chrome --no-sandbox "$@"\n' > /usr/bin/google-chrome
 chmod +x /usr/bin/google-chrome
 cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
-EOF_2d725f92f9b8
+EOF_bb3d5099ae9d
 
 
-RUN <<EOF_de222b6f8a8e
+RUN <<EOF_436c532d43c4
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/chartjs/Chart.js /testbed
@@ -129,8 +129,10 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install karma-json-reporter@1.2.1 --save-dev --legacy-peer-deps
-sed -i "s/reporters: \['spec', 'kjhtml'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" karma.conf.js
-EOF_de222b6f8a8e
+sed -i -E "s#reporters: \['(spec|progress)'[^]]*\],#reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json' },#" karma.conf.js
+sed -i "s/frameworks: \['jasmine'\],/frameworks: ['jasmine'],\n    captureTimeout: 180000,\n    browserDisconnectTimeout: 120000,\n    browserDisconnectTolerance: 3,\n    browserNoActivityTimeout: 180000,/" karma.conf.js
+sed -i "s/--disable-renderer-backgrounding/--disable-renderer-backgrounding',\n          '--disable-dev-shm-usage/" karma.conf.js
+EOF_436c532d43c4
 
 
 COPY src/image_assets/chartjs__Chart.js-9766/ /swebench/image_assets/
