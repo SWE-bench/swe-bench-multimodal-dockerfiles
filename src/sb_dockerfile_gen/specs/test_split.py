@@ -17,8 +17,6 @@ import re
 from sb_dockerfile_gen.common import (
     XVFB_DEPS,
     SET_OPENSSL_TO_LEGACY,
-    SET_PUPPETEER_ENV_VAR,
-    SET_PUPPETEER_PATH,
     SET_PUPPETEER_PATH_OPT,
     SETUP_KARMA_JSON_REPORTER_NEXT,
     SETUP_KARMA_JSON_REPORTER_BPMN,
@@ -26,7 +24,6 @@ from sb_dockerfile_gen.common import (
     INSTALL_TINYTEX,
     INSTALL_R_PACKAGES,
     _CHROMIUM_72_INSTALL,
-    _CHROMIUM_85_INSTALL,
     _CHROME_120_INSTALL,
     chromium_preinstall,
     CHROMIUM_71_A, CHROMIUM_71_B, CHROMIUM_72_B, CHROMIUM_73,

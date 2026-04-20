@@ -65,10 +65,6 @@ _CHROMIUM_72_INSTALL = _chromium_snapshot_install("599821")
 _CHROMIUM_85_INSTALL = _chromium_snapshot_install("793478")
 # Additional era-appropriate Chromium pins for chart.js visual/rendering tests.
 _CHROMIUM_90_INSTALL = _chromium_snapshot_install("856583")   # Chrome 90
-_CHROMIUM_97_INSTALL = _chromium_snapshot_install("938248")   # Chrome 97
-_CHROMIUM_100_INSTALL = _chromium_snapshot_install("901912")  # Chrome 100
-_CHROMIUM_107_INSTALL = _chromium_snapshot_install("1036745") # Chrome 107
-_CHROMIUM_108_INSTALL = _chromium_snapshot_install("1025233") # Chrome 108
 
 
 def _chrome_for_testing_install(version: str) -> list[str]:
@@ -85,13 +81,10 @@ def _chrome_for_testing_install(version: str) -> list[str]:
 
 
 _CHROMIUM_110_INSTALL = _chromium_snapshot_install("1069273")  # Chrome 110
-_CHROME_113_INSTALL = _chrome_for_testing_install("113.0.5672.63")
 _CHROME_120_INSTALL = _chrome_for_testing_install("120.0.6099.109")
 
 
 SET_OPENSSL_TO_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
-SET_PUPPETEER_ENV_VAR = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
-SET_PUPPETEER_PATH = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|\" {}"
 # Retargets `CHROME_BIN` to the pre-baked /opt/chromium/chrome path (see
 # chromium_preinstall). Used by p5.js / bpmn-js / next / lighthouse pins.
 SET_PUPPETEER_PATH_OPT = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/opt/chromium/chrome';|\" {}"
