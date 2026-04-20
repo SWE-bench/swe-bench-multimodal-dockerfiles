@@ -57,13 +57,10 @@ def _chromium_snapshot_install(revision: str) -> list[str]:
         "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
     ]
 
-# Revision → approximate Chrome version mapping:
-#   599821 → Chrome ~72 (Oct 2018) — for v1.11-v1.15
-#   793478 → Chrome ~85 (Aug 2020) — for v1.21
-# Chrome for Testing 120 — for v1.27 and openlayers v7.4
-_CHROMIUM_72_INSTALL = _chromium_snapshot_install("599821")
+# Legacy install-command-list helpers kept for chart.js only (sets up
+# /usr/bin/google-chrome wrapper at a specific Chromium rev). Everyone else
+# uses the `CHROMIUM_*` constants + `chromium_preinstall` pattern below.
 _CHROMIUM_85_INSTALL = _chromium_snapshot_install("793478")
-# Additional era-appropriate Chromium pins for chart.js visual/rendering tests.
 _CHROMIUM_90_INSTALL = _chromium_snapshot_install("856583")   # Chrome 90
 
 

@@ -23,8 +23,6 @@ from sb_dockerfile_gen.common import (
     INSTALL_JULIA,
     INSTALL_TINYTEX,
     INSTALL_R_PACKAGES,
-    _CHROMIUM_72_INSTALL,
-    _CHROME_120_INSTALL,
     chromium_preinstall,
     CHROMIUM_71_A, CHROMIUM_71_B, CHROMIUM_72_B, CHROMIUM_73,
     CHROMIUM_76_A, CHROMIUM_76_B, CHROMIUM_76_P5, CHROMIUM_77,
@@ -157,16 +155,15 @@ SPECS_BPMN_JS = {
             "node_version": "21.6.2",
         }
     } for k in [
-        '0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3',
         '3.4', '4.0', '5.0', '5.1', '6.0', '6.3', '7.2', '7.3',
         '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3',
-        '11.1', '11.3', '13.2', '14.0', '15.2'
+        '11.1', '11.3', '13.2', '15.2'
     ]},
 }
 for v in ['6.0', '6.3', '7.2', '7.3', '7.4', '8.3', '8.8', '8.9', '9.0', '9.1', '9.2', '9.3']:
     SPECS_BPMN_JS[v]["docker_specs"]["node_version"] = "16.20.2"
 # Set OpenSSL to legacy provider for certain versions
-for v in ['3.0', '3.3', '3.4', '4.0', '5.1']:
+for v in ['3.4', '4.0', '5.1']:
     SPECS_BPMN_JS[v]["test_cmd"][-1] = f'{SET_OPENSSL_TO_LEGACY} {SPECS_BPMN_JS[v]["test_cmd"][-1]}'
 # Per-version Chromium pins. Constants live in common.py. v5.0 intentionally
 # absent — stays on Firefox (see Firefox block below; Chrome 76 regresses
@@ -216,11 +213,6 @@ SPECS_BPMN_JS['5.0']['test_cmd'] = [
     "sed -i \"s/browsers: .*/browsers: ['FirefoxHeadless'],/\" test/config/karma.unit.js",
     "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors",
 ]
-# Dataset-absent versions keep the old era buckets (no per-version pinning).
-for v in ['0.27', '0.9', '2.3', '2.4', '2.5', '3.0', '3.3']:
-    SPECS_BPMN_JS[v]['pre_install'] = _CHROMIUM_72_INSTALL
-for v in ['14.0']:
-    SPECS_BPMN_JS[v]['pre_install'] = _CHROME_120_INSTALL
 # Install karma-json-reporter and patch config for structured JSON output.
 # Must be after npm install (so karma.unit.js and node_modules exist).
 for v in SPECS_BPMN_JS:
