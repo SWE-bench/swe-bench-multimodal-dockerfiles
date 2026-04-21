@@ -110,11 +110,15 @@ def _next_test_cmds(instance: dict) -> list:
     # chrome-launcher; PUPPETEER_EXECUTABLE_PATH for v1.22+ puppeteer path.
     ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome CHROME_BIN=/opt/chromium/chrome"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
-    return list(dict.fromkeys([
+    cmds = list(dict.fromkeys([
         f'timeout 5m bash -c \'{XVFB} '
         f'su chromeuser -c "{ENV} npm run test {test_path.split("/")[1]}"\''
         for test_path in get_test_paths(instance)
     ]))
+    # Pretty-print karma-results.json after the run so parser sees full JSON
+    # across multiple lines (docker log pipe truncates >64KB single-line emits).
+    cmds.append("python3 -m json.tool /testbed/karma-results.json 2>/dev/null || cat /testbed/karma-results.json 2>/dev/null || true")
+    return cmds
 
 
 for v in SPECS_NEXT:

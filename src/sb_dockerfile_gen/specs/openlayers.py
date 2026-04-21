@@ -285,13 +285,17 @@ for v in ['9.1']:
 # downloads (the OL base image leaves PUPPETEER_SKIP_DOWNLOAD unset). No
 # karma CHROME_BIN sed needed — the original karma config calls
 # `puppeteer.executablePath()` which now resolves to the downloaded binary.
-# Install karma-json-reporter for structured JSON output.
+# Install karma-json-reporter for structured JSON output. Writes to
+# /testbed/karma-results.json (not stdout) — large karma runs emit 200–500KB
+# single-line JSON which Docker's log pipe truncates at 64KB boundaries.
+# Eval post-step pretty-prints the file into the log so the parser can read
+# the full result across multiple lines.
 # OL has two config patterns: test/karma.config.js (≤6.5) and test/browser/karma.config.cjs (≥6.5.1).
 # Reporter lines vary: ['dots'], ['dots', 'coverage-istanbul'], ['progress'].
 _OL_KARMA_JSON_SED_JS = (
-    "sed -i \"s/reporters: \\['dots', 'coverage-istanbul'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
-    "sed -i \"s/reporters: \\['dots'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0} ; "
-    "sed -i \"s/reporters: \\['progress'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
+    "sed -i \"s|reporters: \\['dots', 'coverage-istanbul'\\]|reporters: ['json'],\\n        jsonReporter: {{ outputFile: '/testbed/karma-results.json', stdout: false }}|\" {0} ; "
+    "sed -i \"s|reporters: \\['dots'\\]|reporters: ['json'],\\n        jsonReporter: {{ outputFile: '/testbed/karma-results.json', stdout: false }}|\" {0} ; "
+    "sed -i \"s|reporters: \\['progress'\\]|reporters: ['json'],\\n        jsonReporter: {{ outputFile: '/testbed/karma-results.json', stdout: false }}|\" {0}"
 )
 # Add `ol` alias to karma webpack config. ol-mapbox-style imports
 # `ol/format/GeoJSON.js` etc.; rendering webpack.config.js already has this
@@ -403,6 +407,13 @@ def _openlayers_test_cmds(instance: dict) -> list:
     strict_cases = _OL_STRICT_CMP_CASES.get(instance.get("instance_id", ""))
     if strict_cases and ran_rendering:
         cmds.append(_ol_strict_cmp_cmd(strict_cases))
+    # Pretty-print karma-results.json into the log so parser sees full JSON.
+    # karma-json-reporter writes single-line JSON (200-500KB for OL) which gets
+    # cut at 64KB by Docker's log pipe; json.tool outputs multi-line.
+    cmds.append(
+        "python3 -m json.tool /testbed/karma-results.json 2>/dev/null || "
+        "cat /testbed/karma-results.json 2>/dev/null || true"
+    )
     # Dedupe while preserving insertion order — reproducible eval.sh across bakes.
     return list(dict.fromkeys(cmds))
 
