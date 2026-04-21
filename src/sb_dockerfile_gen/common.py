@@ -36,6 +36,42 @@ X11_DEPS = [
 ]
 
 SET_OPENSSL_TO_LEGACY = "NODE_OPTIONS=--openssl-legacy-provider"
+
+
+# Writes /usr/local/bin/pretty-karma-json — a helper script that extracts the
+# karma-json-reporter single-line JSON blob from a mixed log file and re-emits
+# it pretty-printed. Docker's log pipe truncates lines >64KB; large karma runs
+# emit 200-500KB single-line JSON, so we write karma output to a file in the
+# container, then run this helper which breaks the JSON across many shorter
+# lines. Non-JSON preamble (karma progress, npm notice) is passed through
+# unchanged so debugging context stays in the log.
+INSTALL_PRETTY_KARMA_JSON = [
+    # HEREDOC delimited with 'PYEOF' so shell variables aren't expanded inside.
+    (
+        "cat > /usr/local/bin/pretty-karma-json <<'PYEOF'\n"
+        "#!/usr/bin/env python3\n"
+        "import re, json, sys\n"
+        "if len(sys.argv) < 2:\n"
+        "    print('usage: pretty-karma-json <log_file>', file=sys.stderr); sys.exit(2)\n"
+        "with open(sys.argv[1], errors='replace') as f:\n"
+        "    c = f.read()\n"
+        "m = re.search(r'\\{\\s*\"browsers\"', c)\n"
+        "# Pass-through any non-JSON preamble lines\n"
+        "for line in c.split('\\n'):\n"
+        "    if m and line.lstrip().startswith('{\"browsers\"'):\n"
+        "        continue\n"
+        "    print(line)\n"
+        "if m:\n"
+        "    try:\n"
+        "        data, _ = json.JSONDecoder().raw_decode(c[m.start():])\n"
+        "        print(json.dumps(data, indent=2))\n"
+        "    except Exception as e:\n"
+        "        print(f'# pretty-karma-json: {e}', file=sys.stderr)\n"
+        "        print(c[m.start():m.start()+200], file=sys.stderr)\n"
+        "PYEOF"
+    ),
+    "chmod +x /usr/local/bin/pretty-karma-json",
+]
 # Retargets `CHROME_BIN` to the pre-baked /opt/chromium/chrome path (see
 # chromium_preinstall). Used by p5.js / bpmn-js / next / lighthouse pins.
 SET_PUPPETEER_PATH_OPT = "sed -i \"s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/opt/chromium/chrome';|\" {}"
@@ -157,7 +193,7 @@ CHROMIUM_CFT_120 = ('cft', '120.0.6099.109')     # chart.js v4.3/v4.4
 # The config file has an explicit plugins array so we must register the plugin.
 # The sed on 'karma-coverage' handles both with and without trailing comma (v1.11 vs v1.14+).
 SETUP_KARMA_JSON_REPORTER_NEXT = "sed -i \"s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/\" {0} && " \
-    "sed -i \"s/reporters: \\['spec', 'coverage'\\]/reporters: ['json'],\\n        jsonReporter: {{ stdout: true }}/\" {0}"
+    "sed -i \"s|reporters: \\['spec', 'coverage'\\]|reporters: ['json'],\\n        jsonReporter: {{ outputFile: '/testbed/karma-results.json', stdout: false }}|\" {0}"
 
 INSTALL_JULIA = [
     "wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz",

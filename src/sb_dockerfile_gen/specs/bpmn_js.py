@@ -1,6 +1,7 @@
 """bpmn-js spec."""
 
 from sb_dockerfile_gen.common import (
+    INSTALL_PRETTY_KARMA_JSON,
     SET_OPENSSL_TO_LEGACY,
     SET_PUPPETEER_PATH_OPT,
     chromium_preinstall,
@@ -10,9 +11,17 @@ from sb_dockerfile_gen.common import (
 )
 
 
-# karma-json-reporter@1.2.1 emits JSON to stdout when no `jsonReporter` config
-# block is present, so the CLI flag alone is enough — no config patching needed.
-TEST_CMD_BPMN_JS = "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json"
+# karma-json-reporter@1.2.1 emits JSON to stdout via `--reporters json`. Large
+# runs (bpmn-js-1607/-1720/-1802/-1640) produce 160–460KB single-line JSON
+# which Docker's log pipe truncates at 64KB boundaries. Capture to a file
+# inside the container, then pretty-print so the JSON spans multiple lines
+# and each line is well under the chunk size. Parser handles both layouts.
+TEST_CMD_BPMN_JS = (
+    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json > /testbed/karma-raw.log 2>&1 ; "
+    "rc=\\$? ; "
+    "pretty-karma-json /testbed/karma-raw.log ; "
+    "exit \\$rc"
+)
 _BPMN_PUPPETEER_ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
 SPECS_BPMN_JS = {
     **{k: {
@@ -90,7 +99,7 @@ SPECS_BPMN_JS['5.0']['install'] = [
 ]
 SPECS_BPMN_JS['5.0']['test_cmd'] = [
     "sed -i \"s/browsers: .*/browsers: ['FirefoxHeadless'],/\" test/config/karma.unit.js",
-    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json",
+    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json > /testbed/karma-raw.log 2>&1 ; rc=$? ; pretty-karma-json /testbed/karma-raw.log ; exit $rc",
 ]
 # Install karma-json-reporter — auto-discovered by karma at test time, structured
 # JSON emitted via `--reporters json` CLI flag (see TEST_CMD_BPMN_JS).
@@ -98,3 +107,6 @@ for v in SPECS_BPMN_JS:
     SPECS_BPMN_JS[v]['install'].append(
         "npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps"
     )
+    # pretty-karma-json helper — installed once per image. See common.py.
+    SPECS_BPMN_JS[v].setdefault('pre_install', [])
+    SPECS_BPMN_JS[v]['pre_install'] = list(SPECS_BPMN_JS[v]['pre_install']) + list(INSTALL_PRETTY_KARMA_JSON)

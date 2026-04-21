@@ -17,7 +17,12 @@ from sb_dockerfile_gen.utils import get_test_paths
 TEST_CHART_JS_TEMPLATE = (
     "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} "
     "--single-run --coverage --grep --auto-watch false --browsers chrome; "
-    "rc=\\$?; test -f /testbed/karma-results.json && cat /testbed/karma-results.json; exit \\$rc"
+    "rc=\\$?; "
+    # Pretty-print karma-results.json — docker log pipe truncates single-line
+    # JSON >64KB (reproduced on bpmn-js-1607/1720/1802/1640 and openlayers-*).
+    "test -f /testbed/karma-results.json && "
+    "(python3 -m json.tool /testbed/karma-results.json 2>/dev/null || cat /testbed/karma-results.json); "
+    "exit \\$rc"
 )
 # chart.js variant: replace whole reporters list with just karma-json-reporter.
 # v3.0 uses ['progress', 'kjhtml']; v3.5+/v4.x use ['spec', 'kjhtml', ...].
