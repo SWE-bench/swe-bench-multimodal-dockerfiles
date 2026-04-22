@@ -188,6 +188,115 @@ def _OL_NOSANDBOX_SED(cfg: str) -> str:
         "\" " + cfg
     )
 
+# Render harness has a promise-leak: renderPage awaits `renderCalled` which
+# only resolves when the test page calls `window.render(...)`. If the page's
+# main.js throws before reaching `render()`, `handleRender` is never invoked
+# and the await hangs indefinitely. Under nopatch, cases that depend on the
+# fix's new API/operator (e.g. cog-style needs `layer.setStyle`, vector-id
+# needs the 'id' text-expression operator) throw on load and hang the whole
+# render loop. The eval script then times out at 1800s with no report.json.
+#
+# Fix (universal): race renderCalled against a 30s timeout AND reject it on
+# page-level `pageerror` events. Wrap renderPage's call-site in renderEach
+# with try/catch so one bad case logs a `mismatch 1 (render error: ...)`
+# line (parser-recognized) and continues. Also install a process-level
+# unhandledRejection handler so stray rejections don't kill Node v21+.
+# Applied to all OL versions; v9.0/v9.1's renderEach replacement patches
+# run AFTER this and replace their renderEach body, so the try/catch is
+# only effective on pre-v9 vanilla renderEach — acceptable since the 3
+# known hanging instances are all pre-v9.
+_OL_RENDER_ERROR_GUARD = (
+    "python3 - <<'PYEOF'\n"
+    "import re\n"
+    "f = 'test/rendering/test.js'\n"
+    "s = open(f).read()\n"
+    "old_render_page = '''async function renderPage(page, entry, options) {\\n"
+    "  const renderCalled = new Promise((resolve) => {\\n"
+    "    handleRender = (config) => {\\n"
+    "      handleRender = null;\\n"
+    "      resolve(config || {});\\n"
+    "    };\\n"
+    "  });\\n"
+    "  options.log.debug(\\'navigating\\', entry);\\n"
+    "  await page.goto(`http://${options.host}:${options.port}${getHref(entry)}`, {\\n"
+    "    waitUntil: \\'networkidle0\\',\\n"
+    "  });\\n"
+    "  const config = await renderCalled;\\n"
+    "  options.log.debug(\\'screenshot\\', entry);\\n"
+    "  await page.screenshot({path: getActualScreenshotPath(entry)});\\n"
+    "  return config;\\n"
+    "}'''\n"
+    "new_render_page = '''async function renderPage(page, entry, options) {\\n"
+    "  let rejectRender;\\n"
+    "  const renderCalled = new Promise((resolve, reject) => {\\n"
+    "    rejectRender = reject;\\n"
+    "    handleRender = (config) => {\\n"
+    "      handleRender = null;\\n"
+    "      resolve(config || {});\\n"
+    "    };\\n"
+    "  });\\n"
+    "  renderCalled.catch(() => {});\\n"
+    "  const pageErrHandler = (err) => {\\n"
+    "    if (handleRender) { handleRender = null; rejectRender(err); }\\n"
+    "  };\\n"
+    "  page.on(\\'pageerror\\', pageErrHandler);\\n"
+    "  const timer = setTimeout(() => {\\n"
+    "    if (handleRender) { handleRender = null;\\n"
+    "      rejectRender(new Error(\\'renderCalled timeout (30s) for \\' + entry)); }\\n"
+    "  }, 30000);\\n"
+    "  try {\\n"
+    "    options.log.debug(\\'navigating\\', entry);\\n"
+    "    await page.goto(`http://${options.host}:${options.port}${getHref(entry)}`, {\\n"
+    "      waitUntil: \\'networkidle0\\', timeout: 30000,\\n"
+    "    });\\n"
+    "    const config = await renderCalled;\\n"
+    "    options.log.debug(\\'screenshot\\', entry);\\n"
+    "    await page.screenshot({path: getActualScreenshotPath(entry)});\\n"
+    "    return config;\\n"
+    "  } finally {\\n"
+    "    clearTimeout(timer);\\n"
+    "    page.off(\\'pageerror\\', pageErrHandler);\\n"
+    "  }\\n"
+    "}\\n\\n"
+    "process.on(\\'unhandledRejection\\', (reason) => {\\n"
+    "  console.error(\\'[renderPage] swallowed unhandled rejection:\\', reason && reason.message ? reason.message : reason);\\n"
+    "});'''\n"
+    "if old_render_page not in s: raise SystemExit('renderPage block not found; skipping guard')\n"
+    "s = s.replace(old_render_page, new_render_page)\n"
+    "\n"
+    "# Wrap renderPage call in try/catch inside vanilla renderEach.\n"
+    "old_re = '''async function renderEach(page, entries, options) {\\n"
+    "  let fail = false;\\n"
+    "  for (const entry of entries) {\\n"
+    "    const {tolerance = 0.005, message = \\'\\'} = await renderPage(\\n"
+    "      page,\\n"
+    "      entry,\\n"
+    "      options\\n"
+    "    );'''\n"
+    "new_re = '''async function renderEach(page, entries, options) {\\n"
+    "  let fail = false;\\n"
+    "  for (const entry of entries) {\\n"
+    "    let tolerance = 0.005, message = \\'\\';\\n"
+    "    try {\\n"
+    "      const _cfg = await renderPage(page, entry, options);\\n"
+    "      tolerance = _cfg.tolerance ?? 0.005;\\n"
+    "      message = _cfg.message || \\'\\';\\n"
+    "    } catch (err) {\\n"
+    "      options.log.error(`case ${entry}\\\\x27: mismatch 1 (render error: ${err.message})`);\\n"
+    "      fail = true; handleRender = null; continue;\\n"
+    "    }\\n"
+    "    {'''\n"
+    "if old_re in s:\n"
+    "  s = s.replace(old_re, new_re)\n"
+    "  # Close extra block-scope brace before `return fail;`.\n"
+    "  s = s.replace('    }\\n  }\\n  return fail;\\n}', '    }\\n    }\\n  }\\n  return fail;\\n}', 1)\n"
+    "open(f, 'w').write(s)\n"
+    "PYEOF"
+)
+# NOTE: not attached to `install` — applied at test_cmd time instead (see
+# _openlayers_test_cmds prepending it before rendering invocations), so
+# existing images don't need rebuilding.
+
 # v9.x rendering runner: Chromium 121+ renderer crashes with
 # `V8 process OOM (ExternalEntityTable::AllocateSegment)` after ~5 GeoTIFF
 # WebGLTile cases when reusing a single page. V8's sandbox entity table is
@@ -394,6 +503,10 @@ def _openlayers_test_cmds(instance: dict) -> list:
             # CI=true activates puppeteer's --no-sandbox args (required in Docker).
             # --log-level=info emits "ok" lines for passing cases.
             # --force skips getOutdated() filter so ALL cases run.
+            # Apply render-harness error guard before invocation — v9.0/v9.1
+            # install-time patches overwrite renderEach; if both apply, the
+            # v9.x patch runs later in eval_setup (install) and wins there.
+            cmds.append(_OL_RENDER_ERROR_GUARD)
             if instance.get("version") in ['7.4']:
                 # v7.4 needs a rollup build first (build-full) to produce ol.js.
                 cmds.append(
