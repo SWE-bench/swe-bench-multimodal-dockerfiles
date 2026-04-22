@@ -1,6 +1,17 @@
 """ESLint spec."""
 
-TEST_CMD_ESLINT = './node_modules/.bin/mocha --forbid-only --reporter json -t 10000 --no-colors "tests/{bin,conf,lib,tools}/**/*.js"'
+# Redirect mocha's json stdout into a file, then cat — avoids docker log-pipe
+# truncation on large suites. mocha 3.x (the version bundled in ESLint <8) does
+# NOT honor `--reporter-options output=…` for the json reporter, so we use
+# shell stdout redirect which works across every mocha version in the dataset.
+TEST_CMD_ESLINT = (
+    '{ set +x; '
+    './node_modules/.bin/mocha --forbid-only --reporter json '
+    '-t 10000 --no-colors "tests/{bin,conf,lib,tools}/**/*.js" '
+    '> /testbed/mocha-0.json 2>/dev/null ; '
+    'cat /testbed/mocha-0.json 2>/dev/null; '
+    'set -x; } 2>/dev/null || true'
+)
 SPECS_ESLINT = {
     **{k: {
         "install": ["npm install"],

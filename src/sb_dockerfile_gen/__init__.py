@@ -469,8 +469,11 @@ def _get_eval_script(instance: dict) -> str:
     ]
     # Force stdout flush before the END marker. Without this, buffered test
     # output (e.g. mocha JSON at 9MB+) can arrive after END and be cut off by
-    # the grader's START/END slice. Hits eslint, quarto, and any large suite.
-    eval_commands.append("{ set +x ; } 2>/dev/null ; sync ; sleep 0.1 ; set -x")
+    # the grader's START/END slice. Hits eslint, quarto, grommet, carbon, and
+    # any large jest/mocha JSON suite. 3s is empirical: 0.1s wasn't enough to
+    # drain docker's log pipe before the next xtrace line (`+ :` END marker)
+    # got interleaved mid-JSON.
+    eval_commands.append("{ set +x ; } 2>/dev/null ; sync ; sleep 3 ; set -x")
     eval_commands.append(f": '{END_TEST_OUTPUT}'")
 
     if test_patch:

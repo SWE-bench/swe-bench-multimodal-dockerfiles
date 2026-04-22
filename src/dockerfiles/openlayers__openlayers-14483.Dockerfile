@@ -93,7 +93,7 @@ python2 -V
 EOF_cc508ad98ca6
 
 
-RUN <<EOF_89bc65ee3565
+RUN <<EOF_76a94f1b1ffc
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -118,10 +118,10 @@ npm install --ignore-scripts
 mkdir -p /opt/puppeteer-cache/chrome/linux-115.0.5790.102 && wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.102/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d /opt/puppeteer-cache/chrome/linux-115.0.5790.102/ && rm /tmp/chrome.zip && chmod -R 755 /opt/puppeteer-cache/chrome/linux-115.0.5790.102
 mkdir -p /opt/puppeteer-cache/chrome/linux-115.0.5790.170 && wget -q https://storage.googleapis.com/chrome-for-testing-public/115.0.5790.170/linux64/chrome-linux64.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d /opt/puppeteer-cache/chrome/linux-115.0.5790.170/ && rm /tmp/chrome.zip && chmod -R 755 /opt/puppeteer-cache/chrome/linux-115.0.5790.170
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
-sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
+sed -i "s|reporters: \['dots', 'coverage-istanbul'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" test/browser/karma.config.cjs ; sed -i "s|reporters: \['dots'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" test/browser/karma.config.cjs ; sed -i "s|reporters: \['progress'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" test/browser/karma.config.cjs
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_89bc65ee3565
+EOF_76a94f1b1ffc
 
 
 COPY src/image_assets/openlayers__openlayers-14483/ /swebench/image_assets/

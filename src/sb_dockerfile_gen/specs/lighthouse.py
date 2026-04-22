@@ -121,14 +121,27 @@ def _lighthouse_test_cmds(instance: dict) -> list:
                 cmds.append(f"{ENV} yarn mocha {test_path}")
         elif '3.0' <= str(instance.get("version", "")) <= '8.6':
             # Write JSON to file then cat — avoids docker-log truncation on
-            # large single-line stdout writes. See specs/carbon.py _jest_file_cmd.
+            # large single-line stdout writes. Wrap in `{ set +x; …; set -x;
+            # } 2>/dev/null` so the xtrace line for the NEXT jest invocation
+            # (ENV var assignments + yarn jest) can't interleave mid-JSON via
+            # docker's stderr→stdout merge. See specs/carbon.py _jest_file_cmd.
             out = f"/testbed/jest-{len(cmds)}.json"
             cmds.append(
-                f"{ENV} yarn jest --no-colors --json --outputFile={out} {test_path} "
-                f"> /dev/null 2>&1 || true; cat {out} 2>/dev/null || true"
+                f"{{ set +x; {ENV} yarn jest --no-colors --json --outputFile={out} {test_path} "
+                f"> /dev/null 2>&1 || true; cat {out} 2>/dev/null; set -x; }} 2>/dev/null"
             )
         else:
-            cmds.append(f"{ENV} ./node_modules/.bin/mocha --reporter json {test_path}")
+            # Shell stdout redirect instead of `--reporter-options output=…`:
+            # mocha 3.x (lighthouse <v3) doesn't honor that flag for the json
+            # reporter, so we pipe mocha's stdout to the file directly. Wrap
+            # in `{ set +x; …; set -x; } 2>/dev/null` so the xtrace line for
+            # the next command (e.g. `>>>>> End Test Output`) can't interleave
+            # mid-JSON via docker's stderr→stdout merge.
+            out = f"/testbed/mocha-{len(cmds)}.json"
+            cmds.append(
+                f"{{ set +x; {ENV} ./node_modules/.bin/mocha --reporter json {test_path} "
+                f"> {out} 2>/dev/null ; cat {out} 2>/dev/null; set -x; }} 2>/dev/null"
+            )
     return list(dict.fromkeys(cmds))
 
 

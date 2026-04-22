@@ -87,22 +87,37 @@ OL_PINS = {
 
 
 def _ol_prebake_chromium(kind: str, rev_or_ver: str) -> str:
-    """Pre-bake one Chromium variant into the path puppeteer expects at runtime."""
+    """Pre-bake one Chromium variant into the path puppeteer expects at runtime.
+
+    For 'rev' installs we keep the legacy path (older puppeteer uses it) AND
+    symlink it into `$PUPPETEER_CACHE_DIR/chrome/linux-<rev>` so puppeteer ≥19.7
+    (which moved to the cache layout) also resolves the binary. Fixes OL
+    rendering tests on v7.1/7.2/7.3 instances that bundle puppeteer ≥19.4."""
     if kind == 'rev':
         url = f"https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev_or_ver}/chrome-linux.zip"
         dest = f"node_modules/puppeteer/.local-chromium/linux-{rev_or_ver}"
+        cache_alias = f"/opt/puppeteer-cache/chrome/linux-{rev_or_ver}"
+        return (
+            f"mkdir -p {dest} && "
+            f"wget -q {url} -O /tmp/chrome.zip && "
+            f"unzip -q /tmp/chrome.zip -d {dest}/ && "
+            f"rm /tmp/chrome.zip && "
+            f"chmod -R 755 {dest} && "
+            f"mkdir -p $(dirname {cache_alias}) && "
+            f"ln -sfn /testbed/{dest} {cache_alias}"
+        )
     elif kind == 'cft':
         url = f"https://storage.googleapis.com/chrome-for-testing-public/{rev_or_ver}/linux64/chrome-linux64.zip"
         dest = f"/opt/puppeteer-cache/chrome/linux-{rev_or_ver}"
+        return (
+            f"mkdir -p {dest} && "
+            f"wget -q {url} -O /tmp/chrome.zip && "
+            f"unzip -q /tmp/chrome.zip -d {dest}/ && "
+            f"rm /tmp/chrome.zip && "
+            f"chmod -R 755 {dest}"
+        )
     else:
         raise ValueError(f"_ol_prebake_chromium: unknown kind {kind!r}")
-    return (
-        f"mkdir -p {dest} && "
-        f"wget -q {url} -O /tmp/chrome.zip && "
-        f"unzip -q /tmp/chrome.zip -d {dest}/ && "
-        f"rm /tmp/chrome.zip && "
-        f"chmod -R 755 {dest}"
-    )
 
 
 for _ol_v, _pins in OL_PINS.items():

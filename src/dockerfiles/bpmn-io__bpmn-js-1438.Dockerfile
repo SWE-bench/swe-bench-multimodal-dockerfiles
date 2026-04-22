@@ -91,7 +91,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_e1cdbb147f18
+RUN <<EOF_58e254c63a71
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -106,7 +106,29 @@ chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
-EOF_e1cdbb147f18
+cat > /usr/local/bin/pretty-karma-json <<'PYEOF'
+#!/usr/bin/env python3
+import re, json, sys
+if len(sys.argv) < 2:
+    print('usage: pretty-karma-json <log_file>', file=sys.stderr); sys.exit(2)
+with open(sys.argv[1], errors='replace') as f:
+    c = f.read()
+m = re.search(r'\{\s*"browsers"', c)
+# Pass-through any non-JSON preamble lines
+for line in c.split('\n'):
+    if m and line.lstrip().startswith('{"browsers"'):
+        continue
+    print(line)
+if m:
+    try:
+        data, _ = json.JSONDecoder().raw_decode(c[m.start():])
+        print(json.dumps(data, indent=2))
+    except Exception as e:
+        print(f'# pretty-karma-json: {e}', file=sys.stderr)
+        print(c[m.start():m.start()+200], file=sys.stderr)
+PYEOF
+chmod +x /usr/local/bin/pretty-karma-json
+EOF_58e254c63a71
 
 
 RUN <<EOF_d9941530ff8e

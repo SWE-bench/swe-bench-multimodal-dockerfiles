@@ -93,7 +93,7 @@ python2 -V
 EOF_cc508ad98ca6
 
 
-RUN <<EOF_23182809b580
+RUN <<EOF_c258664cf301
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/openlayers/openlayers /testbed
@@ -115,15 +115,15 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --ignore-scripts
-mkdir -p node_modules/puppeteer/.local-chromium/linux-1022525 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1022525/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1022525/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1022525
-mkdir -p node_modules/puppeteer/.local-chromium/linux-1036745 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1036745/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1036745/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1036745
-mkdir -p node_modules/puppeteer/.local-chromium/linux-1056772 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1056772/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1056772/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1056772
+mkdir -p node_modules/puppeteer/.local-chromium/linux-1022525 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1022525/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1022525/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1022525 && mkdir -p $(dirname /opt/puppeteer-cache/chrome/linux-1022525) && ln -sfn /testbed/node_modules/puppeteer/.local-chromium/linux-1022525 /opt/puppeteer-cache/chrome/linux-1022525
+mkdir -p node_modules/puppeteer/.local-chromium/linux-1036745 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1036745/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1036745/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1036745 && mkdir -p $(dirname /opt/puppeteer-cache/chrome/linux-1036745) && ln -sfn /testbed/node_modules/puppeteer/.local-chromium/linux-1036745 /opt/puppeteer-cache/chrome/linux-1036745
+mkdir -p node_modules/puppeteer/.local-chromium/linux-1056772 && wget -q https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1056772/chrome-linux.zip -O /tmp/chrome.zip && unzip -q /tmp/chrome.zip -d node_modules/puppeteer/.local-chromium/linux-1056772/ && rm /tmp/chrome.zip && chmod -R 755 node_modules/puppeteer/.local-chromium/linux-1056772 && mkdir -p $(dirname /opt/puppeteer-cache/chrome/linux-1056772) && ln -sfn /testbed/node_modules/puppeteer/.local-chromium/linux-1056772 /opt/puppeteer-cache/chrome/linux-1056772
 grep -q 'process.env.CHROME_BIN' test/karma.config.js || echo "process.env.CHROME_BIN = require('puppeteer').executablePath();" >> test/karma.config.js
 npm install karma-json-reporter@1.2.1 --no-save --legacy-peer-deps
-sed -i "s/reporters: \['dots', 'coverage-istanbul'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['dots'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs ; sed -i "s/reporters: \['progress'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" test/browser/karma.config.cjs
+sed -i "s|reporters: \['dots', 'coverage-istanbul'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" test/browser/karma.config.cjs ; sed -i "s|reporters: \['dots'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" test/browser/karma.config.cjs ; sed -i "s|reporters: \['progress'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" test/browser/karma.config.cjs
 sed -i "s/browsers: \[process.env.CI ? 'ChromeHeadless' : 'Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['ChromeHeadless'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/browsers: \['Chrome'\]/customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },\n    browsers: ['ChromeNoSandbox']/; s/flags: \['--headless=new'\]/flags: ['--headless=new', '--no-sandbox']/" test/browser/karma.config.cjs
 if grep -q 'resolve:' test/browser/karma.config.cjs; then sed -i '0,/resolve:[[:space:]]*{/s|resolve:[[:space:]]*{|resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") },|' test/browser/karma.config.cjs; else sed -i '/webpack:[[:space:]]*{/a\    resolve: { alias: { ol: require(\"path\").resolve(__dirname, \"../../src/ol\") }, },' test/browser/karma.config.cjs; fi
-EOF_23182809b580
+EOF_c258664cf301
 
 
 COPY src/image_assets/openlayers__openlayers-14100/ /swebench/image_assets/

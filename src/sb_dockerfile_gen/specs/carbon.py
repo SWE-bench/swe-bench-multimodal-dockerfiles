@@ -12,9 +12,15 @@ def _jest_file_cmd(yarn_invocation: str, idx: int) -> str:
     large jest JSON got cut mid-test). cat of a pre-written file is safe (chart.js
     does the same with karma-results.json)."""
     out = f"/testbed/jest-{idx}.json"
+    # Pretty-print across many lines (docker log-pipe 64KB chunk truncation
+    # then only affects one short line, not the blob). Wrap in `{ set +x; …;
+    # set -x; } 2>/dev/null` so the xtrace line for the NEXT command (e.g.
+    # `>>>>> End Test Output`) can't interleave mid-JSON via docker's
+    # stderr→stdout merge.
     return (
-        f"{yarn_invocation} --outputFile={out} > /dev/null 2>&1 || true; "
-        f"cat {out} 2>/dev/null || true"
+        f"{{ set +x; {yarn_invocation} --outputFile={out} > /dev/null 2>&1 || true; "
+        f"(python3 -m json.tool {out} 2>/dev/null || cat {out} 2>/dev/null); "
+        f"set -x; }} 2>/dev/null"
     )
 
 

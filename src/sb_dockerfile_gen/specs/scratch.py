@@ -8,11 +8,13 @@ SPECS_SCRATCH = {
         "install": ["npm install"],
         # --outputFile + cat: see specs/carbon.py _jest_file_cmd for rationale.
         "test_cmd": (
+            "{ set +x; "
             "./node_modules/.bin/jest --runInBand --no-colors --json --forceExit "
             "--testPathIgnorePatterns='test/integration' "
             "--testPathIgnorePatterns='vm-manager-hoc' "
             "--outputFile=/testbed/jest-0.json > /dev/null 2>&1 || true; "
-            "cat /testbed/jest-0.json 2>/dev/null || true"
+            "(python3 -m json.tool /testbed/jest-0.json 2>/dev/null || cat /testbed/jest-0.json 2>/dev/null); "
+            "set -x; } 2>/dev/null"
         ),
         "docker_specs": {
             "node_version": {

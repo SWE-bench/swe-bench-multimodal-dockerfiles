@@ -91,12 +91,34 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_9025c28e31c3
+RUN <<EOF_70849a3905e2
 #!/bin/bash
 set -euxo pipefail
 add-apt-repository -y ppa:mozillateam/ppa
 apt-get update && apt-get install -y -t 'o=LP-PPA-mozillateam' firefox
-EOF_9025c28e31c3
+cat > /usr/local/bin/pretty-karma-json <<'PYEOF'
+#!/usr/bin/env python3
+import re, json, sys
+if len(sys.argv) < 2:
+    print('usage: pretty-karma-json <log_file>', file=sys.stderr); sys.exit(2)
+with open(sys.argv[1], errors='replace') as f:
+    c = f.read()
+m = re.search(r'\{\s*"browsers"', c)
+# Pass-through any non-JSON preamble lines
+for line in c.split('\n'):
+    if m and line.lstrip().startswith('{"browsers"'):
+        continue
+    print(line)
+if m:
+    try:
+        data, _ = json.JSONDecoder().raw_decode(c[m.start():])
+        print(json.dumps(data, indent=2))
+    except Exception as e:
+        print(f'# pretty-karma-json: {e}', file=sys.stderr)
+        print(c[m.start():m.start()+200], file=sys.stderr)
+PYEOF
+chmod +x /usr/local/bin/pretty-karma-json
+EOF_70849a3905e2
 
 
 RUN <<EOF_407980397135

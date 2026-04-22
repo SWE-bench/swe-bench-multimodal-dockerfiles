@@ -10,7 +10,7 @@ SPECS_GROMMET = {
         # on >64KB single-line stdout writes. See specs/carbon.py _jest_file_cmd.
         "test_cmd": [
             "yarn install",
-            "npx jest --runInBand --json --outputFile=/testbed/jest-0.json > /dev/null 2>&1 || true; cat /testbed/jest-0.json 2>/dev/null || true",
+            "{ set +x; npx jest --runInBand --json --outputFile=/testbed/jest-0.json > /dev/null 2>&1 || true; (python3 -m json.tool /testbed/jest-0.json 2>/dev/null || cat /testbed/jest-0.json 2>/dev/null); set -x; } 2>/dev/null",
         ],
         "docker_specs": {
             "node_version": "21.6.2"
