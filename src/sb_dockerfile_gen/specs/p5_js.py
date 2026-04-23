@@ -11,6 +11,29 @@ from sb_dockerfile_gen.common import (
 from sb_dockerfile_gen.utils import get_test_paths
 
 
+# Structured test output. Mocha's spec reporter loses describe() levels that
+# have no direct tests (e.g. `describe('random()', ...)` containing only
+# nested describes), so parse_log_p5js drifts when P2P keys reference those
+# levels. Emit per-test JSON events with an explicit suite-stack array so the
+# parser can reconstruct `suite1:suite2:...:test` keys exactly.
+_P5_REPORTER_SETUP = (
+    "cat > /testbed/p5-suite-reporter.js << 'P5REPEOF'\n"
+    "module.exports = function (runner) {\n"
+    "  const stack = [];\n"
+    "  runner.on('suite', s => { if (s.title) stack.push(s.title); });\n"
+    "  runner.on('suite end', s => { if (s.title) stack.pop(); });\n"
+    "  runner.on('pass', t => { console.log('P5JSON ' + JSON.stringify({t:'pass', s: stack.slice(), n: t.title})); });\n"
+    "  runner.on('fail', (t, err) => { console.log('P5JSON ' + JSON.stringify({t:'fail', s: stack.slice(), n: t.title, err: err && err.message})); });\n"
+    "};\n"
+    "P5REPEOF\n"
+    # Route node-side mochaTest at the custom reporter (two Gruntfile patterns)
+    "sed -i \"s|const reporter = quietReport ? 'spec' : 'Nyan';|const reporter = '/testbed/p5-suite-reporter.js';|\" Gruntfile.js\n"
+    "sed -i \"s|reporter: 'spec',|reporter: '/testbed/p5-suite-reporter.js',|g\" Gruntfile.js\n"
+    # Inline reporter for browser-side mochaChrome (runs in puppeteer page context)
+    "sed -i \"s|mocha.reporter('spec');|mocha.reporter(function(r){var st=[];r.on('suite',function(s){if(s.title)st.push(s.title);});r.on('suite end',function(s){if(s.title)st.pop();});r.on('pass',function(t){console.log('P5JSON '+JSON.stringify({t:'pass',s:st.slice(),n:t.title}));});r.on('fail',function(t,e){console.log('P5JSON '+JSON.stringify({t:'fail',s:st.slice(),n:t.title,err:e\\&\\&e.message}));});});|\" tasks/test/mocha-chrome.js\n"
+)
+
+
 SPECS_P5_JS = {
     **{
         k: {
@@ -23,7 +46,8 @@ SPECS_P5_JS = {
             # PUPPETEER_EXECUTABLE_PATH routes puppeteer at it; CHROME_BIN routes
             # karma-chrome-launcher at it (v0.4–v0.6 path).
             "test_cmd": (
-                """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
+                _P5_REPORTER_SETUP
+                + "sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"
                 "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome "
                 "CHROME_BIN=/opt/chromium/chrome "
                 "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
