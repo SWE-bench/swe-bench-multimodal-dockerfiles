@@ -20,6 +20,11 @@ TEST_CMD_BPMN_JS = (
     "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json > /testbed/karma-raw.log 2>&1 ; "
     "rc=\\$? ; "
     "pretty-karma-json /testbed/karma-raw.log ; "
+    # Disable xtrace inherited via SHELLOPTS before `exit $rc` so bash does
+    # not emit `+ exit 0` to stderr (which, after the eval_script's 2>&1
+    # merge, ends up interleaved mid-way through the pretty-karma-json
+    # stdout, corrupting the JSON for downstream parsers).
+    "{ set +x; } 2>/dev/null ; "
     "exit \\$rc"
 )
 _BPMN_PUPPETEER_ENV = "PUPPETEER_EXECUTABLE_PATH=/opt/chromium/chrome"
@@ -99,7 +104,7 @@ SPECS_BPMN_JS['5.0']['install'] = [
 ]
 SPECS_BPMN_JS['5.0']['test_cmd'] = [
     "sed -i \"s/browsers: .*/browsers: ['FirefoxHeadless'],/\" test/config/karma.unit.js",
-    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json > /testbed/karma-raw.log 2>&1 ; rc=$? ; pretty-karma-json /testbed/karma-raw.log ; exit $rc",
+    "./node_modules/.bin/karma start test/config/karma.unit.js --no-colors --reporters json > /testbed/karma-raw.log 2>&1 ; rc=$? ; pretty-karma-json /testbed/karma-raw.log ; { set +x; } 2>/dev/null ; exit $rc",
 ]
 # Install karma-json-reporter — auto-discovered by karma at test time, structured
 # JSON emitted via `--reporters json` CLI flag (see TEST_CMD_BPMN_JS).
