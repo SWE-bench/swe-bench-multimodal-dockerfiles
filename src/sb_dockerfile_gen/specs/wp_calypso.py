@@ -76,7 +76,12 @@ SPECS_CALYPSO = {
             # low worker counts.
             # `npm run test-client` triggers pretest → lerna clean → wipes dist/
             # from workspace packages. Invoke jest directly to skip pretest.
+            # Allow jest to transform `@automattic/*` files (otherwise the
+            # @automattic/calypso-ui dist imports raw .scss and Jest rejects
+            # it because node_modules is ignored by default — blocks
+            # plan-storage tests in 35531).
             "test_cmd": (
+                "sed -i 's#gridicons)#gridicons|@automattic)#g' test/client/jest.config.js\n"
                 "NODE_OPTIONS='--max-old-space-size=8192' "
                 "./node_modules/.bin/jest -c=test/client/jest.config.js --verbose"
             ),
