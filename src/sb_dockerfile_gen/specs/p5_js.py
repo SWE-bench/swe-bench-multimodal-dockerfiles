@@ -31,6 +31,12 @@ _P5_REPORTER_SETUP = (
     "sed -i \"s|reporter: 'spec',|reporter: '/testbed/p5-suite-reporter.js',|g\" Gruntfile.js\n"
     # Inline reporter for browser-side mochaChrome (runs in puppeteer page context)
     "sed -i \"s|mocha.reporter('spec');|mocha.reporter(function(r){var st=[];r.on('suite',function(s){if(s.title)st.push(s.title);});r.on('suite end',function(s){if(s.title)st.pop();});r.on('pass',function(t){console.log('P5JSON '+JSON.stringify({t:'pass',s:st.slice(),n:t.title}));});r.on('fail',function(t,e){console.log('P5JSON '+JSON.stringify({t:'fail',s:st.slice(),n:t.title,err:e\\&\\&e.message}));});});|\" tasks/test/mocha-chrome.js\n"
+    # Replace page.on('console') handler with msg.text() — the default
+    # jsonValue() round-trip per arg overwhelms puppeteer's async pipeline on
+    # older versions (v0.7 / mocha 5.x / puppeteer 1.12) once we emit thousands
+    # of P5JSON console.log calls per suite, hanging the yui→test transition.
+    # text() is sync and preserves the already-formatted P5JSON payload.
+    "sed -i \"s|const args = await mapSeries(msg.args(), v => v.jsonValue());|const args = [msg.text()];|\" tasks/test/mocha-chrome.js\n"
 )
 
 
@@ -97,6 +103,17 @@ for _v, (_kind, _rev) in P5_JS_PINS.items():
 
 _SPECS_P5_JS_STATIC_TEST_CMD = {v: SPECS_P5_JS[v]["test_cmd"] for v in SPECS_P5_JS}
 
+# Versions whose bundled mocha+puppeteer can't handle our custom json
+# reporter cleanly. On v0.6/v0.7 (mocha 5.2 + puppeteer 1.12), the
+# hundreds of console.log('P5JSON ...') calls emitted by our in-page
+# reporter overwhelm puppeteer's console-message pipeline during the
+# mochaChrome:yui→mochaChrome:test transition and the runner never
+# completes. Strip the reporter-setup prelude for those versions and
+# let parse_log_p5js fall back to spec-scraping (the describe nesting
+# on those older p5.js releases is shallow enough for spec-scraping to
+# work).
+_REPORTER_INCOMPATIBLE_VERSIONS = {"0.6", "0.7"}
+
 
 def _p5js_test_cmds(instance: dict) -> list:
     """Conditionally re-run yuidoc before tests.
@@ -106,7 +123,10 @@ def _p5js_test_cmds(instance: dict) -> list:
     regenerates doc data and changes which doc-example tests exist, causing
     spurious P2P drift on other instances.
     """
-    test_cmd = _SPECS_P5_JS_STATIC_TEST_CMD[instance["version"]]
+    version = instance["version"]
+    test_cmd = _SPECS_P5_JS_STATIC_TEST_CMD[version]
+    if version in _REPORTER_INCOMPATIBLE_VERSIONS and isinstance(test_cmd, str):
+        test_cmd = test_cmd.replace(_P5_REPORTER_SETUP, "")
     cmds = list(test_cmd) if isinstance(test_cmd, list) else [test_cmd]
     all_paths = get_test_paths(instance) + re.findall(
         r"diff --git a/.* b/(.*)", instance.get("patch", "")
