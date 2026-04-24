@@ -354,15 +354,17 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
     """Resolve a spec's test_cmd to a single shell string.
 
     `test_cmd` may be a string, a list[str], or a callable(instance) -> list[str].
-    Multi-command results are joined with `;` so all test runs execute even if
-    one fails (we need output from every test for F2P/P2P grading).
+    Multi-command results are joined with newlines so each command runs on its
+    own line — this keeps heredoc delimiters (e.g. `PYEOF`) on standalone lines
+    where bash can recognise them. eval.sh uses `set -uxo pipefail` (not `-e`)
+    so a non-zero exit from any one command doesn't abort subsequent ones.
     """
     test_cmd = specs["test_cmd"]
     if callable(test_cmd):
         cmds = test_cmd(instance)
-        return " ; ".join(cmds) if cmds else ""
+        return "\n".join(cmds) if cmds else ""
     if isinstance(test_cmd, list):
-        return " ; ".join(test_cmd)
+        return "\n".join(test_cmd)
     return test_cmd
 
 
