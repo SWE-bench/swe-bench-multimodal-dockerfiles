@@ -26,9 +26,6 @@ SPECS_OPENLAYERS = {
         "test_cmd": "npm run test",
         "docker_specs": {
             "node_version": "21.6.2",
-            "run_args": {
-                "cap_add": ["SYS_ADMIN"],
-            }
         }
     } for k in [
         '3.0', '3.4', '3.5', '3.8', '3.10', '3.11', '3.12', '3.14', '3.16', '3.17', '3.18', '3.19', '3.20',
@@ -168,7 +165,7 @@ for _ol_v in {'4.6', '5.1'}:
 # All become a custom ChromeNoSandbox launcher: ChromeHeadless + --no-sandbox.
 # (The SUID sandbox helper isn't available in containers; on GHA VMs it was.)
 _OL_NOSANDBOX_LAUNCHER_REPL = (
-    "customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox'] } },"
+    "customLaunchers: { ChromeNoSandbox: { base: 'ChromeHeadless', flags: ['--no-sandbox', '--disable-dev-shm-usage'] } },"
     "\\n    browsers: ['ChromeNoSandbox']"
 )
 def _OL_NOSANDBOX_SED(cfg: str) -> str:
@@ -176,7 +173,10 @@ def _OL_NOSANDBOX_SED(cfg: str) -> str:
     1) For older configs that just use `browsers: [...]` without a customLauncher,
        inject our ChromeNoSandbox launcher.
     2) For v9.0+ which already define a customLauncher with `flags: ['--headless=new']`,
-       just append `--no-sandbox` to its flags array.
+       append `--no-sandbox` and `--disable-dev-shm-usage` to its flags array.
+    `--disable-dev-shm-usage` routes Chrome IPC away from /dev/shm (Docker
+    default 64 MB) — required for v9.x rendering runs that previously needed
+    `--shm-size=2g` at the harness level.
     Sed treats each `;`-separated expression independently — only the matching
     one fires per file."""
     return (
@@ -184,7 +184,7 @@ def _OL_NOSANDBOX_SED(cfg: str) -> str:
         "s/browsers: \\[process.env.CI ? 'ChromeHeadless' : 'Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
         "s/browsers: \\['ChromeHeadless'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
         "s/browsers: \\['Chrome'\\]/" + _OL_NOSANDBOX_LAUNCHER_REPL + "/; "
-        "s/flags: \\['--headless=new'\\]/flags: ['--headless=new', '--no-sandbox']/"
+        "s/flags: \\['--headless=new'\\]/flags: ['--headless=new', '--no-sandbox', '--disable-dev-shm-usage']/"
         "\" " + cfg
     )
 

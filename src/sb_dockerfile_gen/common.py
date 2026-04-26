@@ -84,9 +84,11 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
     share one install pattern. `kind` is 'rev' (chromium-snapshots bucket) or
     'cft' (chrome-for-testing). `/opt/chromium/chrome` is a shell wrapper
     that adds `--no-sandbox` (required to launch Chromium inside Docker
-    without CAP_SYS_ADMIN). Callers set PUPPETEER_EXECUTABLE_PATH and/or
-    CHROME_BIN to /opt/chromium/chrome in test_cmd and (where needed) use
-    SET_PUPPETEER_PATH_OPT to rewrite karma configs."""
+    without CAP_SYS_ADMIN) and `--disable-dev-shm-usage` (routes shared
+    memory to /tmp instead of /dev/shm so renderer IPC doesn't OOM under
+    Docker's default 64 MB shm). Callers set PUPPETEER_EXECUTABLE_PATH
+    and/or CHROME_BIN to /opt/chromium/chrome in test_cmd and (where
+    needed) use SET_PUPPETEER_PATH_OPT to rewrite karma configs."""
     if kind == "rev":
         url = f"https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/{rev_or_ver}/chrome-linux.zip"
         zip_subdir = "chrome-linux"
@@ -110,7 +112,7 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
         # only discovered as `-b chromium`, and some test suites hard-
         # code `chrome`). Any other invocation runs the real binary.
         "VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+')",
-        'printf \'#!/bin/bash\\nif [ "$1" = "--version" ]; then echo "Google Chrome \'"$VER"\'"; exit 0; fi\\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\\n\' > /opt/chromium/chrome',
+        'printf \'#!/bin/bash\\nif [ "$1" = "--version" ]; then echo "Google Chrome \'"$VER"\'"; exit 0; fi\\nexec /opt/chromium/chrome-bin --no-sandbox --disable-dev-shm-usage "$@"\\n\' > /opt/chromium/chrome',
         "chmod +x /opt/chromium/chrome",
         "chmod -R 755 /opt/chromium-pinned",
         # Symlink into /usr/bin so Cypress, chrome-launcher, and any tool
