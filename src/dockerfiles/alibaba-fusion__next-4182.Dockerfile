@@ -94,7 +94,7 @@ python2 -V
 EOF_bb1a77ae5cf1
 
 
-RUN <<EOF_ecd44ca5373f
+RUN <<EOF_75bc3b4a3578
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -104,15 +104,15 @@ rm /tmp/chromium.zip
 mkdir -p /opt/chromium
 ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
 VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-printf '#!/bin/bash\nif [ "$1" = "--version" ]; then echo "Google Chrome '"$VER"'"; exit 0; fi\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+printf '#!/bin/bash\nif [ "$1" = "--version" ]; then echo "Google Chrome '"$VER"'"; exit 0; fi\nexec /opt/chromium/chrome-bin --no-sandbox --disable-dev-shm-usage "$@"\n' > /opt/chromium/chrome
 chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome-stable
-EOF_ecd44ca5373f
+EOF_75bc3b4a3578
 
 
-RUN <<EOF_ee93e67c5e06
+RUN <<EOF_f8eb8c785ecc
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/alibaba-fusion/next /testbed
@@ -137,8 +137,8 @@ sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|proces
 chmod -R 777 /testbed
 su chromeuser -c 'npm install'
 npm install karma-json-reporter@1.2.1 --no-save
-sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s/reporters: \['spec', 'coverage'\]/reporters: ['json'],\n        jsonReporter: { stdout: true }/" scripts/test/karma.js
-EOF_ee93e67c5e06
+sed -i "s/'karma-coverage'/'karma-coverage', 'karma-json-reporter'/" scripts/test/karma.js && sed -i "s|reporters: \['spec', 'coverage'\]|reporters: ['json'],\n        jsonReporter: { outputFile: '/testbed/karma-results.json', stdout: false }|" scripts/test/karma.js
+EOF_f8eb8c785ecc
 
 
 COPY src/image_assets/alibaba-fusion__next-4182/ /swebench/image_assets/

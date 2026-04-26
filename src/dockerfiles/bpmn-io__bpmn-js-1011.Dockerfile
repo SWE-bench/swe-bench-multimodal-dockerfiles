@@ -91,7 +91,7 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_da2e1ee59459
+RUN <<EOF_a09a46e105f2
 #!/bin/bash
 set -euxo pipefail
 apt-get update && apt-get install -y libxtst6 && rm -rf /var/lib/apt/lists/*
@@ -101,7 +101,7 @@ rm /tmp/chromium.zip
 mkdir -p /opt/chromium
 ln -sf /opt/chromium-pinned/chrome-linux/chrome /opt/chromium/chrome-bin
 VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
-printf '#!/bin/bash\nif [ "$1" = "--version" ]; then echo "Google Chrome '"$VER"'"; exit 0; fi\nexec /opt/chromium/chrome-bin --no-sandbox "$@"\n' > /opt/chromium/chrome
+printf '#!/bin/bash\nif [ "$1" = "--version" ]; then echo "Google Chrome '"$VER"'"; exit 0; fi\nexec /opt/chromium/chrome-bin --no-sandbox --disable-dev-shm-usage "$@"\n' > /opt/chromium/chrome
 chmod +x /opt/chromium/chrome
 chmod -R 755 /opt/chromium-pinned
 ln -sf /opt/chromium/chrome /usr/bin/google-chrome
@@ -128,7 +128,7 @@ if m:
         print(c[m.start():m.start()+200], file=sys.stderr)
 PYEOF
 chmod +x /usr/local/bin/pretty-karma-json
-EOF_da2e1ee59459
+EOF_a09a46e105f2
 
 
 RUN <<EOF_e58a7ef6cc24
