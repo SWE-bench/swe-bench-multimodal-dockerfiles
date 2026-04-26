@@ -17,9 +17,6 @@ SPECS_NEXT = {
         "test_cmd": "npm run test",
         "docker_specs": {
             "node_version": "14.11.0",
-            "run_args": {
-                "cap_add": ["SYS_ADMIN"],
-            },
         }
     } for k in [
         '1.11', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19',
