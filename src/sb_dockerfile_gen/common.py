@@ -111,7 +111,13 @@ def chromium_preinstall(kind: str, rev_or_ver: str) -> list[str]:
         # browser detection accepts it (chromium binaries are otherwise
         # only discovered as `-b chromium`, and some test suites hard-
         # code `chrome`). Any other invocation runs the real binary.
-        "VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+')",
+        # Probe is best-effort: very old Chromium (rev <540000, ~Chrome
+        # 64-) silently exits 0 with no version output when no display
+        # is available, which fails `grep -o` under `set -o pipefail`.
+        # Trailing `|| true` keeps the build from aborting; an empty
+        # VER just yields a wrapper that prints "Google Chrome " for
+        # --version, which Cypress still accepts (matches by prefix).
+        "VER=$(/opt/chromium/chrome-bin --no-sandbox --version 2>&1 | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' || true)",
         'printf \'#!/bin/bash\\nif [ "$1" = "--version" ]; then echo "Google Chrome \'"$VER"\'"; exit 0; fi\\nexec /opt/chromium/chrome-bin --no-sandbox --disable-dev-shm-usage "$@"\\n\' > /opt/chromium/chrome',
         "chmod +x /opt/chromium/chrome",
         "chmod -R 755 /opt/chromium-pinned",
