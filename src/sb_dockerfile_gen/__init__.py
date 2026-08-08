@@ -233,7 +233,7 @@ def _make_image_download_script(instance: dict) -> str:
 
 def _get_dockerfile(instance) -> str:
     repo = instance["repo"]
-    version = instance.get("version")
+    version = instance.get("version") or None
     base_commit = instance["base_commit"]
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
     dockerfile = _DOCKERFILE_BASE_JS
@@ -283,7 +283,7 @@ def _get_test_paths(instance: dict) -> list[str]:
 
 
 def _get_test_cmds_prism(instance: dict) -> list:
-    test_cmd = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance["version"]]["test_cmd"]
+    test_cmd = MAP_REPO_VERSION_TO_SPECS_JS[instance["repo"]][instance.get("version") or None]["test_cmd"]
     directives = []
     for test_path in _get_test_paths(instance):
         if test_path.startswith("tests/languages"):
@@ -487,7 +487,7 @@ def _get_test_commands(instance: dict, specs: dict) -> str:
 def _get_eval_script(instance: dict) -> str:
     """Generate the eval.sh script for a multimodal instance."""
     repo = instance["repo"]
-    version = instance.get("version")
+    version = instance.get("version") or None
     base_commit = instance["base_commit"]
     test_patch = instance.get("test_patch", "")
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
@@ -579,6 +579,18 @@ def _get_eval_script(instance: dict) -> str:
             f"chmod -R 755 {chrome_dir}/chrome-linux64",
             f"chown -R chromeuser:chromeuser {cache}",
         ])
+
+    # a patch that changes package.json leaves node_modules stale; without the skip
+    # guard the reinstall blocks forever fetching Chromium
+    eval_commands.append(
+        'if ! git diff --quiet HEAD -- package.json 2>/dev/null; then '
+        'echo "package.json changed by patch; re-syncing dependencies"; '
+        "export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; "
+        "if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; "
+        "else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; "
+        "chmod -R a+rX node_modules > /dev/null 2>&1 || true; "
+        "fi"
+    )
 
     eval_commands += [
         f": '{START_TEST_OUTPUT}'",

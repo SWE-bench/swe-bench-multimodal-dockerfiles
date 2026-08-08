@@ -1069,13 +1069,12 @@ for v in SPECS_CARBON:
         "tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && "
         "rm nwsapi-2.2.7.tgz"
     )
-_CARBON_ACHECKER_RULES = {
-    '16.15': '12March2022',
-    '20.12': '12March2022',
-    '20.14': '12March2022',
-}
-for v, archive in _CARBON_ACHECKER_RULES.items():
-    SPECS_CARBON[v]['install'].append(f"echo 'ruleArchive: {archive}' > .achecker.yml")
+# a11y engine is fetched from a CDN at runtime; pin every version so results reproduce
+CARBON_ACHECKER_ARCHIVE = '07Oct2020'
+for v in SPECS_CARBON:
+    SPECS_CARBON[v]['install'].append(
+        f"echo 'ruleArchive: {CARBON_ACHECKER_ARCHIVE}' > .achecker.yml"
+    )
 
 SPECS_SCRATCH = {
     **{k: {
@@ -1196,6 +1195,24 @@ PIP_INSTALLS_QUARTOCLI = [
     "pip3 install appnope",
     "pip3 install ipykernel",
 ]
+# quarto renders PDFs with xelatex; TeX Live 2026 drift breaks it, so pin to a frozen 2024 tree
+TEXLIVE_2024_REPO = (
+    "https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2024/tlnet-final"
+)
+PIN_TINYTEX_2024 = [
+    "rm -rf /root/.TinyTeX /opt/TinyTeX",
+    "wget -qO /tmp/install-tinytex.sh https://tinytex.yihui.org/install-bin-unix.sh",
+    "TINYTEX_VERSION=2024.12 sh /tmp/install-tinytex.sh",
+    f'"$(echo /root/.TinyTeX/bin/*)"/tlmgr option repository {TEXLIVE_2024_REPO}',
+    # babel-french unpacked directly: `tlmgr update --self` against the frozen repo breaks the tree
+    f"curl -sSL {TEXLIVE_2024_REPO}/archive/babel-french.tar.xz -o /tmp/babel-french.tar.xz || true",
+    "tar -xJf /tmp/babel-french.tar.xz -C /root/.TinyTeX/texmf-dist tex/generic/babel-french || true",
+    '"$(echo /root/.TinyTeX/bin/*)"/mktexlsr || true',
+    'tex_ver="$("$(echo /root/.TinyTeX/bin/*)"/xelatex --version)"; '
+    'case "$tex_ver" in *"TeX Live 2024"*) echo "TinyTeX pinned to TL2024 OK";; '
+    '*) echo "TinyTeX pin FAILED, got: $tex_ver"; exit 1;; esac',
+]
+
 SPECS_QUARTOCLI = {
     None : {
         "apt-pkgs": ["libffi-dev", "zip", "unzip", "python3", "python3-pip", "python3.10-distutils", "r-base-core",
@@ -1204,7 +1221,7 @@ SPECS_QUARTOCLI = {
                     "[ -f configure.sh ] || ./configure-linux.sh",
                     "[ -f configure-linux.sh ] || ./configure.sh",
                     "cd tests", "./configure-test-env.sh || true", "cd ..",
-                    ] + PIP_INSTALLS_QUARTOCLI,
+                    ] + PIN_TINYTEX_2024 + PIP_INSTALLS_QUARTOCLI,
         "test_cmd": [ # test generates files that add future test cases -- run tests fairly
             "cp -r tests/ tests_tmp/", 
             "cd tests", 

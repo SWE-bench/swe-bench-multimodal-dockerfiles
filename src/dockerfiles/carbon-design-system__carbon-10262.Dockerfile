@@ -88,7 +88,7 @@ python2 -V
 EOF_eb7a57515ea1
 
 
-RUN <<EOF_3bd71725ccae
+RUN <<EOF_09ccefcfbbeb
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/carbon-design-system/carbon /testbed
@@ -108,7 +108,8 @@ npm i -g yarn
 yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
-EOF_3bd71725ccae
+echo 'ruleArchive: 07Oct2020' > .achecker.yml
+EOF_09ccefcfbbeb
 
 
 RUN <<EOF_69fe9053c980
