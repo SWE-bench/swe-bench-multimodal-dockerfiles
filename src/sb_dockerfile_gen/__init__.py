@@ -346,7 +346,9 @@ def _get_test_cmds_next(instance: dict) -> list:
 
 def _get_test_cmds_carbon(instance: dict) -> list:
     cmds = []
-    max_workers = " --maxWorkers=1" if instance.get("version") == "12" else ""
+    # uncapped jest spawns a worker per core in every container; capping is both faster
+    # and stops the accessibility-checker engine fetch failing under contention
+    max_workers = " --maxWorkers=1" if instance.get("version") == "12" else " --maxWorkers=4"
     for test_path in _get_test_paths(instance):
         if re.search(r"__snapshots__/(.*).js.snap$", test_path):
             test_path = "/".join(test_path.split("/")[:-2])

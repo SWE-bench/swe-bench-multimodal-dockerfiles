@@ -912,7 +912,7 @@ SPECS_GROMMET = {
         ],
         "test_cmd": [
             "yarn install",
-            "yarn test",
+            "yarn test --maxWorkers=4",
         ],
         "docker_specs": {
             "node_version": "21.6.2"
@@ -1235,10 +1235,19 @@ QUARTO_TEX_ON_PATH = [
 # Per-instance steps keyed by instance_id so that regenerating cannot silently drop
 # a fix. "install_post" runs after the repo's install commands at build time;
 # "eval_pre" runs in eval.sh just before the test command.
+ALIBABA_FUSION_INSTANCES = (94, 101, 114, 665, 717, 870, 877, 895, 966, 1063, 1064, 1067, 1500, 1509, 1586, 1708, 1720, 1742, 1788, 1807, 2131, 2164, 2355, 2860, 2919, 2923, 2984, 3034, 3198, 3218, 3345, 3445, 3454, 3724, 3947, 4021, 4182, 4806, 4859)
+
 INSTANCE_OVERRIDES = {
     f"quarto-dev__quarto-cli-{n}": {"install_post": QUARTO_TEX_ON_PATH}
     for n in (896, 1029, 1373, 1650, 2583, 2689, 2756, 3853, 4025, 4064, 4184)
 }
+
+# alibaba-fusion's karma config defines a --no-sandbox launcher gated on TRAVIS.
+# Using it avoids relaxing container seccomp, which breaks openlayers' WebGL tests.
+INSTANCE_OVERRIDES.update({
+    f"alibaba-fusion__next-{n}": {"eval_pre": ["export TRAVIS=1"]}
+    for n in ALIBABA_FUSION_INSTANCES
+})
 
 # test/unit/util/audio-context.test.js throws an unhandled rejection from
 # web-audio-test-api, which Node 20 treats as fatal; that kills the jest process
