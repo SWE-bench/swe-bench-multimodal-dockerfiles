@@ -6,6 +6,7 @@ from pathlib import Path
 from sb_dockerfile_gen.constants import (
     CONTAINER_WORKDIR,
     END_TEST_OUTPUT,
+    INSTANCE_OVERRIDES,
     MAP_REPO_VERSION_TO_SPECS_JS,
     START_TEST_OUTPUT,
 )
@@ -137,7 +138,7 @@ def make_env_script_list(instance, specs):
     return make_heredoc_run_command(commands)
 
 
-def make_repo_script_list(specs, repo, base_commit):
+def make_repo_script_list(specs, repo, base_commit, instance_id=None):
     commands = [
         *git_clone_timesafe(repo, base_commit, CONTAINER_WORKDIR),
         f"cd {CONTAINER_WORKDIR}",
@@ -154,6 +155,7 @@ def make_repo_script_list(specs, repo, base_commit):
         if isinstance(build_commands, str):
             build_commands = [build_commands]
         commands.extend(build_commands)
+    commands.extend(INSTANCE_OVERRIDES.get(instance_id, {}).get("install_post", []))
     return make_heredoc_run_command(commands)
 
 
@@ -250,7 +252,7 @@ def _get_dockerfile(instance) -> str:
     env_script = make_env_script_list(instance, specs)
     if env_script:
         dockerfile += f"\n{env_script}\n"
-    repo_script = make_repo_script_list(specs, repo, base_commit)
+    repo_script = make_repo_script_list(specs, repo, base_commit, instance["instance_id"])
     if repo_script:
         dockerfile += f"\n{repo_script}\n"
     # Download image_assets at build time
@@ -591,6 +593,8 @@ def _get_eval_script(instance: dict) -> str:
         "chmod -R a+rX node_modules > /dev/null 2>&1 || true; "
         "fi"
     )
+
+    eval_commands += INSTANCE_OVERRIDES.get(instance["instance_id"], {}).get("eval_pre", [])
 
     eval_commands += [
         f": '{START_TEST_OUTPUT}'",

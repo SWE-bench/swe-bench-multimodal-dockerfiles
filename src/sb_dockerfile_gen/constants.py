@@ -1196,8 +1196,9 @@ PIP_INSTALLS_QUARTOCLI = [
     "pip3 install ipykernel",
 ]
 # quarto renders PDFs with xelatex; TeX Live 2026 drift breaks it, so pin to a frozen 2024 tree
+# ftp.math.utah.edu is unreachable, which silently broke every package install
 TEXLIVE_2024_REPO = (
-    "https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2024/tlnet-final"
+    "https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2024/tlnet-final"
 )
 PIN_TINYTEX_2024 = [
     "rm -rf /root/.TinyTeX /opt/TinyTeX",
@@ -1208,10 +1209,43 @@ PIN_TINYTEX_2024 = [
     f"curl -sSL {TEXLIVE_2024_REPO}/archive/babel-french.tar.xz -o /tmp/babel-french.tar.xz || true",
     "tar -xJf /tmp/babel-french.tar.xz -C /root/.TinyTeX/texmf-dist tex/generic/babel-french || true",
     '"$(echo /root/.TinyTeX/bin/*)"/mktexlsr || true',
+    # the frozen 2024 repo is signed with an expired key, which tlmgr refuses by default
+    "rm -f /usr/local/bin/tlmgr",
+    'printf \'#!/bin/sh\\nexec "$(echo /root/.TinyTeX/bin/*)"/tlmgr --verify-repo=none "$@"\\n\''
+    " > /usr/local/bin/tlmgr && chmod 755 /usr/local/bin/tlmgr",
     'tex_ver="$("$(echo /root/.TinyTeX/bin/*)"/xelatex --version)"; '
     'case "$tex_ver" in *"TeX Live 2024"*) echo "TinyTeX pinned to TL2024 OK";; '
     '*) echo "TinyTeX pin FAILED, got: $tex_ver"; exit 1;; esac',
 ]
+
+# quarto before ~v1.3 resolves the TeX engine through PATH; later versions locate TinyTeX themselves.
+# The installer points sys_bin at /root/bin, so `tlmgr path add` links nothing usable.
+QUARTO_TEX_ON_PATH = [
+    'for b in /root/.TinyTeX/bin/*/*; do ln -sf "$b" /usr/local/bin/; done',
+    # the frozen 2024 repo is signed with an expired key; tlmgr aborts unless verification is off.
+    # rm first: the loop above left a symlink, and writing through it would clobber the real tlmgr
+    "rm -f /usr/local/bin/tlmgr",
+    'printf \'#!/bin/sh\\nexec "$(echo /root/.TinyTeX/bin/*)"/tlmgr --verify-repo=none "$@"\\n\''
+    " > /usr/local/bin/tlmgr && chmod 755 /usr/local/bin/tlmgr",
+    'hash -r; tex_ver="$(xelatex --version)"; '
+    'case "$tex_ver" in *"TeX Live 2024"*) echo "xelatex on PATH OK";; '
+    '*) echo "xelatex not resolvable via PATH, got: $tex_ver"; exit 1;; esac',
+]
+
+# Per-instance steps keyed by instance_id so that regenerating cannot silently drop
+# a fix. "install_post" runs after the repo's install commands at build time;
+# "eval_pre" runs in eval.sh just before the test command.
+INSTANCE_OVERRIDES = {
+    f"quarto-dev__quarto-cli-{n}": {"install_post": QUARTO_TEX_ON_PATH}
+    for n in (896, 1029, 1373, 1650, 2583, 2689, 2756, 3853, 4025, 4064, 4184)
+}
+
+# test/unit/util/audio-context.test.js throws an unhandled rejection from
+# web-audio-test-api, which Node 20 treats as fatal; that kills the jest process
+# before the graded button.test.jsx reports. The offending file is not graded.
+INSTANCE_OVERRIDES["scratchfoundation__scratch-gui-8492"] = {
+    "eval_pre": ["export NODE_OPTIONS=--unhandled-rejections=warn"]
+}
 
 SPECS_QUARTOCLI = {
     None : {
