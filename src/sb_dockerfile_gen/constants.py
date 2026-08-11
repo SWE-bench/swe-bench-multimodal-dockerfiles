@@ -912,7 +912,7 @@ SPECS_GROMMET = {
         ],
         "test_cmd": [
             "yarn install",
-            "yarn test --maxWorkers=4",
+            "yarn test",
         ],
         "docker_specs": {
             "node_version": "21.6.2"
