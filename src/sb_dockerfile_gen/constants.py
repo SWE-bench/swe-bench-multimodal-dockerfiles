@@ -1069,7 +1069,8 @@ for v in SPECS_CARBON:
         "tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && "
         "rm nwsapi-2.2.7.tgz"
     )
-# a11y engine is fetched from a CDN at runtime; pin every version so results reproduce
+# a11y engine + rules are fetched from a CDN at runtime; pinning the archive makes results
+# reproducible but not offline, so ~4.5% of carbon runs flake -- see issue #8
 CARBON_ACHECKER_ARCHIVE = '07Oct2020'
 for v in SPECS_CARBON:
     SPECS_CARBON[v]['install'].append(
