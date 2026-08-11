@@ -31,9 +31,17 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
     if branch:
         clone_cmd = f"git clone -o origin --branch {branch} --single-branch https://github.com/{repo} {workdir}"
     else:
-        # Full clone (all branches). Fast for most repos (< 2 min).
-        # --single-branch was faster but fails when base_commit is on a non-default branch.
-        clone_cmd = f"git clone -o origin https://github.com/{repo} {workdir}"
+        # Fetch just the base commit. A full clone bakes every historical version of
+        # committed artifacts into the image -- carbon's .git alone is 7.8GB of a 9.2GB
+        # /testbed because Yarn zero-installs commits dependency zips. Falls back to a
+        # full clone if the host refuses a by-SHA fetch.
+        clone_cmd = (
+            f"(mkdir -p {workdir} && cd {workdir} && git init -q . "
+            f"&& git remote add origin https://github.com/{repo} "
+            f"&& git fetch -q --depth 1 origin {base_commit} "
+            f"&& git reset -q --hard FETCH_HEAD) "
+            f"|| (rm -rf {workdir} && git clone -o origin https://github.com/{repo} {workdir})"
+        )
     return [
         clone_cmd,
         f"chmod -R 777 {workdir}",
