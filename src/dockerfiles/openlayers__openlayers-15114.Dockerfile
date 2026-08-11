@@ -91,10 +91,10 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_bec3b4db7487
+RUN <<EOF_0905417551b7
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/openlayers/openlayers /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/openlayers/openlayers && git fetch -q --depth 1 origin d4ce437830efcfe44b57a1fac53b727a1eed2f0e && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/openlayers/openlayers /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard d4ce437830efcfe44b57a1fac53b727a1eed2f0e
@@ -108,7 +108,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_bec3b4db7487
+EOF_0905417551b7
 
 
 RUN <<EOF_4060050e87d5

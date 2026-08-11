@@ -88,10 +88,10 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_9528dd4c95bc
+RUN <<EOF_edd7a6e4b072
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/PrismJS/prism /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/PrismJS/prism && git fetch -q --depth 1 origin ea82478dfc6d22a39d6eca1881d9f88122b05035 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/PrismJS/prism /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ea82478dfc6d22a39d6eca1881d9f88122b05035
@@ -106,7 +106,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_9528dd4c95bc
+EOF_edd7a6e4b072
 
 
 RUN <<EOF_86fd42ee27e0

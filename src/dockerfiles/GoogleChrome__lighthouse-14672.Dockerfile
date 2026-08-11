@@ -88,10 +88,10 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_633f31fa2f68
+RUN <<EOF_12a1bb3a730b
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/GoogleChrome/lighthouse && git fetch -q --depth 1 origin 3055496570b7f18378718b2ddcaaa62edde563d7 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 3055496570b7f18378718b2ddcaaa62edde563d7
@@ -107,7 +107,7 @@ source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn
 yarn build-all
-EOF_633f31fa2f68
+EOF_12a1bb3a730b
 
 
 RUN <<EOF_5147e44e4c36

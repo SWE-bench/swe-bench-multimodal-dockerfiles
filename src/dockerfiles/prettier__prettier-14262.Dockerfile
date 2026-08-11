@@ -88,10 +88,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_13cc097c7d77
+RUN <<EOF_5c54c40fafcd
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/prettier/prettier /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/prettier/prettier && git fetch -q --depth 1 origin 37fb53acf33a20379a93bfecea8242c03ce0a4fc && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/prettier/prettier /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 37fb53acf33a20379a93bfecea8242c03ce0a4fc
@@ -106,7 +106,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn
-EOF_13cc097c7d77
+EOF_5c54c40fafcd
 
 
 RUN <<EOF_79ae14e27893

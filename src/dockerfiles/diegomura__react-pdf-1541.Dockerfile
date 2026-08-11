@@ -91,10 +91,10 @@ python2 -V
 EOF_a32284fbdcc9
 
 
-RUN <<EOF_f7f5f4c4b498
+RUN <<EOF_5ea6cdf9c88a
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/diegomura/react-pdf /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/diegomura/react-pdf && git fetch -q --depth 1 origin bef5d6e39ee877fb0ca6957652984dda09e1cb71 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/diegomura/react-pdf /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard bef5d6e39ee877fb0ca6957652984dda09e1cb71
@@ -109,7 +109,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
-EOF_f7f5f4c4b498
+EOF_5ea6cdf9c88a
 
 
 RUN <<EOF_56cfbff49a5f

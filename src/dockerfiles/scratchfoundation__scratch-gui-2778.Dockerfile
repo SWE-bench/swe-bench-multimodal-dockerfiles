@@ -88,10 +88,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_43f9e3427c09
+RUN <<EOF_035585aabce9
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/scratchfoundation/scratch-gui && git fetch -q --depth 1 origin 63c189e531ac5a5a17bbae959eb1048ae425b6ac && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 63c189e531ac5a5a17bbae959eb1048ae425b6ac
@@ -107,7 +107,7 @@ source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
-EOF_43f9e3427c09
+EOF_035585aabce9
 
 
 RUN <<EOF_40623a6ed1b6

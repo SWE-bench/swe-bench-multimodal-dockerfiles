@@ -88,10 +88,10 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_1e946ad1c17f
+RUN <<EOF_a46c059694c6
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/highlightjs/highlight.js /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/highlightjs/highlight.js && git fetch -q --depth 1 origin 04f3904c9dd7e9fd338ad916044564d0f8fb13d2 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/highlightjs/highlight.js /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 04f3904c9dd7e9fd338ad916044564d0f8fb13d2
@@ -106,7 +106,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_1e946ad1c17f
+EOF_a46c059694c6
 
 
 RUN <<EOF_729911b30c51

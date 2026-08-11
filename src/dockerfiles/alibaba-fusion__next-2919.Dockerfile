@@ -91,10 +91,10 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_e3e32b38d925
+RUN <<EOF_017cae81282f
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/alibaba-fusion/next /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin f93b366fbe6238b0b27218fc659eb3c735c44e10 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard f93b366fbe6238b0b27218fc659eb3c735c44e10
@@ -115,7 +115,7 @@ npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install puppeteer@19.11.1 --save-exact
 npm install highlight.js@10.7.3 --save-exact
-EOF_e3e32b38d925
+EOF_017cae81282f
 
 
 RUN <<EOF_64471d209f2b

@@ -91,10 +91,10 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_570e6b5517e1
+RUN <<EOF_010b33b5de46
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/openlayers/openlayers /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/openlayers/openlayers && git fetch -q --depth 1 origin ba60c3ba4a1f7cef4da84ec30f05b506197fb28a && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/openlayers/openlayers /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ba60c3ba4a1f7cef4da84ec30f05b506197fb28a
@@ -109,7 +109,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_570e6b5517e1
+EOF_010b33b5de46
 
 
 RUN <<EOF_9ee9d42ea02a

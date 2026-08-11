@@ -88,10 +88,10 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_5e9f82bedb47
+RUN <<EOF_587e43c55d64
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/bpmn-io/bpmn-js && git fetch -q --depth 1 origin c657944a7af9d3eab1a7900ed3340395110ca754 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard c657944a7af9d3eab1a7900ed3340395110ca754
@@ -105,7 +105,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_5e9f82bedb47
+EOF_587e43c55d64
 
 
 RUN <<EOF_1ea5fb98ab43

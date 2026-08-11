@@ -88,10 +88,10 @@ python2 -V
 EOF_31553638dfda
 
 
-RUN <<EOF_dfd3e2ca8050
+RUN <<EOF_93b1a1cff0ea
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/carbon-design-system/carbon /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/carbon-design-system/carbon && git fetch -q --depth 1 origin ec3bd2ffc7ce4d5ecaea38df2393e445ccdf41a1 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/carbon-design-system/carbon /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard ec3bd2ffc7ce4d5ecaea38df2393e445ccdf41a1
@@ -109,7 +109,7 @@ yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
 echo 'ruleArchive: 07Oct2020' > .achecker.yml
-EOF_dfd3e2ca8050
+EOF_93b1a1cff0ea
 
 
 RUN <<EOF_5c2056d71411

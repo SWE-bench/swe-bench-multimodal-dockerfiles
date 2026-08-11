@@ -91,10 +91,10 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_ef1f450d5036
+RUN <<EOF_2dbfb5f4c526
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/alibaba-fusion/next /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin c345df112a460ecc9128c159c647fd678b15ab05 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard c345df112a460ecc9128c159c647fd678b15ab05
@@ -121,7 +121,7 @@ npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install lodash.clonedeep@4.5.0 --save-exact
-EOF_ef1f450d5036
+EOF_2dbfb5f4c526
 
 
 RUN <<EOF_879dad80ed1b

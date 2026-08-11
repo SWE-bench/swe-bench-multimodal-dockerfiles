@@ -88,10 +88,10 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_0501485c3d7a
+RUN <<EOF_db00c2dfb529
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/eslint/eslint /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/eslint/eslint && git fetch -q --depth 1 origin 2665552ba0057e8603f9fbece0fd236f189f5cf3 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/eslint/eslint /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 2665552ba0057e8603f9fbece0fd236f189f5cf3
@@ -105,7 +105,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_0501485c3d7a
+EOF_db00c2dfb529
 
 
 RUN <<EOF_232e89715abd

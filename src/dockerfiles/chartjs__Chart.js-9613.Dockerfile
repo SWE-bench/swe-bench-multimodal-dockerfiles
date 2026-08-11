@@ -91,10 +91,10 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_c7d5a24f014d
+RUN <<EOF_0530ac17f662
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/chartjs/Chart.js /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/chartjs/Chart.js && git fetch -q --depth 1 origin 8d68b119bcb95af182cc69d42acad8490af53d3e && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/chartjs/Chart.js /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 8d68b119bcb95af182cc69d42acad8490af53d3e
@@ -108,7 +108,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_c7d5a24f014d
+EOF_0530ac17f662
 
 
 RUN <<EOF_6b1e06f18ec1

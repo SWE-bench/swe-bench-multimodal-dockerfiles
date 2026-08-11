@@ -88,10 +88,10 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_f0782d56b439
+RUN <<EOF_3b6c2a5750e0
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/grommet/grommet /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/grommet/grommet && git fetch -q --depth 1 origin 739c72f7dfbaf4adfdf26377b3c704a3a3463faa && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/grommet/grommet /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 739c72f7dfbaf4adfdf26377b3c704a3a3463faa
@@ -106,7 +106,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
-EOF_f0782d56b439
+EOF_3b6c2a5750e0
 
 
 RUN <<EOF_33ff6f39bbf9

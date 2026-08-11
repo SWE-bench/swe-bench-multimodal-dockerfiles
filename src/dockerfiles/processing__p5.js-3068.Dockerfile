@@ -91,10 +91,10 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_14186e9fc271
+RUN <<EOF_d8d273f0651c
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/processing/p5.js /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/processing/p5.js && git fetch -q --depth 1 origin 52151068bdc7e95150a189392fbd5ec0a48318f0 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/processing/p5.js /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 52151068bdc7e95150a189392fbd5ec0a48318f0
@@ -109,7 +109,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 ./node_modules/.bin/grunt yui
-EOF_14186e9fc271
+EOF_d8d273f0651c
 
 
 RUN <<EOF_b7fec91d8780

@@ -88,10 +88,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_087929332923
+RUN <<EOF_f95fbfce6a4f
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/scratchfoundation/scratch-gui && git fetch -q --depth 1 origin 0eb9ced9ae6d833a230c1c27dbf42dcb4e30bec4 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 0eb9ced9ae6d833a230c1c27dbf42dcb4e30bec4
@@ -106,7 +106,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i 's/states: ."disabled", "enabled"./states: ["enabled", "disabled"]/' node_modules/web-audio-test-api/lib/utils/api.js
-EOF_087929332923
+EOF_f95fbfce6a4f
 
 
 RUN <<EOF_572749ca8015

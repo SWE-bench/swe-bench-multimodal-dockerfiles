@@ -103,10 +103,10 @@ pnpm -v
 EOF_b63450f00529
 
 
-RUN <<EOF_ac0a52d0f1f3
+RUN <<EOF_74effd12d55b
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/chartjs/Chart.js /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/chartjs/Chart.js && git fetch -q --depth 1 origin c35d0c6e48ece06b2f420e3804c5f7267820d129 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/chartjs/Chart.js /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard c35d0c6e48ece06b2f420e3804c5f7267820d129
@@ -121,7 +121,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 pnpm install
 pnpm run build
-EOF_ac0a52d0f1f3
+EOF_74effd12d55b
 
 
 RUN <<EOF_2866af1239f5

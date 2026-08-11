@@ -91,10 +91,10 @@ python2 -V
 EOF_01667795d52d
 
 
-RUN <<EOF_500758415305
+RUN <<EOF_4e6ae6ee3ff5
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/quarto-dev/quarto-cli && git fetch -q --depth 1 origin 6f4599c36bb0c309a5ba5fc3247abd6ac82cc434 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard 6f4599c36bb0c309a5ba5fc3247abd6ac82cc434
@@ -120,10 +120,12 @@ cd ..
 rm -rf /root/.TinyTeX /opt/TinyTeX
 wget -qO /tmp/install-tinytex.sh https://tinytex.yihui.org/install-bin-unix.sh
 TINYTEX_VERSION=2024.12 sh /tmp/install-tinytex.sh
-"$(echo /root/.TinyTeX/bin/*)"/tlmgr option repository https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2024/tlnet-final
-curl -sSL https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2024/tlnet-final/archive/babel-french.tar.xz -o /tmp/babel-french.tar.xz || true
+"$(echo /root/.TinyTeX/bin/*)"/tlmgr option repository https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2024/tlnet-final
+curl -sSL https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2024/tlnet-final/archive/babel-french.tar.xz -o /tmp/babel-french.tar.xz || true
 tar -xJf /tmp/babel-french.tar.xz -C /root/.TinyTeX/texmf-dist tex/generic/babel-french || true
 "$(echo /root/.TinyTeX/bin/*)"/mktexlsr || true
+rm -f /usr/local/bin/tlmgr
+printf '#!/bin/sh\nexec "$(echo /root/.TinyTeX/bin/*)"/tlmgr --verify-repo=none "$@"\n' > /usr/local/bin/tlmgr && chmod 755 /usr/local/bin/tlmgr
 tex_ver="$("$(echo /root/.TinyTeX/bin/*)"/xelatex --version)"; case "$tex_ver" in *"TeX Live 2024"*) echo "TinyTeX pinned to TL2024 OK";; *) echo "TinyTeX pin FAILED, got: $tex_ver"; exit 1;; esac
 pip3 install --user pipenv
 pip3 install nbformat
@@ -144,7 +146,11 @@ pip3 install pexpect
 pip3 install ptyprocess
 pip3 install appnope
 pip3 install ipykernel
-EOF_500758415305
+for b in /root/.TinyTeX/bin/*/*; do ln -sf "$b" /usr/local/bin/; done
+rm -f /usr/local/bin/tlmgr
+printf '#!/bin/sh\nexec "$(echo /root/.TinyTeX/bin/*)"/tlmgr --verify-repo=none "$@"\n' > /usr/local/bin/tlmgr && chmod 755 /usr/local/bin/tlmgr
+hash -r; tex_ver="$(xelatex --version)"; case "$tex_ver" in *"TeX Live 2024"*) echo "xelatex on PATH OK";; *) echo "xelatex not resolvable via PATH, got: $tex_ver"; exit 1;; esac
+EOF_4e6ae6ee3ff5
 
 
 RUN <<EOF_8686cb006846

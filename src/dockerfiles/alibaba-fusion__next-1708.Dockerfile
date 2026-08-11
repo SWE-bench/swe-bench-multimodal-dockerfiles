@@ -91,10 +91,10 @@ python2 -V
 EOF_4d2410c5ce08
 
 
-RUN <<EOF_5aa7831c190b
+RUN <<EOF_26e066970ce7
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/alibaba-fusion/next /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin bd48e0b8804febc0e9f771772d24c5bc6c53c37a && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard bd48e0b8804febc0e9f771772d24c5bc6c53c37a
@@ -113,7 +113,7 @@ npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
-EOF_5aa7831c190b
+EOF_26e066970ce7
 
 
 RUN <<EOF_114755962016

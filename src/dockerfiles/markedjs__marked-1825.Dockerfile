@@ -88,10 +88,10 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_33acffa37518
+RUN <<EOF_eba642b92701
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/markedjs/marked /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/markedjs/marked && git fetch -q --depth 1 origin da071c9e408faceec944c0df4b8d4fac43c47d3d && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/markedjs/marked /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard da071c9e408faceec944c0df4b8d4fac43c47d3d
@@ -105,7 +105,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_33acffa37518
+EOF_eba642b92701
 
 
 RUN <<EOF_5aa060814e66

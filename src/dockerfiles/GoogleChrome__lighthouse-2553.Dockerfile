@@ -88,10 +88,10 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_c97add8e3983
+RUN <<EOF_c6d3e9e87991
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/GoogleChrome/lighthouse && git fetch -q --depth 1 origin bfcbc302cb3598c79ce9564993972eeb531bd2ff && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard bfcbc302cb3598c79ce9564993972eeb531bd2ff
@@ -108,7 +108,7 @@ npm i -g yarn
 yarn
 yarn install-all
 yarn build-all
-EOF_c97add8e3983
+EOF_c6d3e9e87991
 
 
 RUN <<EOF_227a75e05c13

@@ -88,10 +88,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_7263802d8f39
+RUN <<EOF_d610b67e3aab
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/prettier/prettier /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/prettier/prettier && git fetch -q --depth 1 origin d6858d52adf1686a436b84b5a337519cc38ead48 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/prettier/prettier /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard d6858d52adf1686a436b84b5a337519cc38ead48
@@ -108,7 +108,7 @@ npm i -g yarn
 yarn
 yarn add meriyah@3.1.2
 git checkout -- package.json yarn.lock 2>/dev/null || true
-EOF_7263802d8f39
+EOF_d610b67e3aab
 
 
 RUN <<EOF_aade16199343

@@ -91,10 +91,10 @@ python2 -V
 EOF_9dbe435fcb39
 
 
-RUN <<EOF_a697976333e0
+RUN <<EOF_c317d7d4386c
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/diegomura/react-pdf /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/diegomura/react-pdf && git fetch -q --depth 1 origin f508d4e9938e80e888deb2dc8cada6d84e116427 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/diegomura/react-pdf /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard f508d4e9938e80e888deb2dc8cada6d84e116427
@@ -109,7 +109,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
-EOF_a697976333e0
+EOF_c317d7d4386c
 
 
 RUN <<EOF_12d553d8b67a

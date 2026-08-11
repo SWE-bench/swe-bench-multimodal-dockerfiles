@@ -91,10 +91,10 @@ python2 -V
 EOF_a39dff40c908
 
 
-RUN <<EOF_bcf1473931bc
+RUN <<EOF_492bc6c5ad6e
 #!/bin/bash
 set -euxo pipefail
-git clone -o origin https://github.com/Automattic/wp-calypso /testbed
+(mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/Automattic/wp-calypso && git fetch -q --depth 1 origin fac839d3f39b142a7257510e46e7916def20f0ca && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/Automattic/wp-calypso /testbed)
 chmod -R 777 /testbed
 cd /testbed
 git reset --hard fac839d3f39b142a7257510e46e7916def20f0ca
@@ -108,7 +108,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_bcf1473931bc
+EOF_492bc6c5ad6e
 
 
 RUN <<EOF_b4241339eb15
