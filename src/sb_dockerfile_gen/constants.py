@@ -1242,10 +1242,15 @@ INSTANCE_OVERRIDES = {
     for n in (896, 1029, 1373, 1650, 2583, 2689, 2756, 3853, 4025, 4064, 4184)
 }
 
-# alibaba-fusion's karma config defines a --no-sandbox launcher gated on TRAVIS.
-# Using it avoids relaxing container seccomp, which breaks openlayers' WebGL tests.
+# alibaba-fusion defines a --no-sandbox launcher (ChromeTravis) but only selects it
+# behind TRAVIS or CI depending on the version, and neither is set here, so karma falls
+# back to plain Chrome and cannot start its sandbox. Point the default at the launcher
+# instead; this avoids relaxing container seccomp, which breaks openlayers' WebGL tests.
+_ALIBABA_USE_NOSANDBOX_LAUNCHER = [
+    "sed -i \"s/browsers: \\['Chrome'\\]/browsers: ['ChromeTravis']/\" scripts/test/karma.js || true"
+]
 INSTANCE_OVERRIDES.update({
-    f"alibaba-fusion__next-{n}": {"eval_pre": ["export TRAVIS=1"]}
+    f"alibaba-fusion__next-{n}": {"eval_pre": _ALIBABA_USE_NOSANDBOX_LAUNCHER}
     for n in ALIBABA_FUSION_INSTANCES
 })
 
