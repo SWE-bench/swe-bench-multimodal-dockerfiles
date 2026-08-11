@@ -331,13 +331,13 @@ def _get_test_cmds_openlayers(instance: dict) -> list:
             '4.3', '4.4', '4.5', '4.6', '5.1', '5.2', '5.3'
         ]:
             cmds[-1] = f"{SSL_LEGACY} {cmds[-1]}"
-    return list(set(cmds))
+    return sorted(set(cmds))
 
 
 def _get_test_cmds_next(instance: dict) -> list:
     SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
-    return list(set([
+    return sorted(set([
         f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
         f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
         for test_path in _get_test_paths(instance)
@@ -384,7 +384,7 @@ def _get_test_cmds_carbon(instance: dict) -> list:
         if test_path.endswith(".e2e.js"):
             test_path = "/".join(test_path.split("/")[:-1])
         cmds.append(f"yarn test{max_workers} {test_path}")
-    return list(set(cmds))
+    return sorted(set(cmds))
 
 
 def _get_test_cmds_scratch_gui(instance: dict) -> list:
@@ -394,7 +394,7 @@ def _get_test_cmds_scratch_gui(instance: dict) -> list:
         if "__snapshots__" in test_path:
             test_path = test_path.split("__snapshots__")[0]
         cmds.append(f"{test_prefix} {test_path}")
-    return list(set(cmds))
+    return sorted(set(cmds))
 
 
 def _get_test_cmds_lighthouse(instance: dict) -> list:
@@ -424,7 +424,7 @@ def _get_test_cmds_lighthouse(instance: dict) -> list:
             cmds.append(f"yarn jest --no-colors {test_path}")
         else:
             cmds.append(f"./node_modules/.bin/mocha --reporter json {test_path}")
-    return list(set(cmds))
+    return sorted(set(cmds))
 
 
 def _get_test_cmds_prettier(instance: dict) -> list:
@@ -439,7 +439,7 @@ def _get_test_cmds_prettier(instance: dict) -> list:
         if not test_path.endswith("jsfmt.spec.js") and not "/__tests__/" in test_path and not test_path.endswith("/"):
             test_path = "/".join(test_path.split("/")[:-1])
         cmds.append(f"yarn test {test_path}")
-    return list(set(cmds))
+    return sorted(set(cmds))
 
 
 def _get_test_cmds_react_pdf(instance: dict) -> list:
@@ -453,7 +453,7 @@ def _get_test_cmds_react_pdf(instance: dict) -> list:
             cmds.append(f"{test_prefix} {test_path}")
         elif test_path.startswith("tests/"):
             cmds.append(test_prefix)
-    return list(set(cmds))
+    return sorted(set(cmds))
 
 
 _MAP_REPO_TO_TEST_CMDS = {
