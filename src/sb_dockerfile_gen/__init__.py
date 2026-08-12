@@ -316,7 +316,8 @@ def _get_test_cmds_openlayers(instance: dict) -> list:
                 PENV = "CI=true PUPPETEER_CACHE_DIR=/home/chromeuser/.cache/puppeteer"
                 cmds.append(
                     f'{PENV} {XVFB} su chromeuser -c "'
-                    f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force"'
+                    f'{PENV} npm run build-full && {PENV} '
+                    f'node test/rendering/test.js --force --headless --log-level info"'
                 )
             else:
                 # CI=1 makes puppeteer headless with --no-sandbox, which is the config
@@ -327,8 +328,12 @@ def _get_test_cmds_openlayers(instance: dict) -> list:
                 # passing cases ("<case>': ok"), the only positive evidence that an
                 # all-passing run actually executed, since the parser records only
                 # failures.
+                # --headless explicitly: CI=1 only implies headless on the newer
+                # harness; v5.x hardcodes `headless: false` and CI-gates just the
+                # sandbox args, leaving rendering ~98% off under Xvfb.
                 cmds.append(
-                    f'CI=1 {SET_PUPPETEER} {XVFB} npm run test-rendering -- --log-level info'
+                    f'CI=1 {SET_PUPPETEER} {XVFB} '
+                    f'npm run test-rendering -- --headless --log-level info'
                 )
         elif test_type == "spec":
             cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
