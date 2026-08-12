@@ -353,7 +353,10 @@ def _get_test_cmds_next(instance: dict) -> list:
     SET_PUPPETEER = "PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable"
     XVFB = 'xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99"'
     return sorted(set([
-        f'timeout 5m bash -c \'{SET_PUPPETEER} {XVFB} '
+        # 5m was cutting off legitimate runs (alibaba-fusion__next-4182 was killed
+        # at 382s with its graded tests still passing); the harness applies its own
+        # overall per-instance timeout on top of this
+        f'timeout 20m bash -c \'{SET_PUPPETEER} {XVFB} '
         f'su chromeuser -c "npm run test {test_path.split("/")[1]}"\''
         for test_path in _get_test_paths(instance)
     ]))
