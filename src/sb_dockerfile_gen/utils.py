@@ -48,12 +48,23 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
-        # Remove tags newer than base commit (prevents future info leakage)
-        f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
-        'git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done',
-        # Delete all branches except the detached HEAD at base_commit
-        'git branch -D $(git branch | grep -v "^\\*") 2>/dev/null || true',
+        # Remove all future information (tags/branches/objects newer than base).
+        f"TARGET_TIMESTAMP=$(git show -s --format=%ci {base_commit})",
+        # Delete every tag and branch: matches the multilingual generator, and is
+        # simpler than pruning by date (the previous `git tag -l | while read`
+        # form silently stopped after ~29 of 257 tags because a git command in
+        # the loop body consumed the piped stdin).
+        "git branch | grep -v '^\\*' | xargs -r git branch -D || true",
+        "git tag -l | xargs -r git tag -d",
         "git reflog expire --expire=now --all",
+        # Physically drop the now-unreachable future commits; without this they
+        # stay in the pack and are readable via git cat-file / fsck.
+        "git gc --prune=now --aggressive",
+        # Fail the build if anything newer than the base commit survived, so a
+        # broken prune can never ship as a silently leaky image.
+        "AFTER_TIMESTAMP=$(date -d \"$TARGET_TIMESTAMP + 1 second\" '+%Y-%m-%d %H:%M:%S')",
+        'COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)',
+        '[ "$COMMIT_COUNT" -eq 0 ] || exit 1',
         "cd - || true",
     ]
 

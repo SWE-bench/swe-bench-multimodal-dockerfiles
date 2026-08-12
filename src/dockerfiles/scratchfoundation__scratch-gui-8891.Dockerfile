@@ -88,7 +88,7 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_42a48977f6d8
+RUN <<EOF_af89f45ab123
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/scratchfoundation/scratch-gui && git fetch -q --depth 1 origin 8c4526d5f1b5f151d6a0acebb2310d10ed76e16b && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed)
@@ -96,17 +96,21 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard 8c4526d5f1b5f151d6a0acebb2310d10ed76e16b
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 8c4526d5f1b5f151d6a0acebb2310d10ed76e16b)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci 8c4526d5f1b5f151d6a0acebb2310d10ed76e16b)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i 's/states: ."disabled", "enabled"./states: ["enabled", "disabled"]/' node_modules/web-audio-test-api/lib/utils/api.js
-EOF_42a48977f6d8
+EOF_af89f45ab123
 
 
 RUN <<EOF_12e37fe9211f

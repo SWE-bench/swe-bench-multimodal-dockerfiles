@@ -88,7 +88,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_cf649b466efe
+RUN <<EOF_ae44fcda9bb8
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/GoogleChrome/lighthouse && git fetch -q --depth 1 origin 9f58eb418bc5bd6c177bfd2d50e16840c23ac16e && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed)
@@ -96,10 +96,14 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard 9f58eb418bc5bd6c177bfd2d50e16840c23ac16e
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 9f58eb418bc5bd6c177bfd2d50e16840c23ac16e)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci 9f58eb418bc5bd6c177bfd2d50e16840c23ac16e)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -107,7 +111,7 @@ source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn
 yarn build-all
-EOF_cf649b466efe
+EOF_ae44fcda9bb8
 
 
 RUN <<EOF_ee19a57cebb3

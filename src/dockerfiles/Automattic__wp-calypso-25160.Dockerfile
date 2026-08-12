@@ -91,7 +91,7 @@ python2 -V
 EOF_401968897ae7
 
 
-RUN <<EOF_66cd8b0b43e9
+RUN <<EOF_ebb453394c1b
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/Automattic/wp-calypso && git fetch -q --depth 1 origin bcc8e2ee4ec5a0d30fabc995d9ebeedfed0a8fe0 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/Automattic/wp-calypso /testbed)
@@ -99,16 +99,20 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard bcc8e2ee4ec5a0d30fabc995d9ebeedfed0a8fe0
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct bcc8e2ee4ec5a0d30fabc995d9ebeedfed0a8fe0)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci bcc8e2ee4ec5a0d30fabc995d9ebeedfed0a8fe0)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_66cd8b0b43e9
+EOF_ebb453394c1b
 
 
 RUN <<EOF_4eb93a51695e

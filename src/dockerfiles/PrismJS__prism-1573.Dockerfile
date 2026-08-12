@@ -88,7 +88,7 @@ python2 -V
 EOF_9d96e99a759a
 
 
-RUN <<EOF_822284f2b1a9
+RUN <<EOF_ab8e8d6a8c56
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/PrismJS/prism && git fetch -q --depth 1 origin 716923f458c2ba90b5a4ec3ab41dcae8bc0a9917 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/PrismJS/prism /testbed)
@@ -96,16 +96,20 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard 716923f458c2ba90b5a4ec3ab41dcae8bc0a9917
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct 716923f458c2ba90b5a4ec3ab41dcae8bc0a9917)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci 716923f458c2ba90b5a4ec3ab41dcae8bc0a9917)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_822284f2b1a9
+EOF_ab8e8d6a8c56
 
 
 RUN <<EOF_02286b1d24bc

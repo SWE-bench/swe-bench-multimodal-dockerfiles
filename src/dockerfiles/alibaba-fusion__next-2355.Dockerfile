@@ -91,7 +91,7 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_2dbfb5f4c526
+RUN <<EOF_285084a1f3c6
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin c345df112a460ecc9128c159c647fd678b15ab05 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
@@ -99,10 +99,14 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard c345df112a460ecc9128c159c647fd678b15ab05
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c345df112a460ecc9128c159c647fd678b15ab05)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci c345df112a460ecc9128c159c647fd678b15ab05)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -121,7 +125,7 @@ npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install lodash.clonedeep@4.5.0 --save-exact
-EOF_2dbfb5f4c526
+EOF_285084a1f3c6
 
 
 RUN <<EOF_879dad80ed1b

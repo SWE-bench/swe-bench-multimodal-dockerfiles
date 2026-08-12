@@ -91,7 +91,7 @@ python2 -V
 EOF_01667795d52d
 
 
-RUN <<EOF_0bbd5d584e01
+RUN <<EOF_50dc0e51bfdf
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/quarto-dev/quarto-cli && git fetch -q --depth 1 origin e2fbed9afac5c893088ae78f4473f2677529656f && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed)
@@ -99,10 +99,14 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard e2fbed9afac5c893088ae78f4473f2677529656f
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct e2fbed9afac5c893088ae78f4473f2677529656f)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci e2fbed9afac5c893088ae78f4473f2677529656f)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -150,7 +154,7 @@ for b in /root/.TinyTeX/bin/*/*; do ln -sf "$b" /usr/local/bin/; done
 rm -f /usr/local/bin/tlmgr
 printf '#!/bin/sh\nexec "$(echo /root/.TinyTeX/bin/*)"/tlmgr --verify-repo=none "$@"\n' > /usr/local/bin/tlmgr && chmod 755 /usr/local/bin/tlmgr
 hash -r; tex_ver="$(xelatex --version)"; case "$tex_ver" in *"TeX Live 2024"*) echo "xelatex on PATH OK";; *) echo "xelatex not resolvable via PATH, got: $tex_ver"; exit 1;; esac
-EOF_0bbd5d584e01
+EOF_50dc0e51bfdf
 
 
 RUN <<EOF_5616fe812359

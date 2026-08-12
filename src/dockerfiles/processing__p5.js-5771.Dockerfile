@@ -91,7 +91,7 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_338bc69cda43
+RUN <<EOF_26958a010b13
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/processing/p5.js && git fetch -q --depth 1 origin c9fb107b94ffa5f2b905509a0407588b85476b02 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/processing/p5.js /testbed)
@@ -99,10 +99,14 @@ chmod -R 777 /testbed
 cd /testbed
 git reset --hard c9fb107b94ffa5f2b905509a0407588b85476b02
 git remote remove origin
-TARGET_EPOCH=$(git show -s --format=%ct c9fb107b94ffa5f2b905509a0407588b85476b02)
-git tag -l | while read tag; do TAG_COMMIT=$(git rev-list -n 1 "$tag"); TAG_EPOCH=$(git show -s --format=%ct "$TAG_COMMIT"); if [ "$TAG_EPOCH" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag"; fi; done
-git branch -D $(git branch | grep -v "^\*") 2>/dev/null || true
+TARGET_TIMESTAMP=$(git show -s --format=%ci c9fb107b94ffa5f2b905509a0407588b85476b02)
+git branch | grep -v '^\*' | xargs -r git branch -D || true
+git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
+COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
+[ "$COMMIT_COUNT" -eq 0 ] || exit 1
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -110,7 +114,7 @@ source $NVM_DIR/nvm.sh
 npm install
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js
 ./node_modules/.bin/grunt yui
-EOF_338bc69cda43
+EOF_26958a010b13
 
 
 RUN <<EOF_3a8158e2125a
