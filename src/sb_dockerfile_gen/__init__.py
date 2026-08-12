@@ -319,7 +319,17 @@ def _get_test_cmds_openlayers(instance: dict) -> list:
                     f'{PENV} npm run build-full && {PENV} node test/rendering/test.js --force"'
                 )
             else:
-                cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run test-rendering"')
+                # CI=1 makes puppeteer headless with --no-sandbox, which is the config
+                # upstream used to generate the expected.png baselines; without it
+                # rendering is ~97% off. --no-sandbox also removes the need for an
+                # unprivileged user, and running as root lets the harness write
+                # actual.png into the root-owned /testbed. --log-level info surfaces
+                # passing cases ("<case>': ok"), the only positive evidence that an
+                # all-passing run actually executed, since the parser records only
+                # failures.
+                cmds.append(
+                    f'CI=1 {SET_PUPPETEER} {XVFB} npm run test-rendering -- --log-level info'
+                )
         elif test_type == "spec":
             cmds.append(f'{SET_PUPPETEER} {XVFB} su chromeuser -c "npm run karma -- --single-run --log-level error"')
         elif test_type == "node":
