@@ -1248,7 +1248,13 @@ INSTANCE_OVERRIDES = {
 # back to plain Chrome and cannot start its sandbox. Point the default at the launcher
 # instead; this avoids relaxing container seccomp, which breaks openlayers' WebGL tests.
 _ALIBABA_USE_NOSANDBOX_LAUNCHER = [
-    "sed -i \"s/browsers: \\['Chrome'\\]/browsers: ['ChromeTravis']/\" scripts/test/karma.js || true"
+    "sed -i \"s/browsers: \\['Chrome'\\]/browsers: ['ChromeTravis']/\" scripts/test/karma.js || true",
+    # A single-component run has runAll false, so karma gets singleRun: false and
+    # sits in watch mode forever after the tests pass, leaving the result dependent
+    # on a timeout killing it. Force only the config field -- rewriting the derived
+    # `singleRun` variable would also flip `autoWatch: !singleRun`, whose changed
+    # teardown timing makes cascader-select fail on a null focusInput.
+    "sed -i \"s/singleRun: singleRun,/singleRun: true,/\" scripts/test/karma.js || true",
 ]
 INSTANCE_OVERRIDES.update({
     f"alibaba-fusion__next-{n}": {"eval_pre": _ALIBABA_USE_NOSANDBOX_LAUNCHER}
