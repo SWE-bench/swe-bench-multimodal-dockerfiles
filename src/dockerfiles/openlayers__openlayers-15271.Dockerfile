@@ -91,7 +91,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_626558177aba
+RUN <<EOF_cd6563081e19
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/openlayers/openlayers && git fetch -q --depth 1 origin 58fbe6f122cf9e77d11e9587a9f075a06645d412 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/openlayers/openlayers /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard 58fbe6f122cf9e77d11e9587a9f075a06645d412
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci 58fbe6f122cf9e77d11e9587a9f075a06645d412)
+TARGET_EPOCH=$(git show -s --format=%ct 58fbe6f122cf9e77d11e9587a9f075a06645d412)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -112,7 +113,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_626558177aba
+EOF_cd6563081e19
 
 
 RUN <<EOF_69a7adc50a79

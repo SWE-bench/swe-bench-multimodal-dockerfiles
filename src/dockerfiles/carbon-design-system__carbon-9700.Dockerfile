@@ -88,7 +88,7 @@ python2 -V
 EOF_995e847fbbdd
 
 
-RUN <<EOF_e6cffbf58ba6
+RUN <<EOF_2e69350a7aff
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/carbon-design-system/carbon && git fetch -q --depth 1 origin be4e7704a400d6e55a59c960973060920481684d && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/carbon-design-system/carbon /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard be4e7704a400d6e55a59c960973060920481684d
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci be4e7704a400d6e55a59c960973060920481684d)
+TARGET_EPOCH=$(git show -s --format=%ct be4e7704a400d6e55a59c960973060920481684d)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -113,7 +114,7 @@ yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
 echo 'ruleArchive: 07Oct2020' > .achecker.yml
-EOF_e6cffbf58ba6
+EOF_2e69350a7aff
 
 
 RUN <<EOF_5df4bc5d550a

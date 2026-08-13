@@ -91,7 +91,7 @@ python2 -V
 EOF_4d2410c5ce08
 
 
-RUN <<EOF_5996f1ad9a31
+RUN <<EOF_f46a900f3055
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin 8f9bf8ee9b92d97e8d5a54e90343ee239c2ba350 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard 8f9bf8ee9b92d97e8d5a54e90343ee239c2ba350
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci 8f9bf8ee9b92d97e8d5a54e90343ee239c2ba350)
+TARGET_EPOCH=$(git show -s --format=%ct 8f9bf8ee9b92d97e8d5a54e90343ee239c2ba350)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -125,7 +126,7 @@ npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
 npm install react@16.7.0 react-dom@16.7.0 enzyme@3.8.0 enzyme-adapter-react-16@1.7.1 --save-exact
-EOF_5996f1ad9a31
+EOF_f46a900f3055
 
 
 RUN <<EOF_431cae3c4044

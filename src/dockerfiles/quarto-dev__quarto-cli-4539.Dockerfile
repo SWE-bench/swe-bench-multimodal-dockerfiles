@@ -91,7 +91,7 @@ python2 -V
 EOF_01667795d52d
 
 
-RUN <<EOF_74cc8932a378
+RUN <<EOF_2552ffba3b89
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/quarto-dev/quarto-cli && git fetch -q --depth 1 origin e4660ef375dd6d6b176301a52a0c73cf3ee775e2 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard e4660ef375dd6d6b176301a52a0c73cf3ee775e2
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci e4660ef375dd6d6b176301a52a0c73cf3ee775e2)
+TARGET_EPOCH=$(git show -s --format=%ct e4660ef375dd6d6b176301a52a0c73cf3ee775e2)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -150,7 +151,7 @@ pip3 install pexpect
 pip3 install ptyprocess
 pip3 install appnope
 pip3 install ipykernel
-EOF_74cc8932a378
+EOF_2552ffba3b89
 
 
 RUN <<EOF_1ad643a17763

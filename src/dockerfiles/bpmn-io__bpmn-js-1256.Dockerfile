@@ -88,7 +88,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_e8ea25dfa0f9
+RUN <<EOF_a7fbd5532c94
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/bpmn-io/bpmn-js && git fetch -q --depth 1 origin ccc9158ec8c403fb3410c9e2698f4eb7b8b338bc && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard ccc9158ec8c403fb3410c9e2698f4eb7b8b338bc
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci ccc9158ec8c403fb3410c9e2698f4eb7b8b338bc)
+TARGET_EPOCH=$(git show -s --format=%ct ccc9158ec8c403fb3410c9e2698f4eb7b8b338bc)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -109,7 +110,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_e8ea25dfa0f9
+EOF_a7fbd5532c94
 
 
 RUN <<EOF_24750bc98abf

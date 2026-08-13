@@ -88,7 +88,7 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_e585e7bbe2bf
+RUN <<EOF_6c806d334ada
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/GoogleChrome/lighthouse && git fetch -q --depth 1 origin bfcbc302cb3598c79ce9564993972eeb531bd2ff && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/GoogleChrome/lighthouse /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard bfcbc302cb3598c79ce9564993972eeb531bd2ff
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci bfcbc302cb3598c79ce9564993972eeb531bd2ff)
+TARGET_EPOCH=$(git show -s --format=%ct bfcbc302cb3598c79ce9564993972eeb531bd2ff)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -112,7 +113,7 @@ npm i -g yarn
 yarn
 yarn install-all
 yarn build-all
-EOF_e585e7bbe2bf
+EOF_6c806d334ada
 
 
 RUN <<EOF_227a75e05c13

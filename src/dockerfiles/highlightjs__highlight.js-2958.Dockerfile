@@ -88,7 +88,7 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_2a57a67ffe81
+RUN <<EOF_48f08ca47dc8
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/highlightjs/highlight.js && git fetch -q --depth 1 origin 006a478fb62b7b7928dbe9d2756cd76e56ee592c && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/highlightjs/highlight.js /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard 006a478fb62b7b7928dbe9d2756cd76e56ee592c
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci 006a478fb62b7b7928dbe9d2756cd76e56ee592c)
+TARGET_EPOCH=$(git show -s --format=%ct 006a478fb62b7b7928dbe9d2756cd76e56ee592c)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -110,7 +111,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 npm run build
-EOF_2a57a67ffe81
+EOF_48f08ca47dc8
 
 
 RUN <<EOF_2de566b59ca0

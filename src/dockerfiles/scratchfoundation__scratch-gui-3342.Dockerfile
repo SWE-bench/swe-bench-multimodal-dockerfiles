@@ -88,7 +88,7 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_b640b5af7852
+RUN <<EOF_52d990fae684
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/scratchfoundation/scratch-gui && git fetch -q --depth 1 origin a9f1e2ee3ba5e8564066102d3827bd3f1be13f15 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard a9f1e2ee3ba5e8564066102d3827bd3f1be13f15
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci a9f1e2ee3ba5e8564066102d3827bd3f1be13f15)
+TARGET_EPOCH=$(git show -s --format=%ct a9f1e2ee3ba5e8564066102d3827bd3f1be13f15)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -111,7 +112,7 @@ source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
-EOF_b640b5af7852
+EOF_52d990fae684
 
 
 RUN <<EOF_d546981e2275

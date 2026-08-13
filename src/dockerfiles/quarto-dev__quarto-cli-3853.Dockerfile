@@ -91,7 +91,7 @@ python2 -V
 EOF_01667795d52d
 
 
-RUN <<EOF_68244771f6aa
+RUN <<EOF_e97a9e77f2ab
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/quarto-dev/quarto-cli && git fetch -q --depth 1 origin fdfdd315475c4204c790be2ebe105ab4cfa15a34 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/quarto-dev/quarto-cli /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard fdfdd315475c4204c790be2ebe105ab4cfa15a34
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci fdfdd315475c4204c790be2ebe105ab4cfa15a34)
+TARGET_EPOCH=$(git show -s --format=%ct fdfdd315475c4204c790be2ebe105ab4cfa15a34)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -154,7 +155,7 @@ for b in /root/.TinyTeX/bin/*/*; do ln -sf "$b" /usr/local/bin/; done
 rm -f /usr/local/bin/tlmgr
 printf '#!/bin/sh\nexec "$(echo /root/.TinyTeX/bin/*)"/tlmgr --verify-repo=none "$@"\n' > /usr/local/bin/tlmgr && chmod 755 /usr/local/bin/tlmgr
 hash -r; tex_ver="$(xelatex --version)"; case "$tex_ver" in *"TeX Live 2024"*) echo "xelatex on PATH OK";; *) echo "xelatex not resolvable via PATH, got: $tex_ver"; exit 1;; esac
-EOF_68244771f6aa
+EOF_e97a9e77f2ab
 
 
 RUN <<EOF_e8e1cd40be80

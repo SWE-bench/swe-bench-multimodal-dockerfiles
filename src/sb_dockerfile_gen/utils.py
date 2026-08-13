@@ -48,14 +48,15 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
-        # Remove all future information (tags/branches/objects newer than base).
         f"TARGET_TIMESTAMP=$(git show -s --format=%ci {base_commit})",
-        # Delete every tag and branch: matches the multilingual generator, and is
-        # simpler than pruning by date (the previous `git tag -l | while read`
-        # form silently stopped after ~29 of 257 tags because a git command in
-        # the loop body consumed the piped stdin).
+        f"TARGET_EPOCH=$(git show -s --format=%ct {base_commit})",
+        # Delete refs newer than the base commit. Deleting *all* tags instead is
+        # simpler but breaks version derivation: setuptools_scm falls back to
+        # 0.1.dev..., which trips pytest's own `minversion` gate so no tests run.
+        # Use a for-loop, not `git tag -l | while read`: a git command in the loop
+        # body consumes the piped stdin, so that form silently stopped early.
+        'for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done',
         "git branch | grep -v '^\\*' | xargs -r git branch -D || true",
-        "git tag -l | xargs -r git tag -d",
         "git reflog expire --expire=now --all",
         # Physically drop the now-unreachable future commits; without this they
         # stay in the pack and are readable via git cat-file / fsck.

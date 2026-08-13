@@ -91,7 +91,7 @@ python2 -V
 EOF_482a6bebee46
 
 
-RUN <<EOF_d9771767d93a
+RUN <<EOF_72299be79edb
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/Automattic/wp-calypso && git fetch -q --depth 1 origin c73ce2eab8daebaeec5803c30427f2c91c8ef9c0 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/Automattic/wp-calypso /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard c73ce2eab8daebaeec5803c30427f2c91c8ef9c0
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci c73ce2eab8daebaeec5803c30427f2c91c8ef9c0)
+TARGET_EPOCH=$(git show -s --format=%ct c73ce2eab8daebaeec5803c30427f2c91c8ef9c0)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -112,7 +113,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install --unsafe-perm
-EOF_d9771767d93a
+EOF_72299be79edb
 
 
 RUN <<EOF_8d43a9c2839c

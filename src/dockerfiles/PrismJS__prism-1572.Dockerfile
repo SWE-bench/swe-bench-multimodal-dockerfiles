@@ -88,7 +88,7 @@ python2 -V
 EOF_9d96e99a759a
 
 
-RUN <<EOF_bce027ec1fb0
+RUN <<EOF_e5d013320c7e
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/PrismJS/prism && git fetch -q --depth 1 origin 225dd3f7316ad8a18454aee499795433656c1615 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/PrismJS/prism /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard 225dd3f7316ad8a18454aee499795433656c1615
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci 225dd3f7316ad8a18454aee499795433656c1615)
+TARGET_EPOCH=$(git show -s --format=%ct 225dd3f7316ad8a18454aee499795433656c1615)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -109,7 +110,7 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_bce027ec1fb0
+EOF_e5d013320c7e
 
 
 RUN <<EOF_593b237e9914

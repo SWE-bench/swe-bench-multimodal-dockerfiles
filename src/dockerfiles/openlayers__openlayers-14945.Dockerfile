@@ -91,7 +91,7 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_c6f5a73a6539
+RUN <<EOF_c1788b1e15c6
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/openlayers/openlayers && git fetch -q --depth 1 origin b210679c53af6162e968e15bb2d6ae6bbca957de && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/openlayers/openlayers /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard b210679c53af6162e968e15bb2d6ae6bbca957de
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci b210679c53af6162e968e15bb2d6ae6bbca957de)
+TARGET_EPOCH=$(git show -s --format=%ct b210679c53af6162e968e15bb2d6ae6bbca957de)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -113,7 +114,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" test/browser/karma.config.cjs
-EOF_c6f5a73a6539
+EOF_c1788b1e15c6
 
 
 RUN <<EOF_357a72f0c3ce

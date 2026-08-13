@@ -88,7 +88,7 @@ python2 -V
 EOF_df8f9cb8cc5e
 
 
-RUN <<EOF_f25f32da47ac
+RUN <<EOF_aa839aa7db8d
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/grommet/grommet && git fetch -q --depth 1 origin aaf8a69067010e1bb61428a409c7d8850872721d && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/grommet/grommet /testbed)
@@ -97,8 +97,9 @@ cd /testbed
 git reset --hard aaf8a69067010e1bb61428a409c7d8850872721d
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci aaf8a69067010e1bb61428a409c7d8850872721d)
+TARGET_EPOCH=$(git show -s --format=%ct aaf8a69067010e1bb61428a409c7d8850872721d)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -110,7 +111,7 @@ git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm i -g yarn
 yarn install
-EOF_f25f32da47ac
+EOF_aa839aa7db8d
 
 
 RUN <<EOF_904973c27b05

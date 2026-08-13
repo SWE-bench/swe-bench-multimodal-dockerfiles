@@ -91,7 +91,7 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_7c9634565201
+RUN <<EOF_052315db1359
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin a8e07e3816b7c754d420d9072829784aa4b96aa1 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard a8e07e3816b7c754d420d9072829784aa4b96aa1
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci a8e07e3816b7c754d420d9072829784aa4b96aa1)
+TARGET_EPOCH=$(git show -s --format=%ct a8e07e3816b7c754d420d9072829784aa4b96aa1)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -117,7 +118,7 @@ npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
-EOF_7c9634565201
+EOF_052315db1359
 
 
 RUN <<EOF_e297f9f50ddc

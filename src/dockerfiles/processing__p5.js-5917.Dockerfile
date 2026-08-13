@@ -91,7 +91,7 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_427078012e36
+RUN <<EOF_5a830abe9791
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/processing/p5.js && git fetch -q --depth 1 origin ce831a839b6ab8792adc31cdf1942ea89d69e29b && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/processing/p5.js /testbed)
@@ -100,8 +100,9 @@ cd /testbed
 git reset --hard ce831a839b6ab8792adc31cdf1942ea89d69e29b
 git remote remove origin
 TARGET_TIMESTAMP=$(git show -s --format=%ci ce831a839b6ab8792adc31cdf1942ea89d69e29b)
+TARGET_EPOCH=$(git show -s --format=%ct ce831a839b6ab8792adc31cdf1942ea89d69e29b)
+for tag in $(git tag -l); do TAG_EPOCH=$(git log -1 --format=%ct "$tag" 2>/dev/null || echo 0); if [ "${TAG_EPOCH:-0}" -gt "$TARGET_EPOCH" ]; then git tag -d "$tag" >/dev/null 2>&1 || true; fi; done
 git branch | grep -v '^\*' | xargs -r git branch -D || true
-git tag -l | xargs -r git tag -d
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
@@ -114,7 +115,7 @@ source $NVM_DIR/nvm.sh
 npm install
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js
 ./node_modules/.bin/grunt yui
-EOF_427078012e36
+EOF_5a830abe9791
 
 
 RUN <<EOF_5bc1b5f6b6f0
