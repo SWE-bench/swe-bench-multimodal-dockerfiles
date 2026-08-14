@@ -1,3 +1,62 @@
+# Changelog
+
+- **[2026-08-14] Skip puppeteer's Chrome download**: puppeteer v20+ ignores
+  `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` and runs `install.mjs`, which hung indefinitely
+  fetching Chrome; added `PUPPETEER_SKIP_DOWNLOAD=true`. All openlayers 15xxx instances
+  (the build path only; the eval path already set both names).
+- **[2026-08-14] Full git history for lighthouse**: the depth-1 fetch leaves no tag, so the
+  build's `git describe` version stamp failed. Cloning full history restores it; its .git is
+  399MB (48MB after gc), unlike carbon's 7.8GB, and the existing date-based prune + gc still
+  guarantees zero future commits. `GoogleChrome__lighthouse-14479`, `-14515`, `-14587`,
+  `-14672`, `-14800`, `-15054`, `-15092`, and `-5084` (whose tests read the stamped version).
+- **[2026-08-14] chmod after the git reset, and again after install**: `chmod -R 777` ran
+  before `git reset --hard`, so restored files stayed root-owned 0644 and npm could not
+  rewrite a committed `package-lock.json`; install/build also leave root-owned artifacts
+  while tests run as chromeuser. `alibaba-fusion__next-4806`, `-4859`.
+- **[2026-08-14] Pin Chrome 120 for one openlayers instance**: google-chrome-stable is
+  unpinned, so rebuilds pick up the current release; Chrome 151 broke WebGL
+  (`getSupportedExtensions()` undefined). `openlayers__openlayers-11545`.
+- **[2026-08-14] Pre-create a writable build dir**: the eval script re-syncs dependencies as
+  root before dropping to chromeuser, leaving a root-owned `/testbed/build` that fails the
+  later `mkdir build/ol`. `openlayers__openlayers-14932`.
+- **[2026-08-14] Move one eslint instance to node 22**: re2 has no prebuilt for node 21's ABI
+  (404) and resolves its own node-gyp 13 internally, which needs an API added in node 22;
+  env vars and .bin shims are ignored. Added per-instance `docker_specs`/`install` overrides
+  so its 10 siblings keep their node versions. `eslint__eslint-17618`.
+
+## Known issues
+
+- `alibaba-fusion__next-4806`, `-4859` build but fail gold eval: Cypress 13.6.1 reports
+  "browser never connected" / "Missing browserCriClient". Chrome launches fine standalone in
+  the image, so the failure is in Cypress's CDP handshake; not diagnosed further.
+- Chrome is installed unpinned from google-chrome-stable, so any rebuild can pick up a Chrome
+  that breaks browser-driven tests. Only the two instances above are pinned today.
+- prism-1853/-2348 and carbon-7350 pass at low eval parallelism but can fail at `-j 10`:
+  markers are emitted as `set -x` traces on stderr while test output is buffered stdout, so
+  the JSON can land outside the Start/End markers. Images are correct; the fix would be
+  `set +x` plus real `echo` markers.
+
+- **[2026-08-13] Run openlayers rendering tests headless as root**: they ran via
+  `su chromeuser` with `CI` unset, so puppeteer launched non-headless without
+  `--no-sandbox` and rendering came out ~97% off the expected.png baselines; added
+  `CI=1`, `--headless` and `--log-level info` (which also makes passing cases visible).
+  53 `openlayers__openlayers-*` instances.
+- **[2026-08-13] Force karma singleRun for alibaba-fusion**: `singleRun` derived from
+  `runAll`, so single-component runs sat in watch mode after passing and only ended when
+  a timeout killed them, making results depend on machine speed. 39
+  `alibaba-fusion__next-*` instances.
+- **[2026-08-13] Remove future commits reliably when cloning**: the tag prune stopped
+  early because a git call inside `git tag -l | while read` consumed the piped stdin,
+  leaving 3,729 future commits reachable via tags; switched to a `for` loop plus
+  `git gc --prune=now` and a build-time assertion. All instances.
+- **[2026-08-13] Mirror binary patch assets**: `image_assets` pointed only at
+  `raw.githubusercontent.com`, so evaluation depended on that host and nothing fetched
+  them at all; the 135 test_patch/patch files now live in `src/assets/<instance_id>/<path>`
+  with the urls as fallback. 56 instances (126 files), plus 9 in one patch.
+- **[2026-08-13] Deprecate two unfixable openlayers instances**: graded rendering cases
+  fail at mismatch 0.000-0.001 against `tolerance = 0`, which needs the GPU/driver that
+  produced the committed baselines. `openlayers__openlayers-9333`, `-9389`.
+
 # SWE-bench Multimodal v2
 
 *2026-08-11*
