@@ -22,13 +22,21 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && apt-get -y autoclean \
     && rm -rf /var/lib/apt/lists/*
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
+RUN apt-get update \
+    && apt-get install -y fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg \
         fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
         --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
+# Pin Chrome. The apt repo only ever serves the current stable, so an unpinned install
+# silently changes version on every rebuild -- Chrome 151 broke openlayers' WebGL and
+# Cypress's browser connection that way. Chrome for Testing archives every build, so this
+# stays reproducible. Keep both binary names: 160 eval scripts reference one or the other.
+RUN wget -q https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.137/linux64/chrome-linux64.zip -O /tmp/chrome.zip \
+    && unzip -q /tmp/chrome.zip -d /opt/chrome-pinned \
+    && rm /tmp/chrome.zip \
+    && printf '#!/bin/bash\nexec /opt/chrome-pinned/chrome-linux64/chrome "$@"\n' > /usr/bin/google-chrome \
+    && chmod +x /usr/bin/google-chrome \
+    && cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 
 ENV NVM_DIR /usr/local/nvm
 
