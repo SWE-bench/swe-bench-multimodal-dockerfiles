@@ -7,6 +7,9 @@ CONTAINER_WORKDIR = "/testbed"
 
 REPO_BASE_COMMIT_BRANCH: dict[str, dict[str, str]] = {}
 
+# The Chrome the 2026-08-14 images were built and verified against.
+PINNED_CHROME_VERSION = "151.0.7922.137"
+
 START_TEST_OUTPUT = ">>>>> Start Test Output"
 END_TEST_OUTPUT = ">>>>> End Test Output"
 
