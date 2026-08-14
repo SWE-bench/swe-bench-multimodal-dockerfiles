@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,11 +90,10 @@ python2 -V
 EOF_9d96e99a759a
 
 
-RUN <<EOF_cb1c1642bdc8
+RUN <<EOF_e890c1570b94
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/PrismJS/prism && git fetch -q --depth 1 origin 11695629f12925c586702453beaee5f4825d0ebd && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/PrismJS/prism /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 11695629f12925c586702453beaee5f4825d0ebd
 git remote remove origin
@@ -105,12 +106,14 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_cb1c1642bdc8
+chmod -R 777 /testbed
+EOF_e890c1570b94
 
 
 RUN <<EOF_79f0ac730f4b

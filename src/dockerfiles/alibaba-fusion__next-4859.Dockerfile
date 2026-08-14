@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,11 +93,10 @@ python2 -V
 EOF_55f960f4ac15
 
 
-RUN <<EOF_d16795bb56be
+RUN <<EOF_1202dd9e3331
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin 56f9fa2b426e4212cb43f6d7f78d51c6c17becc8 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 56f9fa2b426e4212cb43f6d7f78d51c6c17becc8
 git remote remove origin
@@ -108,6 +109,7 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -122,7 +124,11 @@ cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
 sed -i "s|process.env.CHROME_BIN = require('puppeteer').executablePath();|process.env.CHROME_BIN = '/usr/bin/google-chrome-stable';|" scripts/test/karma.js
 su chromeuser -c 'npm install'
 CYPRESS_CACHE_FOLDER=/home/chromeuser/.cache/Cypress npx cypress install && chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress
-EOF_d16795bb56be
+printf '#!/bin/bash\nexec /opt/chrome-linux64/chrome --no-sandbox --disable-dev-shm-usage "$@"\n' > /usr/bin/google-chrome
+chmod +x /usr/bin/google-chrome
+cp /usr/bin/google-chrome /usr/bin/google-chrome-stable
+chmod -R 777 /testbed
+EOF_1202dd9e3331
 
 
 RUN <<EOF_4136b558d71e

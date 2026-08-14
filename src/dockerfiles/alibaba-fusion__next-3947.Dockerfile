@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -91,11 +93,10 @@ python2 -V
 EOF_2934b9866891
 
 
-RUN <<EOF_e25cfcf2e99f
+RUN <<EOF_8cfa24cb996f
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/alibaba-fusion/next && git fetch -q --depth 1 origin 9b407583705b5b30c6a32d408554f6957992c0a4 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/alibaba-fusion/next /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 9b407583705b5b30c6a32d408554f6957992c0a4
 git remote remove origin
@@ -108,6 +109,7 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -118,7 +120,8 @@ npm install babel-preset-es2015
 npm install cheerio@1.0.0-rc.3
 npm i sass@1.36.0 --save-exact
 npm show cheerio
-EOF_e25cfcf2e99f
+chmod -R 777 /testbed
+EOF_8cfa24cb996f
 
 
 RUN <<EOF_faba4e0161a7

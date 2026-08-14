@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,11 +90,10 @@ python2 -V
 EOF_602599b66b13
 
 
-RUN <<EOF_364b8a53cd55
+RUN <<EOF_c1462125a840
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/carbon-design-system/carbon && git fetch -q --depth 1 origin 5fcbf46eaa04d921a453acf52ccac01f6cc5d0d6 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/carbon-design-system/carbon /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 5fcbf46eaa04d921a453acf52ccac01f6cc5d0d6
 git remote remove origin
@@ -105,6 +106,7 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -114,7 +116,8 @@ yarn install
 yarn build
 wget -q https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz && tar xzf nwsapi-2.2.7.tgz -C node_modules/nwsapi --strip-components=1 && rm nwsapi-2.2.7.tgz
 echo 'ruleArchive: 07Oct2020' > .achecker.yml
-EOF_364b8a53cd55
+chmod -R 777 /testbed
+EOF_c1462125a840
 
 
 RUN <<EOF_dbd294682418

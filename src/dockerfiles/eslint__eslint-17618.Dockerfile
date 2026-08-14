@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -62,14 +64,14 @@ WORKDIR /home/chromeuser
 
 USER root
 
-ENV NODE_VERSION 21.6.2
+ENV NODE_VERSION 22.11.0
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 
-RUN <<EOF_df8f9cb8cc5e
+RUN <<EOF_27f26ae3c042
 #!/bin/bash
 set -euxo pipefail
-export NODE_VERSION=21.6.2
+export NODE_VERSION=22.11.0
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION
@@ -79,20 +81,19 @@ apt-get update
 apt-get install -y python3.9
 ln -sf /usr/bin/python3.9 /usr/bin/python
 apt-get install -y python2
-echo "export NODE_PATH=$NVM_DIR/v21.6.2/lib/node_modules" >> /etc/environment
-echo "export PATH=$NVM_DIR/versions/node/v21.6.2/bin:$PATH" >> /etc/environment
+echo "export NODE_PATH=$NVM_DIR/v22.11.0/lib/node_modules" >> /etc/environment
+echo "export PATH=$NVM_DIR/versions/node/v22.11.0/bin:$PATH" >> /etc/environment
 source $NVM_DIR/nvm.sh && node -v
 source $NVM_DIR/nvm.sh && npm -v
 python -V
 python2 -V
-EOF_df8f9cb8cc5e
+EOF_27f26ae3c042
 
 
-RUN <<EOF_357fb27ed02e
+RUN <<EOF_5092558e2a23
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/eslint/eslint && git fetch -q --depth 1 origin 2665552ba0057e8603f9fbece0fd236f189f5cf3 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/eslint/eslint /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 2665552ba0057e8603f9fbece0fd236f189f5cf3
 git remote remove origin
@@ -105,12 +106,14 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_357fb27ed02e
+chmod -R 777 /testbed
+EOF_5092558e2a23
 
 
 RUN <<EOF_232e89715abd

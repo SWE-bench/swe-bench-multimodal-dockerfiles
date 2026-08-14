@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,11 +90,10 @@ python2 -V
 EOF_34e7d255ba3f
 
 
-RUN <<EOF_5fa65a799d2a
+RUN <<EOF_f45bbfc64bb0
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/bpmn-io/bpmn-js && git fetch -q --depth 1 origin cdc0894012916c7adf2202fb515679f97cddd41c && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/bpmn-io/bpmn-js /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard cdc0894012916c7adf2202fb515679f97cddd41c
 git remote remove origin
@@ -105,12 +106,14 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-EOF_5fa65a799d2a
+chmod -R 777 /testbed
+EOF_f45bbfc64bb0
 
 
 RUN <<EOF_efe9ca0ea83c

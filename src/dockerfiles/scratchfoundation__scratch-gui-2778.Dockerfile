@@ -52,6 +52,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -88,11 +90,10 @@ python2 -V
 EOF_9505c708a4ec
 
 
-RUN <<EOF_a2905de6237d
+RUN <<EOF_911351c35456
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/scratchfoundation/scratch-gui && git fetch -q --depth 1 origin 63c189e531ac5a5a17bbae959eb1048ae425b6ac && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/scratchfoundation/scratch-gui /testbed)
-chmod -R 777 /testbed
 cd /testbed
 git reset --hard 63c189e531ac5a5a17bbae959eb1048ae425b6ac
 git remote remove origin
@@ -105,6 +106,7 @@ git gc --prune=now --aggressive
 AFTER_TIMESTAMP=$(date -d "$TARGET_TIMESTAMP + 1 second" '+%Y-%m-%d %H:%M:%S')
 COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)
 [ "$COMMIT_COUNT" -eq 0 ] || exit 1
+chmod -R 777 /testbed
 cd - || true
 cd /testbed
 git clean -fdxq
@@ -112,7 +114,8 @@ source $NVM_DIR/nvm.sh
 npm install
 npm install cheerio@1.0.0-rc.3
 npm show cheerio
-EOF_a2905de6237d
+chmod -R 777 /testbed
+EOF_911351c35456
 
 
 RUN <<EOF_40623a6ed1b6
