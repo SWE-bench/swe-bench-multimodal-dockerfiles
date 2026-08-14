@@ -70,6 +70,8 @@ ENV DBUS_SESSION_BUS_ADDRESS="unix:path=/run/dbus/system_bus_socket"
 RUN dbus-daemon --system --fork
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# puppeteer v20+ renamed the variable; without it install.mjs hangs fetching Chrome
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV OPENSSL_CONF /etc/ssl
 
 RUN useradd -m chromeuser
@@ -86,7 +88,10 @@ USER root
 
 
 def make_env_script_list(instance, specs):
-    docker_specs = specs.get("docker_specs", {})
+    docker_specs = {
+        **specs.get("docker_specs", {}),
+        **INSTANCE_OVERRIDES.get(instance["instance_id"], {}).get("docker_specs", {}),
+    }
     node_version = docker_specs.get("node_version", "18.17.1")
     pnpm_version = docker_specs.get("pnpm_version", None)
     python_version = docker_specs.get("python_version", "3.9")
@@ -145,7 +150,11 @@ def make_repo_script_list(specs, repo, base_commit, instance_id=None):
         "git clean -fdxq",
     ]
     commands.append("source $NVM_DIR/nvm.sh")
-    if "install" in specs:
+    commands.extend(INSTANCE_OVERRIDES.get(instance_id, {}).get("install_pre", []))
+    override_install = INSTANCE_OVERRIDES.get(instance_id, {}).get("install")
+    if override_install:
+        commands.extend(override_install)
+    elif "install" in specs:
         install_commands = specs["install"]
         if isinstance(install_commands, str):
             install_commands = [install_commands]
@@ -156,6 +165,10 @@ def make_repo_script_list(specs, repo, base_commit, instance_id=None):
             build_commands = [build_commands]
         commands.extend(build_commands)
     commands.extend(INSTANCE_OVERRIDES.get(instance_id, {}).get("install_post", []))
+    # install/build run as root and leave root-owned artifacts (e.g. openlayers' build/),
+    # but the eval script runs the tests as chromeuser. chmod again at the very end so
+    # those directories stay writable.
+    commands.append(f"chmod -R 777 {CONTAINER_WORKDIR}")
     return make_heredoc_run_command(commands)
 
 
@@ -239,7 +252,12 @@ def _get_dockerfile(instance) -> str:
     base_commit = instance["base_commit"]
     specs = MAP_REPO_VERSION_TO_SPECS_JS[repo][version]
     dockerfile = _DOCKERFILE_BASE_JS
-    docker_specs = specs.get("docker_specs", {})
+    # per-instance docker_specs win over the repo/version spec, so one instance can move
+    # off a shared node version without disturbing its siblings
+    docker_specs = {
+        **specs.get("docker_specs", {}),
+        **INSTANCE_OVERRIDES.get(instance["instance_id"], {}).get("docker_specs", {}),
+    }
     node_version = docker_specs.get("node_version", "18.17.1")
     pnpm_version = docker_specs.get("pnpm_version", None)
     dockerfile += f"\nENV NODE_VERSION {node_version}\n"

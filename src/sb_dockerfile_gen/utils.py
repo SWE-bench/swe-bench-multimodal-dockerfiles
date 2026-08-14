@@ -35,16 +35,23 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         # committed artifacts into the image -- carbon's .git alone is 7.8GB of a 9.2GB
         # /testbed because Yarn zero-installs commits dependency zips. Falls back to a
         # full clone if the host refuses a by-SHA fetch.
-        clone_cmd = (
-            f"(mkdir -p {workdir} && cd {workdir} && git init -q . "
-            f"&& git remote add origin https://github.com/{repo} "
-            f"&& git fetch -q --depth 1 origin {base_commit} "
-            f"&& git reset -q --hard FETCH_HEAD) "
-            f"|| (rm -rf {workdir} && git clone -o origin https://github.com/{repo} {workdir})"
-        )
+        # lighthouse's build stamps a version via `git describe`, which needs a tag
+        # reachable from HEAD. A shallow fetch has no such tag (the nearest is ~300
+        # commits back) and separately fetched tags land on their own shallow
+        # branches, so only full history works. Its .git is 399MB, unlike carbon's
+        # 7.8GB. The prune below still drops every tag newer than the base commit.
+        if repo == "GoogleChrome/lighthouse":
+            clone_cmd = f"git clone -o origin https://github.com/{repo} {workdir}"
+        else:
+            clone_cmd = (
+                f"(mkdir -p {workdir} && cd {workdir} && git init -q . "
+                f"&& git remote add origin https://github.com/{repo} "
+                f"&& git fetch -q --depth 1 origin {base_commit} "
+                f"&& git reset -q --hard FETCH_HEAD) "
+                f"|| (rm -rf {workdir} && git clone -o origin https://github.com/{repo} {workdir})"
+            )
     return [
         clone_cmd,
-        f"chmod -R 777 {workdir}",
         f"cd {workdir}",
         f"git reset --hard {base_commit}",
         "git remote remove origin",
@@ -66,6 +73,10 @@ def git_clone_timesafe(repo: str, base_commit: str, workdir: str) -> list[str]:
         "AFTER_TIMESTAMP=$(date -d \"$TARGET_TIMESTAMP + 1 second\" '+%Y-%m-%d %H:%M:%S')",
         'COMMIT_COUNT=$(git log --oneline --all --since="$AFTER_TIMESTAMP" | wc -l)',
         '[ "$COMMIT_COUNT" -eq 0 ] || exit 1',
+        # chmod last: `git reset --hard` above re-creates working-tree files as
+        # root-owned 0644, so chmod'ing before it left committed lockfiles
+        # unwritable by chromeuser and npm install failed with EACCES.
+        f"chmod -R 777 {workdir}",
         "cd - || true",
     ]
 

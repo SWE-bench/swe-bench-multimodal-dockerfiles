@@ -1256,6 +1256,33 @@ _ALIBABA_USE_NOSANDBOX_LAUNCHER = [
     # teardown timing makes cascader-select fail on a null focusInput.
     "sed -i \"s/singleRun: singleRun,/singleRun: true,/\" scripts/test/karma.js || true",
 ]
+# Chrome is installed unpinned from google-chrome-stable, so its version drifts upward on
+# every rebuild. Chrome 151 breaks these two Heatmap/WebGL tests (getSupportedExtensions
+# returns undefined); they passed under the older Chrome present in the previous build.
+# Pin the same Chrome for Testing build already used for openlayers v7.4.
+INSTANCE_OVERRIDES.update({
+    f"openlayers__openlayers-{n}": {"install_pre": _CHROME_120_INSTALL}
+    for n in (11545, 14932)
+})
+
+# eslint 17618 builds native re2 from source; the bundled node-gyp 13 loads an undici
+# calling webidl.util.markAsUncloneable, which node 21.6.2 lacks. Pin a node-gyp that
+# supports this node.
+# re2 has no prebuilt for node 21's ABI (linux-x64-120 is a 404), so it must build from
+# source, and the hoisted node-gyp 13 crashes on node 21. re2 invokes its own local
+# node-gyp, ignoring npm_config_node_gyp, so install deps without scripts first, swap in
+# a node-gyp that supports this node, then run the native builds.
+INSTANCE_OVERRIDES.update({
+    "eslint__eslint-17618": {
+        # re2 has no prebuilt for node 21's ABI and resolves its own node-gyp 13
+        # internally (ignoring npm_config_node_gyp and the .bin shim), and node-gyp 13
+        # needs an API added in node 22. Move this instance to node 22, which eslint of
+        # this era supports, so the source build succeeds.
+        "docker_specs": {"node_version": "22.11.0"},
+        "install": ["npm install"]
+    }
+})
+
 INSTANCE_OVERRIDES.update({
     f"alibaba-fusion__next-{n}": {"eval_pre": _ALIBABA_USE_NOSANDBOX_LAUNCHER}
     for n in ALIBABA_FUSION_INSTANCES
@@ -1322,3 +1349,23 @@ MAP_REPO_VERSION_TO_SPECS_JS = {
     "quarto-dev/quarto-cli": SPECS_QUARTOCLI,
     "scratchfoundation/scratch-gui": SPECS_SCRATCH,
 }
+
+# The eval script re-syncs dependencies as root before dropping to chromeuser, which
+# creates a root-owned /testbed/build; the later `shx mkdir -p build/ol` then fails with
+# permission denied. eval_script lives in the dataset, so pre-create the directory
+# world-writable at build time instead.
+INSTANCE_OVERRIDES.setdefault("openlayers__openlayers-14932", {})["install_post"] = [
+    "mkdir -p /testbed/build",
+    "chmod 777 /testbed/build",
+]
+
+# Chrome dies on the container's 64MB /dev/shm, which Cypress reports only as "browser
+# never connected". Rewrite the pinned-Chrome wrapper for these two instances to disable
+# shm usage; scoped so the other 1.27 instances that pass are untouched.
+for _n in (4806, 4859):
+    INSTANCE_OVERRIDES.setdefault(f"alibaba-fusion__next-{_n}", {})["install_post"] = [
+        "printf '#!/bin/bash\\nexec /opt/chrome-linux64/chrome --no-sandbox"
+        " --disable-dev-shm-usage \"$@\"\\n' > /usr/bin/google-chrome",
+        "chmod +x /usr/bin/google-chrome",
+        "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
+    ]
