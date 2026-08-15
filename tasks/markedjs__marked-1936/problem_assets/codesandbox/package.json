@@ -1,0 +1,23 @@
+{
+  "name": "markedjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html"
+  },
+  "dependencies": {
+    "lodash": "4.17.20",
+    "marked": "1.2.8",
+    "remark": "13.0.0",
+    "remark-html": "13.0.1",
+    "string.prototype.matchall": "4.0.3",
+    "yaml": "1.10.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.2.0",
+    "parcel-bundler": "^1.6.1"
+  },
+  "keywords": []
+}

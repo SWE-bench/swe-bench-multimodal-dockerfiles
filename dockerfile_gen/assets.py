@@ -9,7 +9,7 @@ being reachable years later. Assets live at ``tasks/<instance_id>/assets/<path>`
 mirroring where they land in the repository under test.
 
 The images a problem statement links to are mirrored too, at
-``tasks/<instance_id>/problem_images/<n>-<name>``, where ``n`` is the entry's
+``tasks/<instance_id>/problem_assets/<n>-<name>``, where ``n`` is the entry's
 position in ``image_assets.problem_statement``. The harness never reads them:
 they are the pictures a model is shown, and issue hosts do not keep urls alive
 forever. The index prefix keeps them ordered and distinct, since 19 instances
@@ -30,19 +30,29 @@ from urllib.parse import urlparse
 from .tasks import TASKS_DIR, load_task, task_dirs
 
 TIMEOUT = 60
-PROBLEM_IMAGES_DIR = "problem_images"
+PROBLEM_ASSETS_DIR = "problem_assets"
 # a dead url often answers 200 with a login or error page, so check what arrived
 IMAGE_MAGIC = (b"\x89PNG", b"\xff\xd8", b"GIF8", b"RIFF", b"<svg", b"\x00\x00\x01\x00")
 
 
-def _entries(instance: dict) -> list[dict]:
-    """The assets staged at eval time, which is only the test_patch ones.
+# the kinds the harness stages into the container, and where they are kept
+STAGED_KINDS = ("test_patch", "patch")
+TEST_ASSETS_DIR = "test_assets"
 
-    problem_statement assets are model-facing images in the issue text; they are
-    never placed in the container, so there is nothing to mirror.
+
+def _entries(instance: dict) -> list[dict]:
+    """The assets staged at eval time: both test_patch and patch binaries.
+
+    problem_statement assets go to problem_assets/ instead; they are the pictures
+    a model is shown, never placed in the container.
     """
     assets = instance.get("image_assets") or {}
-    return [e for e in assets.get("test_patch") or [] if e.get("path") and e.get("url")]
+    return [
+        e
+        for kind in STAGED_KINDS
+        for e in assets.get(kind) or []
+        if isinstance(e, dict) and e.get("path") and e.get("url")
+    ]
 
 
 def _problem_image_targets(task_dir: Path, instance: dict) -> list[tuple[Path, str]]:
@@ -54,7 +64,7 @@ def _problem_image_targets(task_dir: Path, instance: dict) -> list[tuple[Path, s
         if not url:
             continue
         name = PurePosixPath(urlparse(url).path).name or "image"
-        targets.append((task_dir / PROBLEM_IMAGES_DIR / f"{i}-{name}", url))
+        targets.append((task_dir / PROBLEM_ASSETS_DIR / f"{i}-{name}", url))
     return targets
 
 
@@ -81,7 +91,7 @@ def fetch_assets(
             continue
         instance = load_task(task_dir)
         for entry in _entries(instance):
-            dest = task_dir / "assets" / entry["path"]
+            dest = task_dir / TEST_ASSETS_DIR / entry["path"]
             if dest.is_file() and not force:
                 skipped += 1
                 continue

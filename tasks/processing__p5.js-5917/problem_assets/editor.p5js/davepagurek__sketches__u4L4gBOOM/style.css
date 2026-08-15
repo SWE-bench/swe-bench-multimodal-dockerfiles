@@ -1,0 +1,37 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+canvas {
+  display: block;
+}
+body {
+  background-color: blue;
+}
+
+#outer {
+  background-color: black;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#inner {
+  display: block;
+  background-color: red;
+  opacity: 0.5;
+  width: 80px;
+  height: 80px;
+}
+#inner2 {
+  display: block;
+  background-color: red;
+  opacity: 0.5;
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  top: 40px;
+  left: 40px;
+}
