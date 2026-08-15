@@ -8,6 +8,13 @@ Keeping a copy with the task means an evaluation does not depend on a url still
 being reachable years later. Assets live at ``tasks/<instance_id>/assets/<path>``,
 mirroring where they land in the repository under test.
 
+The images a problem statement links to are mirrored too, at
+``tasks/<instance_id>/problem_images/<n>-<name>``, where ``n`` is the entry's
+position in ``image_assets.problem_statement``. The harness never reads them:
+they are the pictures a model is shown, and issue hosts do not keep urls alive
+forever. The index prefix keeps them ordered and distinct, since 19 instances
+link to different images that share a filename.
+
     python -m dockerfile_gen.assets                 # fetch whatever is missing
     python -m dockerfile_gen.assets --force         # re-download everything
     python -m dockerfile_gen.assets -i <instance_id>
@@ -17,11 +24,15 @@ from __future__ import annotations
 
 import urllib.request
 from argparse import ArgumentParser
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from urllib.parse import urlparse
 
 from .tasks import TASKS_DIR, load_task, task_dirs
 
 TIMEOUT = 60
+PROBLEM_IMAGES_DIR = "problem_images"
+# a dead url often answers 200 with a login or error page, so check what arrived
+IMAGE_MAGIC = (b"\x89PNG", b"\xff\xd8", b"GIF8", b"RIFF", b"<svg", b"\x00\x00\x01\x00")
 
 
 def _entries(instance: dict) -> list[dict]:
@@ -32,6 +43,28 @@ def _entries(instance: dict) -> list[dict]:
     """
     assets = instance.get("image_assets") or {}
     return [e for e in assets.get("test_patch") or [] if e.get("path") and e.get("url")]
+
+
+def _problem_image_targets(task_dir: Path, instance: dict) -> list[tuple[Path, str]]:
+    """Where each problem-statement image is kept, and the url it came from."""
+    entries = (instance.get("image_assets") or {}).get("problem_statement") or []
+    targets = []
+    for i, entry in enumerate(entries):
+        url = entry if isinstance(entry, str) else entry.get("url", "")
+        if not url:
+            continue
+        name = PurePosixPath(urlparse(url).path).name or "image"
+        targets.append((task_dir / PROBLEM_IMAGES_DIR / f"{i}-{name}", url))
+    return targets
+
+
+def _download(url: str, dest: Path, expect_image: bool = True) -> None:
+    with urllib.request.urlopen(url, timeout=TIMEOUT) as resp:
+        data = resp.read()
+    if expect_image and not data.lstrip()[:8].startswith(IMAGE_MAGIC):
+        raise ValueError(f"not an image, got {data.lstrip()[:16]!r}")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(data)
 
 
 def fetch_assets(
@@ -46,18 +79,27 @@ def fetch_assets(
     for task_dir in task_dirs(tasks_dir):
         if wanted and task_dir.name not in wanted:
             continue
-        for entry in _entries(load_task(task_dir)):
+        instance = load_task(task_dir)
+        for entry in _entries(instance):
             dest = task_dir / "assets" / entry["path"]
             if dest.is_file() and not force:
                 skipped += 1
                 continue
-            dest.parent.mkdir(parents=True, exist_ok=True)
             try:
-                with urllib.request.urlopen(entry["url"], timeout=TIMEOUT) as resp:
-                    dest.write_bytes(resp.read())
+                _download(entry["url"], dest)
                 fetched += 1
             except Exception as e:  # noqa: BLE001 - report every failure, keep going
                 failed.append(f"{task_dir.name} {entry['path']}: {type(e).__name__} {e}")
+
+        for dest, url in _problem_image_targets(task_dir, instance):
+            if dest.is_file() and not force:
+                skipped += 1
+                continue
+            try:
+                _download(url, dest)
+                fetched += 1
+            except Exception as e:  # noqa: BLE001 - a dead url is worth reporting, not fatal
+                failed.append(f"{task_dir.name} {dest.name}: {type(e).__name__} {e}")
     return fetched, skipped, failed
 
 
