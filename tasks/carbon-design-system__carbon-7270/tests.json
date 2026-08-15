@@ -1,0 +1,10 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/Dropdown/Dropdown-test.js",
+    "packages/react/src/components/MultiSelect/__tests__/MultiSelect-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/MultiSelect/__tests__/FilterableMultiSelect-test.js",
+    "packages/react/src/components/MultiSelect/tools/__tests__/sorting-test.js"
+  ]
+}

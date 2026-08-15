@@ -1,0 +1,25 @@
+base_commit: 3e216edbe8f928c45ecdb3a41075ef2e9d234a2f
+created_at: '2022-01-10T19:39:42Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13212:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-tile-multisource/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/75f66757ef6a46be50513c40a3cc022026d8e5c2/test/rendering/cases/webgl-tile-multisource/expected.png
+  - path: test/rendering/data/tiles/osm/1/0/0.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/75f66757ef6a46be50513c40a3cc022026d8e5c2/test/rendering/data/tiles/osm/1/0/0.png
+  - path: test/rendering/data/tiles/osm/1/0/1.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/75f66757ef6a46be50513c40a3cc022026d8e5c2/test/rendering/data/tiles/osm/1/0/1.png
+  - path: test/rendering/data/tiles/osm/1/1/0.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/75f66757ef6a46be50513c40a3cc022026d8e5c2/test/rendering/data/tiles/osm/1/1/0.png
+  - path: test/rendering/data/tiles/osm/1/1/1.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/75f66757ef6a46be50513c40a3cc022026d8e5c2/test/rendering/data/tiles/osm/1/1/1.png
+instance_id: openlayers__openlayers-13212
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.12'

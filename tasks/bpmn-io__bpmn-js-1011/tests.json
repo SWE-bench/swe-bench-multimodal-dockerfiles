@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/rules - BpmnRules groups should resize Group ",
+    "import - groups should import groups with frame property set "
+  ],
+  "PASS_TO_PASS": []
+}

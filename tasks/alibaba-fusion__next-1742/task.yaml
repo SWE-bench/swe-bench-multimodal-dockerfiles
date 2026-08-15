@@ -1,0 +1,16 @@
+base_commit: 10c384abfed652cc73b404f3c02294418d718c73
+created_at: '2020-04-02T11:22:50Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.alibaba-fusion_1776_next-1742:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://dailyfusion.oss-cn-hangzhou.aliyuncs.com/images/nGvimM6SA5Pm.png
+  test_patch: []
+instance_id: alibaba-fusion__next-1742
+log_parser: parse_log_next
+repo: alibaba-fusion/next
+split: test
+version: '1.19'

@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "Trace of Tab computed artifact: finds correct FMP if there was a tracingStartedInPage after the frame's navStart",
+    "Trace of Tab computed artifact: gathers the events from the tab's process",
+    "Trace of Tab computed artifact: finds correct FMP if it appears slightly before the fCP",
+    "Trace of Tab computed artifact: finds correct FMP if there was a tracingStartedInPage after the frame's navStart #2"
+  ],
+  "PASS_TO_PASS": [
+    "Performance: time-to-interactive audit evaluates valid input correctly"
+  ]
+}

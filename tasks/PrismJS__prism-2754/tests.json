@@ -1,0 +1,20 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'jsx' – should pass test case 'issue2753'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'jsx' – should pass test case 'issue1408'",
+    "Testing language 'jsx' – should pass test case 'issue1294'",
+    "Testing language 'jsx' – should pass test case 'issue1364'",
+    "Testing language 'jsx' – should pass test case 'issue1335'",
+    "Testing language 'jsx' – should pass test case 'issue1235'",
+    "Testing language 'jsx' – should pass test case 'dollars-in-attrs'",
+    "Testing language 'jsx' – should pass test case 'issue1356'",
+    "Testing language 'jsx' – should pass test case 'issue1421'",
+    "Testing language 'jsx' – should pass test case 'issue2727'",
+    "Testing language 'jsx' – should pass test case 'issue1342'",
+    "Testing language 'jsx' – should pass test case 'plain-text_feature'",
+    "Testing language 'tsx' – should pass test case 'issue2594'",
+    "Testing language 'jsx' – should pass test case 'issue1103'"
+  ]
+}

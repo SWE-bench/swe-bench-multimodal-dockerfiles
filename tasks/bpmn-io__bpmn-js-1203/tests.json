@@ -1,0 +1,15 @@
+{
+  "FAIL_TO_PASS": [
+    "features/snapping - BpmnCreateMoveSnapping boundary events creating boundary event with label should snap to bottom-left ",
+    "features/copy-paste basic diagram rules should allow copying boundary event without host ",
+    "features/modeling/behavior - detach events basics create should replace ",
+    "features/snapping - BpmnCreateMoveSnapping boundary events creating boundary event with label should snap to top-right ",
+    "features/modeling/behavior - detach events basics move should replace multiple ",
+    "features/snapping - BpmnCreateMoveSnapping boundary events creating boundary event with label should snap to bottom-right ",
+    "features/copy-paste basic diagram copy should copy boundary events without host should copy/paste ",
+    "features/modeling/behavior - attach events basics create should copy properties ",
+    "features/snapping - BpmnCreateMoveSnapping boundary events creating boundary event with label should snap to top-left ",
+    "features/copy-paste basic diagram copy should copy boundary events without host should copy/paste and reattach "
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features - label-editing basics should submit on root element changed "
+  ],
+  "PASS_TO_PASS": []
+}

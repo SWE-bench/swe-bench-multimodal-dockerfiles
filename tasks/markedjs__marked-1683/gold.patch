@@ -1,0 +1,44 @@
+diff --git a/src/Tokenizer.js b/src/Tokenizer.js
+index e3ff002b77..afe252fb41 100644
+--- a/src/Tokenizer.js
++++ b/src/Tokenizer.js
+@@ -9,6 +9,7 @@ const {
+ function outputLink(cap, link, raw) {
+   const href = link.href;
+   const title = link.title ? escape(link.title) : null;
++  const text = cap[1].replace(/\\([\[\]])/g, '$1');
+ 
+   if (cap[0].charAt(0) !== '!') {
+     return {
+@@ -16,15 +17,15 @@ function outputLink(cap, link, raw) {
+       raw,
+       href,
+       title,
+-      text: cap[1]
++      text
+     };
+   } else {
+     return {
+       type: 'image',
+       raw,
+-      text: escape(cap[1]),
+       href,
+-      title
++      title,
++      text: escape(text)
+     };
+   }
+ }
+diff --git a/src/rules.js b/src/rules.js
+index d6c16521cb..b34f56ff8f 100644
+--- a/src/rules.js
++++ b/src/rules.js
+@@ -198,7 +198,7 @@ inline.tag = edit(inline.tag)
+   .replace('attribute', inline._attribute)
+   .getRegex();
+ 
+-inline._label = /(?:\[[^\[\]]*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
++inline._label = /(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/;
+ inline._href = /<(?:\\[<>]?|[^\s<>\\])*>|[^\s\x00-\x1f]*/;
+ inline._title = /"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/;
+ 

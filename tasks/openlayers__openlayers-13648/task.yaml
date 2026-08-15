@@ -1,0 +1,18 @@
+base_commit: 71f37802aef8ae303f8afbec458fcee72cac8dd3
+created_at: '2022-05-06T19:55:08Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13648:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/8262166/163389009-97e39811-1233-437e-947c-065c1f997e6b.png
+  test_patch:
+  - path: test/rendering/cases/webgl-tile-aspect-ratio/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/b490b2e01a1821cd28f4cd86662265d48a016f52/test/rendering/cases/webgl-tile-aspect-ratio/expected.png
+instance_id: openlayers__openlayers-13648
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.14'

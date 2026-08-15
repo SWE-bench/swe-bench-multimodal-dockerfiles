@@ -1,0 +1,16 @@
+base_commit: b85f4ab83bff5744b0f2c3a842706a382c51d99f
+created_at: '2021-01-22T15:45:02Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.highlightjs_1776_highlight.js-2972:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://magicstack.github.io/MagicPython/example.png
+  test_patch: []
+instance_id: highlightjs__highlight.js-2972
+log_parser: parse_log_highlightjs
+repo: highlightjs/highlight.js
+split: test
+version: '10.6'

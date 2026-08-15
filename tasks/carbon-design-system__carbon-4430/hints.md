@@ -1,0 +1,5 @@
+We've marked this issue as stale because there hasn't been any activity for a couple of weeks. If there's no further activity on this issue in the next three days then we'll close it. Thanks for your contributions.
+
+@carbon-design-system/design 👋 
+Hi @Junstar17 if you have searched for a specific instance and it is the only one filtered in the dropdown, then the batch checkmark should select only that instance since it is the only one visible in the table. From your last screenshot it is visually only showing the instance you searched and it is checked, however the words '3 items selected' is confusing and does not reflect what is being displayed in the current table. The selection text is probably something that needs to be fixed in code.  @carbon-design-system/developers http://v6-react.carbondesignsystem.com/?selectedKind=DataTable&selectedStory=default&full=0&addons=1&stories=1&panelRight=0&addonPanel=storybook%2Fstories%2Fstories-panel
+Hi guys, any progress on this?

@@ -1,0 +1,186 @@
+diff --git a/src/webgl/p5.Geometry.js b/src/webgl/p5.Geometry.js
+index b60952be67..3571761a17 100644
+--- a/src/webgl/p5.Geometry.js
++++ b/src/webgl/p5.Geometry.js
+@@ -45,6 +45,7 @@ p5.Geometry = function(detailX, detailY, callback) {
+   //based on faces for most objects;
+   this.edges = [];
+   this.vertexColors = [];
++  this.lineVertexColors = [];
+   this.detailX = detailX !== undefined ? detailX : 1;
+   this.detailY = detailY !== undefined ? detailY : 1;
+   this.dirtyFlags = {};
+@@ -62,6 +63,7 @@ p5.Geometry.prototype.reset = function() {
+   this.vertices.length = 0;
+   this.edges.length = 0;
+   this.vertexColors.length = 0;
++  this.lineVertexColors.length = 0;
+   this.vertexNormals.length = 0;
+   this.uvs.length = 0;
+ 
+@@ -238,12 +240,15 @@ p5.Geometry.prototype._makeTriangleEdges = function() {
+  * @chainable
+  */
+ p5.Geometry.prototype._edgesToVertices = function() {
++  const lineColorData = [];
+   this.lineVertices.length = 0;
+   this.lineNormals.length = 0;
+ 
+   for (let i = 0; i < this.edges.length; i++) {
+-    const begin = this.vertices[this.edges[i][0]];
+-    const end = this.vertices[this.edges[i][1]];
++    const endIndex0 = this.edges[i][0];
++    const endIndex1 = this.edges[i][1];
++    var begin = this.vertices[endIndex0];
++    var end = this.vertices[endIndex1];
+     const dir = end
+       .copy()
+       .sub(begin)
+@@ -260,7 +265,25 @@ p5.Geometry.prototype._edgesToVertices = function() {
+     dirSub.push(-1);
+     this.lineNormals.push(dirAdd, dirSub, dirAdd, dirAdd, dirSub, dirSub);
+     this.lineVertices.push(a, b, c, c, b, d);
++    if (this.lineVertexColors.length > 0) {
++      var beginColor = [
++        this.lineVertexColors[4*endIndex0],
++        this.lineVertexColors[4*endIndex0+1],
++        this.lineVertexColors[4*endIndex0+2],
++        this.lineVertexColors[4*endIndex0+3]
++      ];
++      var endColor = [
++        this.lineVertexColors[4*endIndex1],
++        this.lineVertexColors[4*endIndex1+1],
++        this.lineVertexColors[4*endIndex1+2],
++        this.lineVertexColors[4*endIndex1+3]
++      ];
++      lineColorData.push(
++        beginColor, beginColor, endColor, endColor, beginColor, endColor
++      );
++    }
+   }
++  this.lineVertexColors = lineColorData;
+   return this;
+ };
+ 
+diff --git a/src/webgl/p5.RendererGL.Immediate.js b/src/webgl/p5.RendererGL.Immediate.js
+index c4867be454..9da349f494 100644
+--- a/src/webgl/p5.RendererGL.Immediate.js
++++ b/src/webgl/p5.RendererGL.Immediate.js
+@@ -109,6 +109,13 @@ p5.RendererGL.prototype.vertex = function(x, y) {
+     vertexColor[2],
+     vertexColor[3]
+   );
++  var lineVertexColor = this.curStrokeColor || [0.5, 0.5, 0.5, 1];
++  this.immediateMode.geometry.lineVertexColors.push(
++    lineVertexColor[0],
++    lineVertexColor[1],
++    lineVertexColor[2],
++    lineVertexColor[3]
++  );
+ 
+   if (this.textureMode === constants.IMAGE) {
+     if (this._tex !== null) {
+@@ -405,6 +412,8 @@ p5.RendererGL.prototype._drawImmediateFill = function() {
+ p5.RendererGL.prototype._drawImmediateStroke = function() {
+   const gl = this.GL;
+   const shader = this._getImmediateStrokeShader();
++  this._useLineColor =
++    (this.immediateMode.geometry.lineVertexColors.length > 0);
+   this._setStrokeUniforms(shader);
+   for (const buff of this.immediateMode.buffers.stroke) {
+     buff._prepareBuffer(this.immediateMode.geometry, shader);
+diff --git a/src/webgl/p5.RendererGL.Retained.js b/src/webgl/p5.RendererGL.Retained.js
+index 15737fcae5..05b9673f45 100644
+--- a/src/webgl/p5.RendererGL.Retained.js
++++ b/src/webgl/p5.RendererGL.Retained.js
+@@ -119,6 +119,7 @@ p5.RendererGL.prototype.drawBuffers = function(gId) {
+ 
+   if (this._doStroke && geometry.lineVertexCount > 0) {
+     const strokeShader = this._getRetainedStrokeShader();
++    this._useLineColor = (geometry.model.lineVertexColors.length > 0);
+     this._setStrokeUniforms(strokeShader);
+     for (const buff of this.retainedMode.buffers.stroke) {
+       buff._prepareBuffer(geometry, strokeShader);
+diff --git a/src/webgl/p5.RendererGL.js b/src/webgl/p5.RendererGL.js
+index ea20b83ae2..4cfb73cec3 100755
+--- a/src/webgl/p5.RendererGL.js
++++ b/src/webgl/p5.RendererGL.js
+@@ -110,6 +110,8 @@ p5.RendererGL = function(elt, pInst, isMainCanvas, attr) {
+   this._useNormalMaterial = false;
+   this._useShininess = 1;
+ 
++  this._useLineColor = false;
++
+   this._tint = [255, 255, 255, 255];
+ 
+   // lightFalloff variables
+@@ -149,6 +151,7 @@ p5.RendererGL = function(elt, pInst, isMainCanvas, attr) {
+     geometry: {},
+     buffers: {
+       stroke: [
++        new p5.RenderBuffer(4, 'lineVertexColors', 'lineColorBuffer', 'aVertexColor', this, this._flatten),
+         new p5.RenderBuffer(3, 'lineVertices', 'lineVertexBuffer', 'aPosition', this, this._flatten),
+         new p5.RenderBuffer(4, 'lineNormals', 'lineNormalBuffer', 'aDirection', this, this._flatten)
+       ],
+@@ -184,6 +187,7 @@ p5.RendererGL = function(elt, pInst, isMainCanvas, attr) {
+         new p5.RenderBuffer(2, 'uvs', 'uvBuffer', 'aTexCoord', this, this._flatten)
+       ],
+       stroke: [
++        new p5.RenderBuffer(4, 'lineVertexColors', 'lineColorBuffer', 'aVertexColor', this, this._flatten),
+         new p5.RenderBuffer(3, 'lineVertices', 'lineVertexBuffer', 'aPosition', this, this._flatten),
+         new p5.RenderBuffer(4, 'lineNormals', 'lineNormalBuffer', 'aDirection', this, this._flatten)
+       ],
+@@ -1257,6 +1261,7 @@ p5.RendererGL.prototype._setStrokeUniforms = function(strokeShader) {
+   strokeShader.bindShader();
+ 
+   // set the uniform values
++  strokeShader.setUniform('uUseLineColor', this._useLineColor);
+   strokeShader.setUniform('uMaterialColor', this.curStrokeColor);
+   strokeShader.setUniform('uStrokeWeight', this.curStrokeWeight);
+ };
+diff --git a/src/webgl/shaders/line.frag b/src/webgl/shaders/line.frag
+index 2a8434c90c..38235635df 100644
+--- a/src/webgl/shaders/line.frag
++++ b/src/webgl/shaders/line.frag
+@@ -1,8 +1,8 @@
+ precision mediump float;
+ precision mediump int;
+ 
+-uniform vec4 uMaterialColor;
++varying vec4 vColor;
+ 
+ void main() {
+-  gl_FragColor = vec4(uMaterialColor.rgb, 1.) * uMaterialColor.a;
++  gl_FragColor = vec4(vColor.rgb, 1.) * vColor.a;
+ }
+diff --git a/src/webgl/shaders/line.vert b/src/webgl/shaders/line.vert
+index a359155497..ef70264ab7 100644
+--- a/src/webgl/shaders/line.vert
++++ b/src/webgl/shaders/line.vert
+@@ -22,12 +22,18 @@ uniform mat4 uModelViewMatrix;
+ uniform mat4 uProjectionMatrix;
+ uniform float uStrokeWeight;
+ 
++uniform bool uUseLineColor;
++uniform vec4 uMaterialColor;
++
+ uniform vec4 uViewport;
+ uniform int uPerspective;
+ 
+ attribute vec4 aPosition;
+ attribute vec4 aDirection;
+-  
++attribute vec4 aVertexColor;
++
++varying vec4 vColor;
++
+ void main() {
+   // using a scale <1 moves the lines towards the camera
+   // in order to prevent popping effects due to half of
+@@ -94,4 +100,6 @@ void main() {
+ 
+   gl_Position.xy = p.xy + offset.xy * curPerspScale;
+   gl_Position.zw = p.zw;
++  
++  vColor = (uUseLineColor ? aVertexColor : uMaterialColor);
+ }

@@ -1,0 +1,1 @@
+Thanks for the report. This is a regression and consequence of a big change we made in 1.3 prerelease. We'll fix before 1.3 is stable.

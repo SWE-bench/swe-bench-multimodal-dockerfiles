@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/markdown_ignore/jsfmt.spec.js"
+  ],
+  "PASS_TO_PASS": []
+}

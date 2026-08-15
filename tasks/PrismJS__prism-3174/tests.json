@@ -1,0 +1,21 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'swift' – should pass test case 'keyword_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'swift' – should pass test case 'number_feature'",
+    "Testing language 'swift' – should pass test case 'operator_feature'",
+    "Testing language 'swift' – should pass test case 'label_feature'",
+    "Testing language 'swift' – should pass test case 'punctuation_feature'",
+    "Testing language 'swift' – should pass test case 'attribute_feature'",
+    "Testing language 'swift' – should pass test case 'literal_feature'",
+    "Testing language 'swift' – should pass test case 'short-argument_feature'",
+    "Testing language 'swift' – should pass test case 'directive_feature'",
+    "Testing language 'swift' – should pass test case 'comment_feature'",
+    "Testing language 'swift' – should pass test case 'class-name_feature'",
+    "Testing language 'swift' – should pass test case 'omit_feature'",
+    "Testing language 'swift' – should pass test case 'function_feature'",
+    "Testing language 'swift' – should pass test case 'string_feature'",
+    "Testing language 'swift' – should pass test case 'constant_feature'"
+  ]
+}

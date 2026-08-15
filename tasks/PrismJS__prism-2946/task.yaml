@@ -1,0 +1,17 @@
+base_commit: 8e93c5daa808a4ff74c073d42017bc1dad47a9cc
+created_at: '2021-06-13T19:48:03Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.prismjs_1776_prism-2946:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/212189/121644702-a14b4500-ca93-11eb-9bd5-263d53fbbf31.png
+  - https://user-images.githubusercontent.com/212189/121644736-ad370700-ca93-11eb-97ec-4fd68aeeb9f1.png
+  test_patch: []
+instance_id: PrismJS__prism-2946
+log_parser: parse_log_prismjs
+repo: PrismJS/prism
+split: test
+version: '1.23'

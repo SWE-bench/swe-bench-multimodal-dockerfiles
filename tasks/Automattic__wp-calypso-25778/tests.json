@@ -1,0 +1,15 @@
+{
+  "FAIL_TO_PASS": [
+    "wpcom-api - post comments request - #announceFailure - should dispatch an error notice"
+  ],
+  "PASS_TO_PASS": [
+    "wpcom-api - post comments request - #addComments - should dispatch a comments receive action",
+    "wpcom-api - post comments request - #fetchPostComments() - should dispatch an HTTP request to the post replies endpoint, before the oldest contiguous comment in state",
+    "wpcom-api - post comments request - #addComments - should dispatch a comments receive action and a count receive action when comments found",
+    "wpcom-api - post comments request - #handleDeleteSuccess - should request a fresh copy of a comments page when the query object is filled",
+    "wpcom-api - post comments request - #handleDeleteSuccess - should show a success notice if the related option is set",
+    "wpcom-api - post comments request - #handleDeleteSuccess - should not do anything when no options are set",
+    "wpcom-api - post comments request - #fetchPostComments() - should dispatch an HTTP request to the post replies endpoint",
+    "wpcom-api - post comments request - commentsFromApi - should decode author name entities"
+  ]
+}

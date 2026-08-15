@@ -1,0 +1,16 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/ListBox/__tests__/ListBoxField-test.js",
+    "packages/react/src/components/Dropdown/Dropdown-test.js",
+    "packages/react/src/components/MultiSelect/__tests__/FilterableMultiSelect-test.js",
+    "packages/react/src/components/MultiSelect/__tests__/MultiSelect-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBox-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/ListBox/__tests__/ListBoxSelection-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBoxMenu-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBoxMenuItem-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBoxMenuIcon-test.js",
+    "packages/react/src/components/MultiSelect/tools/__tests__/sorting-test.js"
+  ]
+}

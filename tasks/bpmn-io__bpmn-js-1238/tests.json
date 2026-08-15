@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "modeling/behavior - AssociationBehavior should move to new parent on source move ",
+    "modeling/behavior - AssociationBehavior should move to new parent on target move "
+  ],
+  "PASS_TO_PASS": []
+}

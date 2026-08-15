@@ -1,0 +1,17 @@
+base_commit: 4250bc3ebba1c9fe1cbf0e913723f1177985dca2
+created_at: '2019-07-22T18:06:52Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.automattic_1776_wp-calypso-34820:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/4924246/61652573-1974ab80-ac6d-11e9-82d8-ce764b45c22e.png
+  - https://user-images.githubusercontent.com/4924246/61652579-1c6f9c00-ac6d-11e9-985d-9b9006d70c00.png
+  test_patch: []
+instance_id: Automattic__wp-calypso-34820
+log_parser: parse_log_calypso
+repo: Automattic/wp-calypso
+split: dev
+version: 10.15.2

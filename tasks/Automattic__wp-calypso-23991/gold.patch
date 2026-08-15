@@ -1,0 +1,425 @@
+diff --git a/client/lib/posts/post-edit-store.js b/client/lib/posts/post-edit-store.js
+index 1ed6ce8d262c24..4c5fa83dfdf7c5 100644
+--- a/client/lib/posts/post-edit-store.js
++++ b/client/lib/posts/post-edit-store.js
+@@ -3,7 +3,7 @@
+ /**
+  * External dependencies
+  */
+-import { assign, filter, get, isEqual, pickBy, without, omit } from 'lodash';
++import { assign, filter, get, isEqual, pickBy, without } from 'lodash';
+ import debugFactory from 'debug';
+ const debug = debugFactory( 'calypso:posts:post-edit-store' );
+ import emitter from 'lib/mixins/emitter';
+@@ -135,13 +135,6 @@ function set( attributes ) {
+ 
+ 	updatedPost = assign( {}, _post, attributes );
+ 
+-	// This prevents an unsaved changes dialogue from appearing
+-	// on a new post when only the featured image is added then removed.
+-	// See #17701 for context.
+-	if ( updatedPost.featured_image === '' && ! _savedPost.featured_image && _post.featured_image ) {
+-		updatedPost = omit( updatedPost, 'featured_image' );
+-	}
+-
+ 	updatedPost = normalize( updatedPost );
+ 
+ 	if ( ! isEqual( updatedPost, _post ) ) {
+diff --git a/client/post-editor/controller.js b/client/post-editor/controller.js
+index 0b9c1782682c1e..704d053455fdc6 100644
+--- a/client/post-editor/controller.js
++++ b/client/post-editor/controller.js
+@@ -147,7 +147,12 @@ function startEditingPostCopy( site, postToCopyId, context ) {
+ 			 *
+ 			 * @see https://github.com/Automattic/wp-calypso/pull/13933
+ 			 */
+-			const reduxPostAttributes = pick( postAttributes, [ 'format', 'terms', 'title' ] );
++			const reduxPostAttributes = pick( postAttributes, [
++				'featured_image',
++				'format',
++				'terms',
++				'title',
++			] );
+ 
+ 			actions.startEditingNew( site, {
+ 				content: postToCopy.content,
+diff --git a/client/post-editor/editor-drawer/featured-image.jsx b/client/post-editor/editor-drawer/featured-image.jsx
+index 0620666d5ef9b4..ab7c273c7dd2cf 100644
+--- a/client/post-editor/editor-drawer/featured-image.jsx
++++ b/client/post-editor/editor-drawer/featured-image.jsx
+@@ -18,12 +18,14 @@ import EditorDrawerWell from 'post-editor/editor-drawer-well';
+ import FeaturedImage from 'post-editor/editor-featured-image';
+ import FeaturedImageDropZone from 'post-editor/editor-featured-image/dropzone';
+ import isDropZoneVisible from 'state/selectors/is-drop-zone-visible';
++import { getSelectedSiteId } from 'state/ui/selectors';
++import { getEditorPostId } from 'state/ui/editor/selectors';
++import { getEditedPost } from 'state/posts/selectors';
+ 
+ class EditorDrawerFeaturedImage extends Component {
+ 	static propTypes = {
+-		site: PropTypes.object,
+-		post: PropTypes.object,
+ 		translate: PropTypes.func,
++		hasFeaturedImage: PropTypes.bool,
+ 		isDrawerHidden: PropTypes.bool,
+ 	};
+ 
+@@ -39,7 +41,7 @@ class EditorDrawerFeaturedImage extends Component {
+ 	endSelecting = () => this.setState( { isSelecting: false } );
+ 
+ 	render() {
+-		const { translate, site, post, isDrawerHidden } = this.props;
++		const { translate, hasFeaturedImage, isDrawerHidden } = this.props;
+ 
+ 		return (
+ 			<Accordion
+@@ -49,7 +51,7 @@ class EditorDrawerFeaturedImage extends Component {
+ 			>
+ 				<EditorDrawerWell
+ 					label={ translate( 'Set Featured Image' ) }
+-					empty={ ! site || ! post || ! getFeaturedImageId( post ) }
++					empty={ ! hasFeaturedImage }
+ 					onClick={ this.startSelecting }
+ 					customDropZone={ <FeaturedImageDropZone /> }
+ 					isHidden={ isDrawerHidden }
+@@ -57,8 +59,6 @@ class EditorDrawerFeaturedImage extends Component {
+ 					<FeaturedImage
+ 						selecting={ this.state.isSelecting }
+ 						onImageSelected={ this.endSelecting }
+-						site={ site }
+-						post={ post }
+ 					/>
+ 				</EditorDrawerWell>
+ 			</Accordion>
+@@ -66,6 +66,12 @@ class EditorDrawerFeaturedImage extends Component {
+ 	}
+ }
+ 
+-export default connect( state => ( {
+-	isDrawerHidden: isDropZoneVisible( state, 'featuredImage' ),
+-} ) )( localize( EditorDrawerFeaturedImage ) );
++export default connect( state => {
++	const siteId = getSelectedSiteId( state );
++	const postId = getEditorPostId( state );
++	const post = getEditedPost( state, siteId, postId );
++	const hasFeaturedImage = !! getFeaturedImageId( post );
++	const isDrawerHidden = isDropZoneVisible( state, 'featuredImage' );
++
++	return { hasFeaturedImage, isDrawerHidden };
++} )( localize( EditorDrawerFeaturedImage ) );
+diff --git a/client/post-editor/editor-drawer/index.jsx b/client/post-editor/editor-drawer/index.jsx
+index ca104e6cea76ce..5767f1d3b3dd25 100644
+--- a/client/post-editor/editor-drawer/index.jsx
++++ b/client/post-editor/editor-drawer/index.jsx
+@@ -169,9 +169,7 @@ class EditorDrawer extends Component {
+ 			return;
+ 		}
+ 
+-		return (
+-			<AsyncLoad require="./featured-image" site={ this.props.site } post={ this.props.post } />
+-		);
++		return <AsyncLoad require="./featured-image" />;
+ 	}
+ 
+ 	renderExcerpt() {
+diff --git a/client/post-editor/editor-featured-image/dropzone.jsx b/client/post-editor/editor-featured-image/dropzone.jsx
+index d25dc6d4466a74..6eec219db86041 100644
+--- a/client/post-editor/editor-featured-image/dropzone.jsx
++++ b/client/post-editor/editor-featured-image/dropzone.jsx
+@@ -16,7 +16,6 @@ import DropZone from 'components/drop-zone';
+ import MediaActions from 'lib/media/actions';
+ import MediaStore from 'lib/media/store';
+ import { filterItemsByMimePrefix, isItemBeingUploaded } from 'lib/media/utils';
+-import PostActions from 'lib/posts/actions';
+ import FeaturedImageDropZoneIcon from './dropzone-icon';
+ 
+ import { receiveMedia, deleteMedia } from 'state/media/actions';
+@@ -67,21 +66,7 @@ class FeaturedImageDropZone extends Component {
+ 				}
+ 			}
+ 
+-			/**
+-			 * TODO: Redux way. What's left: figure out how to properly use `editPost`
+-			 * and research if the whole FeaturedImage component has to be updated to
+-			 * work properly with Redux.
+-			 *
+-			 * Right now `PostActions.edit` seems to be the best way to approach the problem.
+-			 */
+-			// this.props.editPost( siteId, this.props.postId, { featured_image: media.ID } );
+-
+-			// Cannot dispatch an action while in a dispatched action. Temporary(tm).
+-			setTimeout( () => {
+-				PostActions.edit( {
+-					featured_image: media.ID,
+-				} );
+-			}, 0 );
++			this.props.editPost( siteId, this.props.postId, { featured_image: media.ID } );
+ 		};
+ 
+ 		MediaStore.on( 'change', handleFeaturedImageUpload );
+diff --git a/client/post-editor/editor-featured-image/index.jsx b/client/post-editor/editor-featured-image/index.jsx
+index 13d16d7ad8032b..83f026092d3a2d 100644
+--- a/client/post-editor/editor-featured-image/index.jsx
++++ b/client/post-editor/editor-featured-image/index.jsx
+@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
+ import classnames from 'classnames';
+ import Gridicon from 'gridicons';
+ import { connect } from 'react-redux';
+-import { isNumber } from 'lodash';
++import { noop } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+@@ -17,10 +17,9 @@ import { isNumber } from 'lodash';
+ import MediaLibrarySelectedData from 'components/data/media-library-selected-data';
+ import MediaModal from 'post-editor/media-modal';
+ import MediaActions from 'lib/media/actions';
+-import PostActions from 'lib/posts/actions';
+ import * as stats from 'lib/posts/stats';
+ import EditorFeaturedImagePreviewContainer from './preview-container';
+-import FeaturedImageDropZone from 'post-editor/editor-featured-image/dropzone';
++import FeaturedImageDropZone from './dropzone';
+ import isDropZoneVisible from 'state/selectors/is-drop-zone-visible';
+ import Button from 'components/button';
+ import RemoveButton from 'components/remove-button';
+@@ -29,6 +28,10 @@ import { getFeaturedImageId } from 'lib/posts/utils';
+ import QueryMedia from 'components/data/query-media';
+ import { localize } from 'i18n-calypso';
+ import { recordTracksEvent } from 'state/analytics/actions';
++import { getSelectedSiteId } from 'state/ui/selectors';
++import { getEditorPostId } from 'state/ui/editor/selectors';
++import { getEditedPost } from 'state/posts/selectors';
++import { editPost } from 'state/posts/actions';
+ 
+ class EditorFeaturedImage extends Component {
+ 	static propTypes = {
+@@ -36,8 +39,6 @@ class EditorFeaturedImage extends Component {
+ 		hasDropZone: PropTypes.bool,
+ 		isDropZoneVisible: PropTypes.bool,
+ 		maxWidth: PropTypes.number,
+-		site: PropTypes.object,
+-		post: PropTypes.object,
+ 		recordTracksEvent: PropTypes.func,
+ 		selecting: PropTypes.bool,
+ 		translate: PropTypes.func,
+@@ -48,7 +49,7 @@ class EditorFeaturedImage extends Component {
+ 		hasDropZone: false,
+ 		isDropZoneVisible: false,
+ 		maxWidth: 450,
+-		onImageSelected: () => {},
++		onImageSelected: noop,
+ 	};
+ 
+ 	state = {
+@@ -56,10 +57,10 @@ class EditorFeaturedImage extends Component {
+ 	};
+ 
+ 	showMediaModal = () => {
+-		const { featuredImage, site } = this.props;
++		const { siteId, featuredImage } = this.props;
+ 
+ 		if ( featuredImage ) {
+-			MediaActions.setLibrarySelectedItems( site.ID, [ featuredImage ] );
++			MediaActions.setLibrarySelectedItems( siteId, [ featuredImage ] );
+ 		}
+ 
+ 		this.setState( {
+@@ -81,7 +82,7 @@ class EditorFeaturedImage extends Component {
+ 			return;
+ 		}
+ 
+-		PostActions.edit( {
++		this.props.editPost( this.props.siteId, this.props.postId, {
+ 			featured_image: value.items[ 0 ].ID,
+ 		} );
+ 
+@@ -94,66 +95,58 @@ class EditorFeaturedImage extends Component {
+ 		} );
+ 	};
+ 
+-	static removeImage() {
+-		PostActions.edit( {
+-			featured_image: '',
+-		} );
++	removeImage = () => {
++		this.props.editPost( this.props.siteId, this.props.postId, { featured_image: '' } );
+ 
+ 		stats.recordStat( 'featured_image_removed' );
+ 		stats.recordEvent( 'Featured image removed' );
+-	}
++	};
+ 
+-	renderMediaModal = () => {
+-		if ( ! this.props.site ) {
++	renderMediaModal() {
++		if ( ! this.props.siteId ) {
+ 			return;
+ 		}
+ 
+ 		return (
+-			<MediaLibrarySelectedData siteId={ this.props.site.ID }>
++			<MediaLibrarySelectedData siteId={ this.props.siteId }>
+ 				<MediaModal
+ 					visible={ this.props.selecting || this.state.isSelecting }
+ 					onClose={ this.setImage }
+-					site={ this.props.site }
++					siteId={ this.props.siteId }
+ 					labels={ { confirm: this.props.translate( 'Set Featured Image' ) } }
+ 					enabledFilters={ [ 'images' ] }
+ 					single
+ 				/>
+ 			</MediaLibrarySelectedData>
+ 		);
+-	};
++	}
+ 
+-	renderCurrentImage = () => {
+-		if ( ! this.props.site || ! this.props.post ) {
+-			return;
+-		}
++	renderCurrentImage() {
++		const { siteId, featuredImageId } = this.props;
+ 
+-		const itemId = getFeaturedImageId( this.props.post );
+-		if ( ! itemId ) {
++		if ( ! featuredImageId ) {
+ 			return;
+ 		}
+ 
+ 		return (
+ 			<EditorFeaturedImagePreviewContainer
+-				siteId={ this.props.site.ID }
+-				itemId={ itemId }
++				siteId={ siteId }
++				itemId={ featuredImageId }
+ 				maxWidth={ this.props.maxWidth }
+ 			/>
+ 		);
+-	};
++	}
+ 
+ 	render() {
+-		const { site, post } = this.props;
+-		const featuredImageId = getFeaturedImageId( post );
++		const { siteId, featuredImageId } = this.props;
+ 		const classes = classnames( 'editor-featured-image', {
+-			'is-assigned': getFeaturedImageId( this.props.post ),
++			'is-assigned': !! featuredImageId,
+ 			'has-active-drop-zone': this.props.hasDropZone && this.props.isDropZoneVisible,
+ 		} );
+ 
+ 		return (
+ 			<div className={ classes }>
+-				{ site && featuredImageId && isNumber( featuredImageId ) ? (
+-					<QueryMedia siteId={ site.ID } mediaId={ featuredImageId } />
+-				) : null }
++				{ featuredImageId && <QueryMedia siteId={ siteId } mediaId={ featuredImageId } /> }
+ 				{ this.renderMediaModal() }
+ 				<div className="editor-featured-image__inner-content">
+ 					<Button
+@@ -166,7 +159,7 @@ class EditorFeaturedImage extends Component {
+ 						{ this.renderCurrentImage() }
+ 						<Gridicon icon="pencil" className="editor-featured-image__edit-icon" />
+ 					</Button>
+-					{ featuredImageId && <RemoveButton onRemove={ EditorFeaturedImage.removeImage } /> }
++					{ featuredImageId && <RemoveButton onRemove={ this.removeImage } /> }
+ 				</div>
+ 
+ 				{ this.props.hasDropZone && <FeaturedImageDropZone /> }
+@@ -176,17 +169,22 @@ class EditorFeaturedImage extends Component {
+ }
+ 
+ export default connect(
+-	( state, ownProps ) => {
+-		const { post, site } = ownProps;
+-		const siteId = site && site.ID;
++	state => {
++		const siteId = getSelectedSiteId( state );
++		const postId = getEditorPostId( state );
++		const post = getEditedPost( state, siteId, postId );
+ 		const featuredImageId = getFeaturedImageId( post );
+ 
+ 		return {
++			siteId,
++			postId,
++			featuredImageId,
+ 			featuredImage: getMediaItem( state, siteId, featuredImageId ),
+ 			isDropZoneVisible: isDropZoneVisible( state, 'featuredImage' ),
+ 		};
+ 	},
+ 	{
++		editPost,
+ 		recordTracksEvent,
+ 	}
+ )( localize( EditorFeaturedImage ) );
+diff --git a/client/post-editor/post-editor.jsx b/client/post-editor/post-editor.jsx
+index d3c78162818f10..21f525e35e52ce 100644
+--- a/client/post-editor/post-editor.jsx
++++ b/client/post-editor/post-editor.jsx
+@@ -360,12 +360,7 @@ export const PostEditor = createReactClass( {
+ 								) }
+ 							</div>
+ 							<div className="post-editor__inner-content">
+-								<FeaturedImage
+-									site={ site }
+-									post={ this.state.post }
+-									maxWidth={ 1462 }
+-									hasDropZone={ true }
+-								/>
++								<FeaturedImage maxWidth={ 1462 } hasDropZone />
+ 								<div className="post-editor__header">
+ 									<EditorTitle onChange={ this.onEditorTitleChange } tabIndex={ 1 } />
+ 									{ this.state.post && isPage && site ? (
+diff --git a/client/state/posts/constants.js b/client/state/posts/constants.js
+index de8ca6a3223fe0..131a8b6e71d2ab 100644
+--- a/client/state/posts/constants.js
++++ b/client/state/posts/constants.js
+@@ -24,4 +24,5 @@ export const DEFAULT_NEW_POST_VALUES = {
+ 	type: 'post',
+ 	parent: 0,
+ 	format: 'default',
++	featured_image: '',
+ };
+diff --git a/client/state/posts/reducer.js b/client/state/posts/reducer.js
+index 0f311617591474..9035b40febd2ab 100644
+--- a/client/state/posts/reducer.js
++++ b/client/state/posts/reducer.js
+@@ -54,6 +54,7 @@ import {
+ 	normalizePostForState,
+ } from './utils';
+ import { itemsSchema, queriesSchema, allSitesQueriesSchema } from './schema';
++import { getFeaturedImageId } from 'lib/posts/utils';
+ 
+ /**
+  * Tracks all known post objects, indexed by post global ID.
+@@ -424,6 +425,8 @@ export function edits( state = {}, action ) {
+ 									return isAuthorEqual( value, post[ key ] );
+ 								case 'discussion':
+ 									return isDiscussionEqual( value, post[ key ] );
++								case 'featured_image':
++									return value === getFeaturedImageId( post );
+ 								case 'terms':
+ 									return isTermsEqual( value, post[ key ] );
+ 							}
+diff --git a/client/state/posts/selectors.js b/client/state/posts/selectors.js
+index 1449ac793c6195..50cec614eee6b7 100644
+--- a/client/state/posts/selectors.js
++++ b/client/state/posts/selectors.js
+@@ -25,6 +25,7 @@ import { decodeURIIfValid } from 'lib/url';
+ import { getSite } from 'state/sites/selectors';
+ import { DEFAULT_POST_QUERY, DEFAULT_NEW_POST_VALUES } from './constants';
+ import { addQueryArgs } from 'lib/route';
++import { getFeaturedImageId } from 'lib/posts/utils';
+ 
+ /**
+  * Returns the PostsQueryManager from the state tree for a given site ID (or
+@@ -421,6 +422,9 @@ export const isEditedPostDirty = createSelector(
+ 					case 'discussion': {
+ 						return ! isDiscussionEqual( value, post.discussion );
+ 					}
++					case 'featured_image': {
++						return value !== getFeaturedImageId( post );
++					}
+ 					case 'parent': {
+ 						return get( post, 'parent.ID', 0 ) !== value;
+ 					}

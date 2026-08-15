@@ -1,0 +1,536 @@
+diff --git a/assets/stylesheets/sections/post-editor.scss b/assets/stylesheets/sections/post-editor.scss
+index 71ba7bf1ac18d..0a7674412233b 100644
+--- a/assets/stylesheets/sections/post-editor.scss
++++ b/assets/stylesheets/sections/post-editor.scss
+@@ -30,6 +30,8 @@
+ @import 'post-editor/editor-fieldset/style';
+ @import 'post-editor/editor-forbidden/style';
+ @import 'post-editor/editor-ground-control/style';
++@import 'post-editor/editor-gutenberg-opt-in-dialog/style';
++@import 'post-editor/editor-gutenberg-opt-in-sidebar/style';
+ @import 'post-editor/editor-html-toolbar/style';
+ @import 'post-editor/editor-location/style';
+ @import 'post-editor/editor-notice/style';
+diff --git a/client/post-editor/editor-gutenberg-opt-in-dialog/index.jsx b/client/post-editor/editor-gutenberg-opt-in-dialog/index.jsx
+new file mode 100644
+index 0000000000000..88379cecb96f7
+--- /dev/null
++++ b/client/post-editor/editor-gutenberg-opt-in-dialog/index.jsx
+@@ -0,0 +1,88 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++
++import PropTypes from 'prop-types';
++import React, { Component } from 'react';
++import { connect } from 'react-redux';
++import getCurrentRoute from 'state/selectors/get-current-route';
++import Gridicon from 'gridicons';
++
++/**
++ * Internal dependencies
++ */
++import isGutenbergOptInDialogShowing from 'state/selectors/is-gutenberg-opt-in-dialog-showing';
++import { hideGutenbergOptInDialog } from 'state/ui/gutenberg-opt-in-dialog/actions';
++import { localize } from 'i18n-calypso';
++import Button from 'components/button';
++import Dialog from 'components/dialog';
++
++class EditorGutenbergOptInDialog extends Component {
++	static propTypes = {
++		// connected properties
++		translate: PropTypes.func,
++		gutenbergURL: PropTypes.string,
++		isDialogVisible: PropTypes.bool,
++		hideGutenbergOptInDialog: PropTypes.func,
++	};
++
++	render() {
++		const { translate, gutenbergURL, isDialogVisible } = this.props;
++		const buttons = [
++			<Button key="gutenberg" href={ gutenbergURL } primary>
++				{ translate( 'Try the new editor' ) }
++			</Button>,
++			{ action: 'cancel', label: translate( 'Use the classic editor' ) },
++		];
++		return (
++			<Dialog
++				additionalClassNames="editor-gutenberg-opt-in-dialog"
++				isVisible={ isDialogVisible }
++				buttons={ buttons }
++				onClose={ this.onCloseDialog }
++			>
++				<div className="editor-gutenberg-opt-in-dialog__illustration" />
++
++				<header>
++					<button onClick={ this.onCloseDialog } className="editor-gutenberg-opt-in-dialog__close">
++						<Gridicon icon="cross" />
++					</button>
++				</header>
++
++				<h1>{ translate( 'Check out the new building blocks of the web' ) }</h1>
++
++				<p className="editor-gutenberg-opt-in-dialog__subhead">
++					{ translate(
++						'A new publishing experience is coming to WordPress. The new editor lets you pick from a growing collection of blocks to build your ideal layout.'
++					) }
++				</p>
++
++				<p>
++					{ translate(
++						'Be one of the first to try the new editor and help us make it the best publishing experience on the web.'
++					) }
++				</p>
++			</Dialog>
++		);
++	}
++
++	onCloseDialog = () => {
++		this.props.hideGutenbergOptInDialog();
++	};
++}
++
++export default connect(
++	state => {
++		const currentRoute = getCurrentRoute( state );
++		const isDialogVisible = isGutenbergOptInDialogShowing( state );
++		return {
++			gutenbergURL: `/gutenberg${ currentRoute }`,
++			isDialogVisible,
++		};
++	},
++	{
++		hideGutenbergOptInDialog,
++	}
++)( localize( EditorGutenbergOptInDialog ) );
+diff --git a/client/post-editor/editor-gutenberg-opt-in-dialog/style.scss b/client/post-editor/editor-gutenberg-opt-in-dialog/style.scss
+new file mode 100644
+index 0000000000000..1f21cca88e923
+--- /dev/null
++++ b/client/post-editor/editor-gutenberg-opt-in-dialog/style.scss
+@@ -0,0 +1,119 @@
++/** @format */
++
++.dialog.card.editor-gutenberg-opt-in-dialog {
++	padding: 0;
++	max-width: 100%;
++
++	@include breakpoint( '<660px' ) {
++		max-height: 100%;
++		height: 100%;
++	}
++
++	@include breakpoint( '>660px' ) {
++		padding: 32px 40px 32px ( 260px + 32px );
++		max-width: 800px;
++	}
++
++	.dialog__content {
++		padding: 0;
++
++		@include breakpoint( '<660px' ) {
++			padding: 0 24px;
++		}
++
++		h1 {
++			font-size: 28px;
++			height: auto;
++			line-height: 1.2;
++
++			@include breakpoint( '>660px' ) {
++				font-size: 32px;
++			}
++		}
++
++		p {
++			margin-bottom: 24px;
++
++			&.editor-gutenberg-opt-in-dialog__subhead {
++				font-size: 18px;
++				color: $gray-darken-20;
++			}
++		}
++	}
++
++	.dialog__action-buttons {
++		padding: 0;
++		border: none;
++		text-align: inherit;
++
++		&:before {
++			display: none;
++		}
++
++		.button {
++			margin: 0 24px 8px 24px;
++
++			@include breakpoint( '<660px' ) {
++				display: block;
++				width: calc( 100% - 24px - 24px );
++				padding: 12px;
++			}
++
++			@include breakpoint( '>660px' ) {
++				margin: 0 16px 0 0;
++			}
++		}
++	}
++}
++
++.editor-gutenberg-opt-in-dialog__illustration {
++	background: $gray-light url( '/calypso/images/illustrations/gutenberg.svg' ) no-repeat;
++	background-position: 50%;
++	background-size: 320px;
++	height: 180px;
++	width: calc( 100% + 24px + 24px );
++	margin: 0 -24px 24px -24px;
++	position: relative;
++
++	@include breakpoint( '>660px' ) {
++		background-position: 40px 43%;
++		background-size: 250px;
++		height: auto;
++		width: 260px;
++		margin: 0;
++		position: absolute;
++		top: 0;
++		left: 0;
++		bottom: 0;
++	}
++
++	&:after {
++		content: '';
++		position: absolute;
++		right: 0;
++		bottom: 0;
++		left: 0;
++		height: 48px;
++		background: linear-gradient( to bottom, rgba( 0, 0, 0, 0 ) 0%, rgba( 0, 0, 0, 0.1 ) 100% );
++
++		@include breakpoint( '>660px' ) {
++			top: 0;
++			left: auto;
++			height: auto;
++			width: 48px;
++			background: linear-gradient( to right, rgba( 0, 0, 0, 0 ) 0%, rgba( 0, 0, 0, 0.1 ) 100% );
++		}
++	}
++}
++
++.editor-gutenberg-opt-in-dialog__close {
++	position: absolute;
++	top: 8px;
++	right: 8px;
++	cursor: pointer;
++	color: $gray;
++
++	&:hover {
++		color: $gray-dark;
++	}
++}
+diff --git a/client/post-editor/editor-gutenberg-opt-in-sidebar/index.jsx b/client/post-editor/editor-gutenberg-opt-in-sidebar/index.jsx
+new file mode 100644
+index 0000000000000..4906d76861f55
+--- /dev/null
++++ b/client/post-editor/editor-gutenberg-opt-in-sidebar/index.jsx
+@@ -0,0 +1,41 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++
++import PropTypes from 'prop-types';
++import React from 'react';
++import { connect } from 'react-redux';
++
++/**
++ * Internal dependencies
++ */
++import { localize } from 'i18n-calypso';
++import Button from 'components/button';
++import { showGutenbergOptInDialog } from 'state/ui/gutenberg-opt-in-dialog/actions';
++
++function EditorGutenbergOptInSidebar( { translate, showDialog } ) {
++	return (
++		<div className="editor-gutenberg-opt-in-sidebar">
++			<img src="/calypso/images/illustrations/gutenberg-mini.svg" alt="" />
++			<p>{ translate( 'Try our new editor and level-up your layout.' ) }</p>
++			<Button onClick={ showDialog } action="show">
++				{ translate( 'Learn more' ) }
++			</Button>
++		</div>
++	);
++}
++
++EditorGutenbergOptInSidebar.propTypes = {
++	// connected properties
++	translate: PropTypes.func,
++	showDialog: PropTypes.func,
++};
++
++export default connect(
++	null,
++	{
++		showDialog: showGutenbergOptInDialog,
++	}
++)( localize( EditorGutenbergOptInSidebar ) );
+diff --git a/client/post-editor/editor-gutenberg-opt-in-sidebar/style.scss b/client/post-editor/editor-gutenberg-opt-in-sidebar/style.scss
+new file mode 100644
+index 0000000000000..c0eab219a5259
+--- /dev/null
++++ b/client/post-editor/editor-gutenberg-opt-in-sidebar/style.scss
+@@ -0,0 +1,24 @@
++/** @format */
++
++.editor-gutenberg-opt-in-sidebar {
++	text-align: center;
++	font-weight: bold;
++	padding: 10%;
++
++	img {
++		min-height: 200px;
++	}
++
++	p {
++		background: linear-gradient(
++			to bottom,
++			rgba( $gray-lighten-30, 0 ) 0%,
++			rgba( $gray-lighten-30, 1 ) 48px
++		);
++		padding-top: 52px;
++		margin-top: -100px;
++		position: relative;
++		z-index: 1;
++		margin-bottom: 8px;
++	}
++}
+diff --git a/client/post-editor/editor-sidebar/index.jsx b/client/post-editor/editor-sidebar/index.jsx
+index ef107d4691b22..b27ef9b33116e 100644
+--- a/client/post-editor/editor-sidebar/index.jsx
++++ b/client/post-editor/editor-sidebar/index.jsx
+@@ -8,10 +8,13 @@ import PropTypes from 'prop-types';
+ /**
+  * Internal dependencies
+  */
++import { isEnabled } from 'config';
+ import EditorDrawer from 'post-editor/editor-drawer';
+ import EditorSidebarHeader from './header';
+ import SidebarFooter from 'layout/sidebar/footer';
+ import EditorDeletePost from 'post-editor/editor-delete-post';
++import EditorGutenbergOptInDialog from 'post-editor/editor-gutenberg-opt-in-dialog';
++import EditorGutenbergOptInSidebar from 'post-editor/editor-gutenberg-opt-in-sidebar';
+ 
+ export class EditorSidebar extends Component {
+ 	static propTypes = {
+@@ -44,6 +47,8 @@ export class EditorSidebar extends Component {
+ 					onSave={ onSave }
+ 					confirmationSidebarStatus={ confirmationSidebarStatus }
+ 				/>
++				{ isEnabled( 'gutenberg/opt-in' ) && <EditorGutenbergOptInSidebar /> }
++				{ isEnabled( 'gutenberg/opt-in' ) && <EditorGutenbergOptInDialog /> }
+ 				<SidebarFooter>
+ 					<EditorDeletePost onTrashingPost={ onTrashingPost } />
+ 				</SidebarFooter>
+diff --git a/client/state/action-types.js b/client/state/action-types.js
+index f22929e9f5df6..67c426425ed94 100644
+--- a/client/state/action-types.js
++++ b/client/state/action-types.js
+@@ -261,6 +261,7 @@ export const GUIDED_TRANSFER_STATUS_RECEIVE = 'GUIDED_TRANSFER_STATUS_RECEIVE';
+ export const GUIDED_TRANSFER_STATUS_REQUEST = 'GUIDED_TRANSFER_STATUS_REQUEST';
+ export const GUIDED_TRANSFER_STATUS_REQUEST_FAILURE = 'GUIDED_TRANSFER_STATUS_REQUEST_FAILURE';
+ export const GUIDED_TRANSFER_STATUS_REQUEST_SUCCESS = 'GUIDED_TRANSFER_STATUS_REQUEST_SUCCESS';
++export const GUTENBERG_OPT_IN_DIALOG_IS_SHOWING = 'GUTENBERG_OPT_IN_DIALOG_IS_SHOWING';
+ export const HAPPINESS_ENGINEERS_FETCH = 'HAPPINESS_ENGINEERS_FETCH';
+ export const HAPPINESS_ENGINEERS_FETCH_FAILURE = 'HAPPINESS_ENGINEERS_FETCH_FAILURE';
+ export const HAPPINESS_ENGINEERS_FETCH_SUCCESS = 'HAPPINESS_ENGINEERS_FETCH_SUCCESS';
+diff --git a/client/state/selectors/is-gutenberg-opt-in-dialog-showing.js b/client/state/selectors/is-gutenberg-opt-in-dialog-showing.js
+new file mode 100644
+index 0000000000000..38e276989bc33
+--- /dev/null
++++ b/client/state/selectors/is-gutenberg-opt-in-dialog-showing.js
+@@ -0,0 +1,11 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++
++import { get } from 'lodash';
++
++export default function isGutenbergOptInDialogShowing( state ) {
++	return get( state, 'ui.gutenbergOptInDialog.isShowing', false );
++}
+diff --git a/client/state/ui/gutenberg-opt-in-dialog/actions.js b/client/state/ui/gutenberg-opt-in-dialog/actions.js
+new file mode 100644
+index 0000000000000..4b798ecaa4ca7
+--- /dev/null
++++ b/client/state/ui/gutenberg-opt-in-dialog/actions.js
+@@ -0,0 +1,20 @@
++/** @format */
++
++/**
++ * Internal dependencies
++ */
++import { GUTENBERG_OPT_IN_DIALOG_IS_SHOWING } from 'state/action-types';
++
++export function showGutenbergOptInDialog() {
++	return {
++		type: GUTENBERG_OPT_IN_DIALOG_IS_SHOWING,
++		isShowing: true,
++	};
++}
++
++export function hideGutenbergOptInDialog() {
++	return {
++		type: GUTENBERG_OPT_IN_DIALOG_IS_SHOWING,
++		isShowing: false,
++	};
++}
+diff --git a/client/state/ui/gutenberg-opt-in-dialog/reducer.js b/client/state/ui/gutenberg-opt-in-dialog/reducer.js
+new file mode 100644
+index 0000000000000..f540629c660db
+--- /dev/null
++++ b/client/state/ui/gutenberg-opt-in-dialog/reducer.js
+@@ -0,0 +1,19 @@
++/** @format */
++
++/**
++ * Internal dependencies
++ */
++
++import { GUTENBERG_OPT_IN_DIALOG_IS_SHOWING } from 'state/action-types';
++import { combineReducers } from 'state/utils';
++
++function isGutenbergOptInDialogShowing( state = false, action ) {
++	if ( action.type === GUTENBERG_OPT_IN_DIALOG_IS_SHOWING ) {
++		return action.isShowing;
++	}
++	return state;
++}
++
++export default combineReducers( {
++	isShowing: isGutenbergOptInDialogShowing,
++} );
+diff --git a/client/state/ui/reducer.js b/client/state/ui/reducer.js
+index 6b6b2596c9559..17ce60b81666a 100644
+--- a/client/state/ui/reducer.js
++++ b/client/state/ui/reducer.js
+@@ -19,6 +19,7 @@ import dropZone from './drop-zone/reducer';
+ import editor from './editor/reducer';
+ import googleMyBusiness from './google-my-business/reducer';
+ import guidedTour from './guided-tours/reducer';
++import gutenbergOptInDialog from './gutenberg-opt-in-dialog/reducer';
+ import language from './language/reducer';
+ import layoutFocus from './layout-focus/reducer';
+ import mediaModal from './media-modal/reducer';
+@@ -105,6 +106,7 @@ const reducer = combineReducers( {
+ 	editor,
+ 	googleMyBusiness,
+ 	guidedTour,
++	gutenbergOptInDialog,
+ 	hasSidebar,
+ 	isLoading,
+ 	isNotificationsOpen,
+diff --git a/config/desktop-development.json b/config/desktop-development.json
+index a15bba7277c9c..a2c61b2d356e6 100644
+--- a/config/desktop-development.json
++++ b/config/desktop-development.json
+@@ -44,6 +44,7 @@
+ 		"guided-tours/site-title": true,
+ 		"guided-tours/theme-sheet-welcome": true,
+ 		"gutenberg": false,
++		"gutenberg/opt-in": false,
+ 		"help": true,
+ 		"help/courses": true,
+ 		"jetpack/api-cache": true,
+diff --git a/config/desktop.json b/config/desktop.json
+index 4da63786fdeb3..f9145db6f38a4 100644
+--- a/config/desktop.json
++++ b/config/desktop.json
+@@ -38,6 +38,7 @@
+ 		"google-analytics": true,
+ 		"google-my-business": false,
+ 		"gutenberg": false,
++		"gutenberg/opt-in": false,
+ 		"help": true,
+ 		"help/courses": true,
+ 		"jetpack/connect/remote-install": true,
+diff --git a/config/development.json b/config/development.json
+index c00f45e5db6e2..8a85ce43c7086 100644
+--- a/config/development.json
++++ b/config/development.json
+@@ -65,6 +65,7 @@
+ 		"guided-tours/site-title": true,
+ 		"guided-tours/theme-sheet-welcome": true,
+ 		"gutenberg": true,
++		"gutenberg/opt-in": true,
+ 		"help": true,
+ 		"help/courses": true,
+ 		"i18n/community-translator": false,
+diff --git a/config/horizon.json b/config/horizon.json
+index 77874c0aacdd5..bfb38edb99f6a 100644
+--- a/config/horizon.json
++++ b/config/horizon.json
+@@ -39,6 +39,7 @@
+ 		"google-my-business": false,
+ 		"google-analytics": true,
+ 		"gutenberg": true,
++		"gutenberg/opt-in": true,
+ 		"happychat": false,
+ 		"help": true,
+ 		"help/courses": true,
+diff --git a/config/production.json b/config/production.json
+index bb4833115ad3c..b57aeb4020763 100644
+--- a/config/production.json
++++ b/config/production.json
+@@ -38,6 +38,7 @@
+ 		"google-analytics": true,
+ 		"google-my-business": true,
+ 		"gutenberg": false,
++		"gutenberg/opt-in": false,
+ 		"happychat": true,
+ 		"help": true,
+ 		"help/courses": true,
+diff --git a/config/stage.json b/config/stage.json
+index 7280cc07cb93d..de84107a3f187 100644
+--- a/config/stage.json
++++ b/config/stage.json
+@@ -40,6 +40,7 @@
+ 		"google-my-business": true,
+ 		"google-analytics": false,
+ 		"gutenberg": false,
++		"gutenberg/opt-in": false,
+ 		"happychat": true,
+ 		"help": true,
+ 		"help/courses": true,
+diff --git a/config/wpcalypso.json b/config/wpcalypso.json
+index 035e870f4b26c..bb7768d6904b6 100644
+--- a/config/wpcalypso.json
++++ b/config/wpcalypso.json
+@@ -46,6 +46,7 @@
+ 		"guided-tours/site-title": true,
+ 		"guided-tours/theme-sheet-welcome": true,
+ 		"gutenberg": true,
++		"gutenberg/opt-in": false,
+ 		"happychat": true,
+ 		"help": true,
+ 		"help/courses": true,
+diff --git a/public/images/illustrations/gutenberg-mini.svg b/public/images/illustrations/gutenberg-mini.svg
+new file mode 100644
+index 0000000000000..ef507a0bf55b5
+--- /dev/null
++++ b/public/images/illustrations/gutenberg-mini.svg
+@@ -0,0 +1,1 @@
++<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="206" height="189" viewBox="0 0 206 189"><defs><path id="a" d="M8 2.667A5.34 5.34 0 0 1 13.333 8 5.34 5.34 0 0 1 8 13.333 5.34 5.34 0 0 1 2.667 8 5.34 5.34 0 0 1 8 2.667zm0-1.334a6.667 6.667 0 1 0 0 13.333A6.667 6.667 0 0 0 8 1.333zm3.333 6H8.667V4.667H7.333v2.666H4.667v1.334h2.666v2.666h1.334V8.667h2.666V7.333z"/><path id="d" d="M87.55 5.382L91.94.993l4.389 4.389H178a4 4 0 0 1 4 4V156a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4V9.382a4 4 0 0 1 4-4h83.55z"/><filter id="c" width="119.8%" height="122.6%" x="-9.9%" y="-11.3%" filterUnits="objectBoundingBox"><feOffset in="SourceAlpha" result="shadowOffsetOuter1"/><feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation="6"/><feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"/><feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.15 0"/></filter><path id="e" d="M8.125 8.75v4.375h-1.25V8.75H6.25v-.014a3.437 3.437 0 1 1 0-6.847v-.014h5.625v1.25h-1.25v10h-1.25v-10h-1.25V8.75z"/><path id="g" d="M4.375 6.25L7.5 9.375l3.125-3.125"/></defs><g fill="none" fill-rule="evenodd"><g transform="translate(95 -1)"><mask id="b" fill="#fff"><use xlink:href="#a"/></mask><g fill="#00AADC" mask="url(#b)"><path d="M0 0h16v16H0z"/></g></g><g transform="translate(12 17)"><use fill="#000" filter="url(#c)" xlink:href="#d"/><path fill="#FFF" stroke="#C8D7E1" stroke-linejoin="square" d="M91.939 1.7l-4.182 4.182H4a3.5 3.5 0 0 0-3.5 3.5V156a3.5 3.5 0 0 0 3.5 3.5h174a3.5 3.5 0 0 0 3.5-3.5V9.382a3.5 3.5 0 0 0-3.5-3.5H96.12L91.94 1.7z"/><rect width="162" height="17" x="10" y="15" stroke="#00ABDC" stroke-width="2" rx="4"/><path fill="#C8D7E1" d="M9 40h164v1H9z"/><path fill="#A8BECE" d="M9 48h45v8H9z"/><path fill="#E9EFF3" d="M15 20h45v8H15zM21 92h25v8H21zM77 92h25v8H77zM135 92h25v8h-25z"/><rect width="51" height="28" x="9" y="60" rx="4"/><rect width="51" height="28" x="122" y="60" rx="4"/><rect width="51" height="28" x="65" y="60" rx="4"/><g transform="translate(27 67)"><path d="M0 0h15v15H0z"/><mask id="f" fill="#fff"><use xlink:href="#e"/></mask><use fill="#12181E" xlink:href="#e"/><g fill="#3D596D" mask="url(#f)"><path d="M0 0h15v15H0z"/></g></g><path fill="#E9EFF3" d="M21 141h25v8H21zM77 141h25v8H77zM135 141h25v8h-25z"/><rect width="51" height="28" x="9" y="109" rx="4"/><rect width="51" height="28" x="122" y="109" rx="4"/><rect width="51" height="28" x="65" y="109" rx="4"/><g transform="rotate(180 88 29.5)"><path d="M0 0h15v15H0z"/><mask id="h" fill="#fff"><use xlink:href="#g"/></mask><use fill="#191E23" xlink:href="#g"/><g fill="#3D596D" mask="url(#h)"><path d="M0 0h15v15H0z"/></g></g><path d="M26 116h15v15H26z"/><g fill="#3D596D" fill-rule="nonzero"><path d="M39.125 118.5h-11.25c-.688 0-1.25.563-1.25 1.25v7.5c0 .688.563 1.25 1.25 1.25h11.25c.688 0 1.25-.563 1.25-1.25v-7.5c0-.688-.563-1.25-1.25-1.25zm0 8.75h-11.25v-7.5h11.25v7.5z"/><path d="M35.063 122.875l-2.188 2.819-1.563-1.882-2.187 2.813h8.75z"/></g><path d="M140 116h15v15h-15z"/><path fill="#3D596D" fill-rule="nonzero" d="M145.731 119.75l1.25 1.25h5.519v6.25h-10v-7.5h3.231zm.519-1.25h-3.75c-.688 0-1.244.563-1.244 1.25l-.006 7.5c0 .688.563 1.25 1.25 1.25h10c.688 0 1.25-.563 1.25-1.25V121c0-.688-.563-1.25-1.25-1.25h-5l-1.25-1.25z"/><g><path d="M83 116h15v15H83z"/><path fill="#3D596D" fill-rule="nonzero" d="M95.5 117.875h-9.375c-.688 0-1.25.563-1.25 1.25v8.75c0 .688.563 1.25 1.25 1.25H95.5c.688 0 1.25-.563 1.25-1.25v-8.75c0-.688-.563-1.25-1.25-1.25zm0 1.25V121h-9.375v-1.875H95.5zm-3.125 8.75H89.25v-5.625h3.125v5.625zm-6.25-5.625H88v5.625h-1.875v-5.625zm7.5 5.625v-5.625H95.5v5.625h-1.875z"/></g><g><path d="M140 67h15v15h-15z"/><path fill="#3D596D" fill-rule="nonzero" d="M141.563 69.5v1.875h3.125v7.5h1.875v-7.5h3.125V69.5h-8.125zm11.875 3.125h-5.625V74.5h1.875v4.375h1.875V74.5h1.875v-1.875z"/></g><g><path d="M83 67h15v15H83z"/><path fill="#3D596D" fill-rule="nonzero" d="M94.875 68.875h-8.75c-.688 0-1.25.563-1.25 1.25v8.75c0 .688.563 1.25 1.25 1.25h8.75c.688 0 1.25-.563 1.25-1.25v-8.75c0-.688-.563-1.25-1.25-1.25zm0 10h-8.75v-8.75h8.75v8.75zm-3.15-4.194l-1.719 2.213-1.225-1.475-1.719 2.206h6.876l-2.213-2.944z"/></g></g></g></svg>
+\ No newline at end of file
+diff --git a/public/images/illustrations/gutenberg.svg b/public/images/illustrations/gutenberg.svg
+new file mode 100644
+index 0000000000000..cd433d29779c3
+--- /dev/null
++++ b/public/images/illustrations/gutenberg.svg
+@@ -0,0 +1,1 @@
++<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="314" height="304" viewBox="0 0 314 304"><defs><path id="b" d="M151.485 45l7-7 7 7H298a4 4 0 0 1 4 4v239a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V49a4 4 0 0 1 4-4h135.485z"/><filter id="a" width="112.4%" height="114.2%" x="-6.2%" y="-7.1%" filterUnits="objectBoundingBox"><feOffset in="SourceAlpha" result="shadowOffsetOuter1"/><feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation="6"/><feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"/><feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.15 0"/></filter><path id="c" d="M13 14v7h-2v-7h-1v-.022a5.5 5.5 0 1 1 0-10.955V3h9v2h-2v16h-2V5h-2v9z"/><path id="e" d="M7 10l5 5 5-5"/><path id="g" d="M12 4c4.411 0 8 3.589 8 8s-3.589 8-8 8-8-3.589-8-8 3.589-8 8-8zm0-2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm5 9h-4V7h-2v4H7v2h4v4h2v-4h4v-2z"/></defs><g fill="none" fill-rule="evenodd"><use fill="#000" filter="url(#a)" xlink:href="#b"/><path fill="#FFF" stroke="#C8D7E1" stroke-linejoin="square" d="M158.485 38.707l-6.793 6.793H16a3.5 3.5 0 0 0-3.5 3.5v239a3.5 3.5 0 0 0 3.5 3.5h282a3.5 3.5 0 0 0 3.5-3.5V49a3.5 3.5 0 0 0-3.5-3.5H165.278l-6.793-6.793z"/><rect width="259" height="28" x="27" y="60" stroke="#00ABDC" stroke-width="2" rx="4"/><path fill="#C8D7E1" d="M26 101h262v1H26z"/><path fill="#A8BECE" d="M26 113h71v12H26z"/><path fill="#E9EFF3" d="M36 68h71v12H36zM46 184h40v12H46zM135 184h40v12h-40zM227 184h40v12h-40z"/><rect width="81" height="44" x="26" y="133" rx="4"/><rect width="81" height="44" x="207" y="133" rx="4"/><rect width="81" height="44" x="116" y="133" rx="4"/><g transform="translate(55 143)"><path d="M0 0h24v24H0z"/><mask id="d" fill="#fff"><use xlink:href="#c"/></mask><use fill="#12181E" xlink:href="#c"/><g fill="#3D596D" mask="url(#d)"><path d="M0 0h24v24H0z"/></g></g><path fill="#E9EFF3" d="M46 262h40v12H46zM135 262h40v12h-40zM227 262h40v12h-40z"/><rect width="81" height="44" x="26" y="211" rx="4"/><rect width="81" height="44" x="207" y="211" rx="4"/><rect width="81" height="44" x="116" y="211" rx="4"/><g transform="rotate(180 146.5 65.5)"><path d="M0 0h24v24H0z"/><mask id="f" fill="#fff"><use xlink:href="#e"/></mask><use fill="#191E23" xlink:href="#e"/><g fill="#3D596D" mask="url(#f)"><path d="M0 0h24v24H0z"/></g></g><path d="M54 221h24v24H54z"/><g fill="#3D596D" fill-rule="nonzero"><path d="M75 225H57c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2v-12c0-1.1-.9-2-2-2zm0 14H57v-12h18v12z"/><path d="M68.5 232l-3.5 4.51-2.5-3.01L59 238h14z"/></g><path d="M235 221h24v24h-24z"/><path fill="#3D596D" fill-rule="nonzero" d="M244.17 227l2 2H255v10h-16v-12h5.17zm.83-2h-6c-1.1 0-1.99.9-1.99 2l-.01 12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-10c0-1.1-.9-2-2-2h-8l-2-2z"/><path d="M145 221h24v24h-24z"/><path fill="#3D596D" fill-rule="nonzero" d="M165 224h-15c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2v-14c0-1.1-.9-2-2-2zm0 2v3h-15v-3h15zm-5 14h-5v-9h5v9zm-10-9h3v9h-3v-9zm12 9v-9h3v9h-3z"/><g><path d="M235 143h24v24h-24z"/><path fill="#3D596D" fill-rule="nonzero" d="M237.5 147v3h5v12h3v-12h5v-3h-13zm19 5h-9v3h3v7h3v-7h3v-3z"/></g><g><path d="M145 143h24v24h-24z"/><path fill="#3D596D" fill-rule="nonzero" d="M164 146h-14c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-14c0-1.1-.9-2-2-2zm0 16h-14v-14h14v14zm-5.04-6.71l-2.75 3.54-1.96-2.36-2.75 3.53h11l-3.54-4.71z"/></g><g transform="translate(145 8)"><mask id="h" fill="#fff"><use xlink:href="#g"/></mask><g fill="#00AADC" mask="url(#h)"><path d="M0 0h24v24H0z"/></g></g></g></svg>
+\ No newline at end of file

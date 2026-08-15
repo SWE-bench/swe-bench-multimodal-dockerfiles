@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/webgl-points/main.js (Points are rendered using webgl as 4px pixel squares)'",
+    "./cases/layer-vectortile-rotate-vector/main.js (Vector tile layer rotates with vector layer on top)'",
+    "./cases/layer-vectortile-rotate/main.js (Vector tile layer rotates)'"
+  ],
+  "PASS_TO_PASS": []
+}

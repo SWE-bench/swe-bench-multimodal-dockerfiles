@@ -1,0 +1,45 @@
+diff --git a/test/helpers/html-differ.js b/test/helpers/html-differ.js
+index 1d92b7d84b..91e781845b 100644
+--- a/test/helpers/html-differ.js
++++ b/test/helpers/html-differ.js
+@@ -1,5 +1,8 @@
+ const HtmlDiffer = require('@markedjs/html-differ').HtmlDiffer;
+-const htmlDiffer = new HtmlDiffer({ ignoreSelfClosingSlash: true });
++const htmlDiffer = new HtmlDiffer({
++  ignoreSelfClosingSlash: true,
++  ignoreComments: false
++});
+ 
+ module.exports = {
+   isEqual: htmlDiffer.isEqual.bind(htmlDiffer),
+diff --git a/test/specs/new/html_comments.html b/test/specs/new/html_comments.html
+index 872b45f6ae..745d823b7e 100644
+--- a/test/specs/new/html_comments.html
++++ b/test/specs/new/html_comments.html
+@@ -55,3 +55,9 @@ <h3 id="example-12">Example 12</h3>
+ <p>&lt;!---&gt; not a comment --&gt;</p>
+ 
+ <!-- <!-- not a comment? --> -->
++
++<h3 id="example-13">Example 13</h3>
++
++<!-- block ends at the end of the document since --!>
++
++*is not a valid comment ending*
+diff --git a/test/specs/new/html_comments.md b/test/specs/new/html_comments.md
+index 06aff02e1d..9a4947b2ae 100644
+--- a/test/specs/new/html_comments.md
++++ b/test/specs/new/html_comments.md
+@@ -53,4 +53,10 @@ comment
+ 
+ <!---> not a comment -->
+ 
+-<!-- <!-- not a comment? --> -->
+\ No newline at end of file
++<!-- <!-- not a comment? --> -->
++
++### Example 13
++
++<!-- block ends at the end of the document since --!>
++
++*is not a valid comment ending*

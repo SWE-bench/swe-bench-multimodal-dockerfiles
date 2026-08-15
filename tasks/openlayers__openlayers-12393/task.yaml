@@ -1,0 +1,21 @@
+base_commit: 07227868571f35585d664cf185311b94405b85c1
+created_at: '2021-06-09T12:05:30Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-12393:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/image-stretched-disable-smoothing/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/269b3c49eeeaf68ccc958ef3d39e27fc0ca2af24/test/rendering/cases/image-stretched-disable-smoothing/expected.png
+  - path: test/rendering/cases/reproj-image-stretched-disable-smoothing/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/269b3c49eeeaf68ccc958ef3d39e27fc0ca2af24/test/rendering/cases/reproj-image-stretched-disable-smoothing/expected.png
+  - path: test/rendering/cases/reproj-image/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/269b3c49eeeaf68ccc958ef3d39e27fc0ca2af24/test/rendering/cases/reproj-image/expected.png
+instance_id: openlayers__openlayers-12393
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: 6.5.1

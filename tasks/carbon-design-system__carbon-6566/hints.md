@@ -1,0 +1,8 @@
+Since you're setting such a small width on the container, you may just need to override the `overflow` property in this scenario. 
+
+You can set it to `overflow-x: scroll` at a much lower breakpoint (or all the time, if you want), but we didn't set this at the Carbon level because the button tooltips do not render when the overflow is set to scroll. 
+Thanks @tw15egan for the quick response, unfortunately anything below 650 causes the same issue. Things potentially could get worse if the language is not as "short" as English is. I imagine if I overwrite the overflow property I will also lose the button tooltips, which is not ideal. Is there a way to make this component "smaller container friendly" without losing the tooltips?
+While writing the previous comment I haven't realised that the component does lose the tooltips on smaller viewports (below 42rem). Therefore it is actually the intention that we don't show them when there is not "enough space". @tw15egan please correct me if I am wrong.
+The only thing we can really do is lower the breakpoint, but even then it would probably be better to do this at the application level where you have a better knowledge of what exactly will be contained in the pagination. Unfortunately, with the way absolute positioning works, you lose the tooltips whenever there is an `overflow` property. A `y` overflow could be added, but then you'd have a vertical scroll bar and potential to cause more visual issues than it would help. Since the scrolling is mainly a mobile fix, and hover tooltips would not be shown anyways, we felt this trade-off would be acceptable. 
+
+Happy to take a look at any PR's you would like to submit to try and handle this at the Carbon level, though. 

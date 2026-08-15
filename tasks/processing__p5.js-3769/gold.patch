@@ -1,0 +1,699 @@
+diff --git a/src/webgl/p5.Geometry.js b/src/webgl/p5.Geometry.js
+index f6c106834b..71786baa1b 100644
+--- a/src/webgl/p5.Geometry.js
++++ b/src/webgl/p5.Geometry.js
+@@ -41,12 +41,28 @@ p5.Geometry = function(detailX, detailY, callback) {
+   this.edges = [];
+   this.detailX = detailX !== undefined ? detailX : 1;
+   this.detailY = detailY !== undefined ? detailY : 1;
++
++  this.dirtyFlags = {};
++
+   if (callback instanceof Function) {
+     callback.call(this);
+   }
+   return this; // TODO: is this a constructor?
+ };
+ 
++p5.Geometry.prototype.reset = function() {
++  this.lineVertices.length = 0;
++  this.lineNormals.length = 0;
++
++  this.vertices.length = 0;
++  this.edges.length = 0;
++  this.vertexColors.length = 0;
++  this.vertexNormals.length = 0;
++  this.uvs.length = 0;
++
++  this.dirtyFlags = {};
++};
++
+ /**
+  * @method computeFaces
+  * @chainable
+diff --git a/src/webgl/p5.RendererGL.Immediate.js b/src/webgl/p5.RendererGL.Immediate.js
+index 7cbc1ad67a..f64910cb31 100644
+--- a/src/webgl/p5.RendererGL.Immediate.js
++++ b/src/webgl/p5.RendererGL.Immediate.js
+@@ -251,14 +251,7 @@ p5.RendererGL.prototype._drawFillImmediateMode = function(
+       gl.DYNAMIC_DRAW
+     );
+ 
+-    shader.enableAttrib(
+-      shader.attributes.aPosition.location,
+-      3,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
++    shader.enableAttrib(shader.attributes.aPosition, 3);
+   }
+ 
+   // initialize the fill shader's 'aVertexColor' buffer
+@@ -271,14 +264,7 @@ p5.RendererGL.prototype._drawFillImmediateMode = function(
+       gl.DYNAMIC_DRAW
+     );
+ 
+-    shader.enableAttrib(
+-      shader.attributes.aVertexColor.location,
+-      4,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
++    shader.enableAttrib(shader.attributes.aVertexColor, 4);
+   }
+ 
+   // initialize the fill shader's 'aTexCoord' buffer
+@@ -292,14 +278,7 @@ p5.RendererGL.prototype._drawFillImmediateMode = function(
+       gl.DYNAMIC_DRAW
+     );
+ 
+-    shader.enableAttrib(
+-      shader.attributes.aTexCoord.location,
+-      2,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
++    shader.enableAttrib(shader.attributes.aTexCoord, 2);
+   }
+ 
+   //if (true || mode) {
+@@ -367,14 +346,7 @@ p5.RendererGL.prototype._drawStrokeImmediateMode = function() {
+       gl.STATIC_DRAW
+     );
+ 
+-    shader.enableAttrib(
+-      shader.attributes.aPosition.location,
+-      3,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
++    shader.enableAttrib(shader.attributes.aPosition, 3);
+   }
+ 
+   // initialize the stroke shader's 'aDirection' buffer
+@@ -386,14 +358,7 @@ p5.RendererGL.prototype._drawStrokeImmediateMode = function() {
+       Float32Array,
+       gl.STATIC_DRAW
+     );
+-    shader.enableAttrib(
+-      shader.attributes.aDirection.location,
+-      4,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
++    shader.enableAttrib(shader.attributes.aDirection, 4);
+   }
+ 
+   this._applyColorBlend(this.curStrokeColor);
+diff --git a/src/webgl/p5.RendererGL.Retained.js b/src/webgl/p5.RendererGL.Retained.js
+index 210a85b4fe..d650df48ff 100644
+--- a/src/webgl/p5.RendererGL.Retained.js
++++ b/src/webgl/p5.RendererGL.Retained.js
+@@ -3,6 +3,38 @@
+ 'use strict';
+ 
+ var p5 = require('../core/main');
++require('./p5.RendererGL');
++
++// a render buffer definition
++function BufferDef(size, src, dst, attr, map) {
++  this.size = size; // the number of FLOATs in each vertex
++  this.src = src; // the name of the model's source array
++  this.dst = dst; // the name of the geometry's buffer
++  this.attr = attr; // the name of the vertex attribute
++  this.map = map; // optional, a transformation function to apply to src
++}
++
++var _flatten = p5.RendererGL.prototype._flatten;
++var _vToNArray = p5.RendererGL.prototype._vToNArray;
++
++var strokeBuffers = [
++  new BufferDef(3, 'lineVertices', 'lineVertexBuffer', 'aPosition', _flatten),
++  new BufferDef(4, 'lineNormals', 'lineNormalBuffer', 'aDirection', _flatten)
++];
++
++var fillBuffers = [
++  new BufferDef(3, 'vertices', 'vertexBuffer', 'aPosition', _vToNArray),
++  new BufferDef(3, 'vertexNormals', 'normalBuffer', 'aNormal', _vToNArray),
++  new BufferDef(4, 'vertexColors', 'colorBuffer', 'aMaterialColor'),
++  new BufferDef(3, 'vertexAmbients', 'ambientBuffer', 'aAmbientColor'),
++  //new BufferDef(3, 'vertexSpeculars', 'specularBuffer', 'aSpecularColor'),
++  new BufferDef(2, 'uvs', 'uvBuffer', 'aTexCoord', _flatten)
++];
++
++p5.RendererGL._textBuffers = [
++  new BufferDef(3, 'vertices', 'vertexBuffer', 'aPosition', _vToNArray),
++  new BufferDef(2, 'uvs', 'uvBuffer', 'aTexCoord', _flatten)
++];
+ 
+ var hashCount = 0;
+ /**
+@@ -11,6 +43,7 @@ var hashCount = 0;
+  * @description initializes buffer defaults. runs each time a new geometry is
+  * registered
+  * @param  {String} gId  key of the geometry object
++ * @returns {Object} a new buffer object
+  */
+ p5.RendererGL.prototype._initBufferDefaults = function(gId) {
+   this._freeBuffers(gId);
+@@ -24,12 +57,12 @@ p5.RendererGL.prototype._initBufferDefaults = function(gId) {
+   }
+ 
+   //create a new entry in our gHash
+-  this.gHash[gId] = {};
++  return (this.gHash[gId] = {});
+ };
+ 
+ p5.RendererGL.prototype._freeBuffers = function(gId) {
+-  var geometry = this.gHash[gId];
+-  if (!geometry) {
++  var buffers = this.gHash[gId];
++  if (!buffers) {
+     return;
+   }
+ 
+@@ -37,160 +70,113 @@ p5.RendererGL.prototype._freeBuffers = function(gId) {
+   hashCount--;
+ 
+   var gl = this.GL;
+-  geometry.vertexBuffer && gl.deleteBuffer(geometry.vertexBuffer);
+-  geometry.normalBuffer && gl.deleteBuffer(geometry.normalBuffer);
+-  geometry.lineNormalBuffer && gl.deleteBuffer(geometry.lineNormalBuffer);
+-  geometry.uvBuffer && gl.deleteBuffer(geometry.uvBuffer);
+-  geometry.indexBuffer && gl.deleteBuffer(geometry.indexBuffer);
+-  geometry.lineVertexBuffer && gl.deleteBuffer(geometry.lineVertexBuffer);
++  if (buffers.indexBuffer) {
++    gl.deleteBuffer(buffers.indexBuffer);
++  }
++
++  function freeBuffers(defs) {
++    for (var i = 0; i < defs.length; i++) {
++      var def = defs[i];
++      if (buffers[def.dst]) {
++        gl.deleteBuffer(buffers[def.dst]);
++        buffers[def.dst] = null;
++      }
++    }
++  }
++
++  // free all the buffers
++  freeBuffers(strokeBuffers);
++  freeBuffers(fillBuffers);
++};
++
++p5.RendererGL.prototype._prepareBuffers = function(buffers, shader, defs) {
++  var model = buffers.model;
++  var attributes = shader.attributes;
++  var gl = this.GL;
++
++  // loop through each of the buffer definitions
++  for (var i = 0; i < defs.length; i++) {
++    var def = defs[i];
++
++    var attr = attributes[def.attr];
++    if (!attr) continue;
++
++    var buffer = buffers[def.dst];
++
++    // check if the model has the appropriate source array
++    var src = model[def.src];
++    if (src) {
++      // check if we need to create the GL buffer
++      var createBuffer = !buffer;
++      if (createBuffer) {
++        // create and remember the buffer
++        buffers[def.dst] = buffer = gl.createBuffer();
++      }
++      // bind the buffer
++      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
++
++      // check if we need to fill the buffer with data
++      if (createBuffer || model.dirtyFlags[def.src] !== false) {
++        var map = def.map;
++        // get the values from the model, possibly transformed
++        var values = map ? map(src) : src;
++
++        // fill the buffer with the values
++        this._bindBuffer(buffer, gl.ARRAY_BUFFER, values);
++
++        // mark the model's source array as clean
++        model.dirtyFlags[def.src] = false;
++      }
++      // enable the attribute
++      shader.enableAttrib(attr, def.size);
++    } else {
++      if (buffer) {
++        // remove the unused buffer
++        gl.deleteBuffer(buffer);
++        buffers[def.dst] = null;
++      }
++      // disable the vertex
++      gl.disableVertexAttribArray(attr.index);
++    }
++  }
+ };
++
+ /**
+- * createBuffers description
++ * creates a buffers object that holds the WebGL render buffers
++ * for a geometry.
+  * @private
+  * @param  {String} gId    key of the geometry object
+- * @param  {p5.Geometry}  obj contains geometry data
++ * @param  {p5.Geometry}  model contains geometry data
+  */
+-p5.RendererGL.prototype.createBuffers = function(gId, obj) {
++p5.RendererGL.prototype.createBuffers = function(gId, model) {
+   var gl = this.GL;
+   //initialize the gl buffers for our geom groups
+-  this._initBufferDefaults(gId);
+-
+-  var geometry = this.gHash[gId];
+-
+-  geometry.numberOfItems = obj.faces.length * 3;
+-  geometry.lineVertexCount = obj.lineVertices.length;
+-
+-  var strokeShader = this._getRetainedStrokeShader();
+-  strokeShader.bindShader();
+-
+-  // initialize the stroke shader's 'aPosition' buffer, if used
+-  if (strokeShader.attributes.aPosition) {
+-    geometry.lineVertexBuffer = gl.createBuffer();
+-
+-    this._bindBuffer(
+-      geometry.lineVertexBuffer,
+-      gl.ARRAY_BUFFER,
+-      this._flatten(obj.lineVertices),
+-      Float32Array,
+-      gl.STATIC_DRAW
+-    );
+-
+-    strokeShader.enableAttrib(
+-      strokeShader.attributes.aPosition.location,
+-      3,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
+-  }
+-
+-  // initialize the stroke shader's 'aDirection' buffer, if used
+-  if (strokeShader.attributes.aDirection) {
+-    geometry.lineNormalBuffer = gl.createBuffer();
+-
+-    this._bindBuffer(
+-      geometry.lineNormalBuffer,
+-      gl.ARRAY_BUFFER,
+-      this._flatten(obj.lineNormals),
+-      Float32Array,
+-      gl.STATIC_DRAW
+-    );
+-
+-    strokeShader.enableAttrib(
+-      strokeShader.attributes.aDirection.location,
+-      4,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
+-  }
+-  strokeShader.unbindShader();
+-
+-  var fillShader = this._getRetainedFillShader();
+-  fillShader.bindShader();
+-
+-  // initialize the fill shader's 'aPosition' buffer, if used
+-  if (fillShader.attributes.aPosition) {
+-    geometry.vertexBuffer = gl.createBuffer();
+-
+-    // allocate space for vertex positions
+-    this._bindBuffer(
+-      geometry.vertexBuffer,
+-      gl.ARRAY_BUFFER,
+-      this._vToNArray(obj.vertices),
+-      Float32Array,
+-      gl.STATIC_DRAW
+-    );
+-
+-    fillShader.enableAttrib(
+-      fillShader.attributes.aPosition.location,
+-      3,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
++  var buffers = this._initBufferDefaults(gId);
++  buffers.model = model;
++
++  var indexBuffer = buffers.indexBuffer;
++
++  if (model.faces.length) {
++    // allocate space for faces
++    if (!indexBuffer) indexBuffer = buffers.indexBuffer = gl.createBuffer();
++    var vals = p5.RendererGL.prototype._flatten(model.faces);
++    this._bindBuffer(indexBuffer, gl.ELEMENT_ARRAY_BUFFER, vals, Uint16Array);
++
++    // the vertex count is based on the number of faces
++    buffers.vertexCount = model.faces.length * 3;
++  } else {
++    // the index buffer is unused, remove it
++    if (indexBuffer) {
++      gl.deleteBuffer(indexBuffer);
++      buffers.indexBuffer = null;
++    }
++    // the vertex count comes directly from the model
++    buffers.vertexCount = model.vertices ? model.vertices.length : 0;
+   }
+ 
+-  // allocate space for faces
+-  geometry.indexBuffer = gl.createBuffer();
+-  this._bindBuffer(
+-    geometry.indexBuffer,
+-    gl.ELEMENT_ARRAY_BUFFER,
+-    this._flatten(obj.faces),
+-    Uint16Array,
+-    gl.STATIC_DRAW
+-  );
++  buffers.lineVertexCount = model.lineVertices ? model.lineVertices.length : 0;
+ 
+-  // initialize the fill shader's 'aNormal' buffer, if used
+-  if (fillShader.attributes.aNormal) {
+-    geometry.normalBuffer = gl.createBuffer();
+-
+-    // allocate space for normals
+-    this._bindBuffer(
+-      geometry.normalBuffer,
+-      gl.ARRAY_BUFFER,
+-      this._vToNArray(obj.vertexNormals),
+-      Float32Array,
+-      gl.STATIC_DRAW
+-    );
+-
+-    fillShader.enableAttrib(
+-      fillShader.attributes.aNormal.location,
+-      3,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
+-  }
+-
+-  // initialize the fill shader's 'aTexCoord' buffer, if used
+-  if (fillShader.attributes.aTexCoord) {
+-    geometry.uvBuffer = gl.createBuffer();
+-
+-    // tex coords
+-    this._bindBuffer(
+-      geometry.uvBuffer,
+-      gl.ARRAY_BUFFER,
+-      this._flatten(obj.uvs),
+-      Float32Array,
+-      gl.STATIC_DRAW
+-    );
+-
+-    fillShader.enableAttrib(
+-      fillShader.attributes.aTexCoord.location,
+-      2,
+-      gl.FLOAT,
+-      false,
+-      0,
+-      0
+-    );
+-  }
+-  fillShader.unbindShader();
+-  return geometry;
++  return buffers;
+ };
+ 
+ /**
+@@ -201,93 +187,25 @@ p5.RendererGL.prototype.createBuffers = function(gId, obj) {
+  */
+ p5.RendererGL.prototype.drawBuffers = function(gId) {
+   var gl = this.GL;
+-  var geometry = this.gHash[gId];
++  var buffers = this.gHash[gId];
+ 
+-  if (this._doStroke && geometry.lineVertexCount > 0) {
++  if (this._doStroke && buffers.lineVertexCount > 0) {
+     var strokeShader = this._getRetainedStrokeShader();
+     this._setStrokeUniforms(strokeShader);
+-
+-    // bind the stroke shader's 'aPosition' buffer
+-    if (geometry.lineVertexBuffer) {
+-      this._bindBuffer(geometry.lineVertexBuffer, gl.ARRAY_BUFFER);
+-      strokeShader.enableAttrib(
+-        strokeShader.attributes.aPosition.location,
+-        3,
+-        gl.FLOAT,
+-        false,
+-        0,
+-        0
+-      );
+-    }
+-
+-    // bind the stroke shader's 'aDirection' buffer
+-    if (geometry.lineNormalBuffer) {
+-      this._bindBuffer(geometry.lineNormalBuffer, gl.ARRAY_BUFFER);
+-      strokeShader.enableAttrib(
+-        strokeShader.attributes.aDirection.location,
+-        4,
+-        gl.FLOAT,
+-        false,
+-        0,
+-        0
+-      );
+-    }
+-
++    this._prepareBuffers(buffers, strokeShader, strokeBuffers);
+     this._applyColorBlend(this.curStrokeColor);
+     this._drawArrays(gl.TRIANGLES, gId);
+     strokeShader.unbindShader();
+   }
+ 
+-  if (this._doFill !== false) {
++  if (this._doFill) {
+     var fillShader = this._getRetainedFillShader();
+     this._setFillUniforms(fillShader);
+-
+-    // bind the fill shader's 'aPosition' buffer
+-    if (geometry.vertexBuffer) {
+-      //vertex position buffer
+-      this._bindBuffer(geometry.vertexBuffer, gl.ARRAY_BUFFER);
+-      fillShader.enableAttrib(
+-        fillShader.attributes.aPosition.location,
+-        3,
+-        gl.FLOAT,
+-        false,
+-        0,
+-        0
+-      );
+-    }
+-
+-    if (geometry.indexBuffer) {
++    this._prepareBuffers(buffers, fillShader, fillBuffers);
++    if (buffers.indexBuffer) {
+       //vertex index buffer
+-      this._bindBuffer(geometry.indexBuffer, gl.ELEMENT_ARRAY_BUFFER);
++      this._bindBuffer(buffers.indexBuffer, gl.ELEMENT_ARRAY_BUFFER);
+     }
+-
+-    // bind the fill shader's 'aNormal' buffer
+-    if (geometry.normalBuffer) {
+-      this._bindBuffer(geometry.normalBuffer, gl.ARRAY_BUFFER);
+-      fillShader.enableAttrib(
+-        fillShader.attributes.aNormal.location,
+-        3,
+-        gl.FLOAT,
+-        false,
+-        0,
+-        0
+-      );
+-    }
+-
+-    // bind the fill shader's 'aTexCoord' buffer
+-    if (geometry.uvBuffer) {
+-      // uv buffer
+-      this._bindBuffer(geometry.uvBuffer, gl.ARRAY_BUFFER);
+-      fillShader.enableAttrib(
+-        fillShader.attributes.aTexCoord.location,
+-        2,
+-        gl.FLOAT,
+-        false,
+-        0,
+-        0
+-      );
+-    }
+-
+     this._applyColorBlend(this.curFillColor);
+     this._drawElements(gl.TRIANGLES, gId);
+     fillShader.unbindShader();
+@@ -332,12 +250,16 @@ p5.RendererGL.prototype._drawArrays = function(drawMode, gId) {
+ };
+ 
+ p5.RendererGL.prototype._drawElements = function(drawMode, gId) {
+-  this.GL.drawElements(
+-    drawMode,
+-    this.gHash[gId].numberOfItems,
+-    this.GL.UNSIGNED_SHORT,
+-    0
+-  );
++  var buffers = this.gHash[gId];
++  var gl = this.GL;
++  // render the fill
++  if (buffers.indexBuffer) {
++    // we're drawing faces
++    gl.drawElements(gl.TRIANGLES, buffers.vertexCount, gl.UNSIGNED_SHORT, 0);
++  } else {
++    // drawing vertices
++    gl.drawArrays(drawMode || gl.TRIANGLES, 0, buffers.vertexCount);
++  }
+   this._pixelsState._pixelsDirty = true;
+ };
+ 
+@@ -354,14 +276,7 @@ p5.RendererGL.prototype._drawPoints = function(vertices, vertexBuffer) {
+     gl.STATIC_DRAW
+   );
+ 
+-  pointShader.enableAttrib(
+-    pointShader.attributes.aPosition.location,
+-    3,
+-    gl.FLOAT,
+-    false,
+-    0,
+-    0
+-  );
++  pointShader.enableAttrib(pointShader.attributes.aPosition, 3);
+ 
+   gl.drawArrays(gl.Points, 0, vertices.length);
+ 
+diff --git a/src/webgl/p5.RendererGL.js b/src/webgl/p5.RendererGL.js
+index d925de1ea4..4ae0d0fafc 100755
+--- a/src/webgl/p5.RendererGL.js
++++ b/src/webgl/p5.RendererGL.js
+@@ -1126,10 +1126,11 @@ p5.RendererGL.prototype._bindBuffer = function(
+   type,
+   usage
+ ) {
++  if (!target) target = this.GL.ARRAY_BUFFER;
+   this.GL.bindBuffer(target, buffer);
+   if (values !== undefined) {
+-    var data = new type(values);
+-    this.GL.bufferData(target, data, usage);
++    var data = new (type || Float32Array)(values);
++    this.GL.bufferData(target, data, usage || this.GL.STATIC_DRAW);
+   }
+ };
+ 
+@@ -1182,11 +1183,12 @@ p5.RendererGL.prototype._flatten = function(arr) {
+  * [1, 2, 3, 4, 5, 6]
+  */
+ p5.RendererGL.prototype._vToNArray = function(arr) {
+-  return this._flatten(
+-    arr.map(function(item) {
+-      return [item.x, item.y, item.z];
+-    })
+-  );
++  var ret = [];
++  for (var i = 0; i < arr.length; i++) {
++    var item = arr[i];
++    ret.push(item.x, item.y, item.z);
++  }
++  return ret;
+ };
+ 
+ /**
+diff --git a/src/webgl/p5.Shader.js b/src/webgl/p5.Shader.js
+index 5c5525488e..c75753e5e2 100644
+--- a/src/webgl/p5.Shader.js
++++ b/src/webgl/p5.Shader.js
+@@ -126,6 +126,7 @@ p5.Shader.prototype._loadAttributes = function() {
+     var attribute = {};
+     attribute.name = name;
+     attribute.location = location;
++    attribute.index = i;
+     attribute.type = attributeInfo.type;
+     attribute.size = attributeInfo.size;
+     this.attributes[name] = attribute;
+@@ -471,17 +472,37 @@ p5.Shader.prototype.isStrokeShader = function() {
+  * @private
+  */
+ p5.Shader.prototype.enableAttrib = function(
+-  loc,
++  attr,
+   size,
+   type,
+   normalized,
+   stride,
+   offset
+ ) {
+-  var gl = this._renderer.GL;
+-  if (loc !== -1) {
+-    gl.enableVertexAttribArray(loc);
+-    gl.vertexAttribPointer(loc, size, type, normalized, stride, offset);
++  if (attr) {
++    if (
++      typeof IS_MINIFIED === 'undefined' &&
++      this.attributes[attr.name] !== attr
++    ) {
++      console.warn(
++        'The attribute "' +
++          attr.name +
++          '"passed to enableAttrib does not belong to this shader.'
++      );
++    }
++    var loc = attr.location;
++    if (loc !== -1) {
++      var gl = this._renderer.GL;
++      gl.enableVertexAttribArray(loc);
++      gl.vertexAttribPointer(
++        loc,
++        size,
++        type || gl.FLOAT,
++        normalized || false,
++        stride || 0,
++        offset || 0
++      );
++    }
+   }
+   return this;
+ };
+diff --git a/src/webgl/text.js b/src/webgl/text.js
+index b8c16d74f1..ba6fa5ae4c 100644
+--- a/src/webgl/text.js
++++ b/src/webgl/text.js
+@@ -3,7 +3,7 @@
+ var p5 = require('../core/main');
+ var constants = require('../core/constants');
+ require('./p5.Shader');
+-require('./p5.RendererGL');
++require('./p5.RendererGL.Retained');
+ 
+ // Text/Typography
+ // @TODO:
+@@ -677,11 +677,8 @@ p5.RendererGL.prototype._renderText = function(p, line, x, y, maxY) {
+   }
+ 
+   // bind the shader buffers
+-  this._bindBuffer(g.vertexBuffer, gl.ARRAY_BUFFER);
+-  sh.enableAttrib(sh.attributes.aPosition.location, 3, gl.FLOAT, false, 0, 0);
++  this._prepareBuffers(g, sh, p5.RendererGL._textBuffers);
+   this._bindBuffer(g.indexBuffer, gl.ELEMENT_ARRAY_BUFFER);
+-  this._bindBuffer(g.uvBuffer, gl.ARRAY_BUFFER);
+-  sh.enableAttrib(sh.attributes.aTexCoord.location, 2, gl.FLOAT, false, 0, 0);
+ 
+   // this will have to do for now...
+   sh.setUniform('uMaterialColor', this.curFillColor);

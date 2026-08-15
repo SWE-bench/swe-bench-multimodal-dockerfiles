@@ -1,0 +1,160 @@
+base_commit: 420aa027b305c91380d96d05e39db2767ec1333a
+created_at: '2021-03-16T15:35:30Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-8650:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/35506344/62070777-17918600-b233-11e9-8f0a-fcfb41ff6fd8.png
+  test_patch:
+  - path: test/fixtures/controller.line/clip/default-y-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/clip/default-y-max.png
+  - path: test/fixtures/controller.line/clip/default-y.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/clip/default-y.png
+  - path: test/fixtures/controller.line/non-numeric-y.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/non-numeric-y.png
+  - path: test/fixtures/controller.line/point-style-offscreen-canvas.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/point-style-offscreen-canvas.png
+  - path: test/fixtures/controller.line/point-style.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/point-style.png
+  - path: test/fixtures/controller.line/pointBackgroundColor/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBackgroundColor/indexable.png
+  - path: test/fixtures/controller.line/pointBackgroundColor/scriptable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBackgroundColor/scriptable.png
+  - path: test/fixtures/controller.line/pointBackgroundColor/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBackgroundColor/value.png
+  - path: test/fixtures/controller.line/pointBorderColor/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBorderColor/indexable.png
+  - path: test/fixtures/controller.line/pointBorderColor/scriptable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBorderColor/scriptable.png
+  - path: test/fixtures/controller.line/pointBorderColor/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBorderColor/value.png
+  - path: test/fixtures/controller.line/pointBorderWidth/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBorderWidth/indexable.png
+  - path: test/fixtures/controller.line/pointBorderWidth/scriptable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBorderWidth/scriptable.png
+  - path: test/fixtures/controller.line/pointBorderWidth/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointBorderWidth/value.png
+  - path: test/fixtures/controller.line/pointStyle/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointStyle/indexable.png
+  - path: test/fixtures/controller.line/pointStyle/scriptable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointStyle/scriptable.png
+  - path: test/fixtures/controller.line/pointStyle/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/pointStyle/value.png
+  - path: test/fixtures/controller.line/radius/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/radius/indexable.png
+  - path: test/fixtures/controller.line/radius/scriptable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/radius/scriptable.png
+  - path: test/fixtures/controller.line/radius/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/radius/value.png
+  - path: test/fixtures/controller.line/rotation/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/rotation/indexable.png
+  - path: test/fixtures/controller.line/rotation/scriptable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/rotation/scriptable.png
+  - path: test/fixtures/controller.line/rotation/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/rotation/value.png
+  - path: test/fixtures/controller.line/showLine/false.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/showLine/false.png
+  - path: test/fixtures/controller.line/stacking/stacked-scatter.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.line/stacking/stacked-scatter.png
+  - path: test/fixtures/controller.scatter/showLine/true.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.scatter/showLine/true.png
+  - path: test/fixtures/controller.scatter/showLine/undefined.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/controller.scatter/showLine/undefined.png
+  - path: test/fixtures/core.layouts/hidden-vertical-boxes.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.layouts/hidden-vertical-boxes.png
+  - path: test/fixtures/core.layouts/no-boxes-all-padding.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.layouts/no-boxes-all-padding.png
+  - path: test/fixtures/core.layouts/refit-vertical-boxes.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.layouts/refit-vertical-boxes.png
+  - path: test/fixtures/core.scale/autoSkip/fit-after.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.scale/autoSkip/fit-after.png
+  - path: test/fixtures/core.scale/cartesian-axis-border-settings.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.scale/cartesian-axis-border-settings.png
+  - path: test/fixtures/core.scale/label-align-end.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.scale/label-align-end.png
+  - path: test/fixtures/core.scale/label-align-start.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.scale/label-align-start.png
+  - path: test/fixtures/core.scale/x-axis-position-dynamic.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/core.scale/x-axis-position-dynamic.png
+  - path: test/fixtures/element.line/default.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/default.png
+  - path: test/fixtures/element.line/skip/first-span.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/skip/first-span.png
+  - path: test/fixtures/element.line/skip/first.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/skip/first.png
+  - path: test/fixtures/element.line/skip/last-span.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/skip/last-span.png
+  - path: test/fixtures/element.line/skip/last.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/skip/last.png
+  - path: test/fixtures/element.line/stepped/after.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/stepped/after.png
+  - path: test/fixtures/element.line/stepped/before.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/stepped/before.png
+  - path: test/fixtures/element.line/stepped/default.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/stepped/default.png
+  - path: test/fixtures/element.line/stepped/middle.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/stepped/middle.png
+  - path: test/fixtures/element.line/tension/default.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/tension/default.png
+  - path: test/fixtures/element.line/tension/one.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/tension/one.png
+  - path: test/fixtures/element.line/tension/zero.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/element.line/tension/zero.png
+  - path: test/fixtures/plugin.filler/fill-line-dataset-interpolated.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/plugin.filler/fill-line-dataset-interpolated.png
+  - path: test/fixtures/plugin.tooltip/positioning.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/plugin.tooltip/positioning.png
+  - path: test/fixtures/scale.time/autoskip-major.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/autoskip-major.png
+  - path: test/fixtures/scale.time/custom-parser.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/custom-parser.png
+  - path: test/fixtures/scale.time/data-ty.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/data-ty.png
+  - path: test/fixtures/scale.time/data-xy.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/data-xy.png
+  - path: test/fixtures/scale.time/negative-times.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/negative-times.png
+  - path: test/fixtures/scale.time/source-auto-linear.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/source-auto-linear.png
+  - path: test/fixtures/scale.time/source-data-linear.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/source-data-linear.png
+  - path: test/fixtures/scale.time/source-labels-linear-offset-min-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/source-labels-linear-offset-min-max.png
+  - path: test/fixtures/scale.time/source-labels-linear.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/source-labels-linear.png
+  - path: test/fixtures/scale.time/ticks-reverse-linear-min-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/ticks-reverse-linear-min-max.png
+  - path: test/fixtures/scale.time/ticks-reverse-linear.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/ticks-reverse-linear.png
+  - path: test/fixtures/scale.time/ticks-reverse-offset.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/ticks-reverse-offset.png
+  - path: test/fixtures/scale.time/ticks-reverse.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.time/ticks-reverse.png
+  - path: test/fixtures/scale.timeseries/normalize.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/normalize.png
+  - path: test/fixtures/scale.timeseries/source-auto.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/source-auto.png
+  - path: test/fixtures/scale.timeseries/source-data-offset-min-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/source-data-offset-min-max.png
+  - path: test/fixtures/scale.timeseries/source-data.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/source-data.png
+  - path: test/fixtures/scale.timeseries/source-labels-offset-min-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/source-labels-offset-min-max.png
+  - path: test/fixtures/scale.timeseries/source-labels.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/source-labels.png
+  - path: test/fixtures/scale.timeseries/ticks-reverse-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/ticks-reverse-max.png
+  - path: test/fixtures/scale.timeseries/ticks-reverse-min-max.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/ticks-reverse-min-max.png
+  - path: test/fixtures/scale.timeseries/ticks-reverse-min.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/ticks-reverse-min.png
+  - path: test/fixtures/scale.timeseries/ticks-reverse.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/ticks-reverse.png
+instance_id: chartjs__Chart.js-8650
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.0'

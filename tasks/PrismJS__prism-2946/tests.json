@@ -1,0 +1,22 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'rest' – should pass test case 'issue2940'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'rest' – should pass test case 'title_feature'",
+    "Testing language 'rest' – should pass test case 'command-line-option_feature'",
+    "Testing language 'rest' – should pass test case 'directive_feature'",
+    "Testing language 'rest' – should pass test case 'comment_feature'",
+    "Testing language 'rest' – should pass test case 'link_feature'",
+    "Testing language 'rest' – should pass test case 'substitution-def_feature'",
+    "Testing language 'rest' – should pass test case 'field_feature'",
+    "Testing language 'rest' – should pass test case 'doctest-block_feature'",
+    "Testing language 'rest' – should pass test case 'quoted-literal-block_feature'",
+    "Testing language 'rest' – should pass test case 'inline_feature'",
+    "Testing language 'rest' – should pass test case 'list-bullet_feature'",
+    "Testing language 'rest' – should pass test case 'link-target_feature'",
+    "Testing language 'rest' – should pass test case 'table_feature'",
+    "Testing language 'rest' – should pass test case 'hr_feature'",
+    "Testing language 'rest' – should pass test case 'literal-block_feature'"
+  ]
+}

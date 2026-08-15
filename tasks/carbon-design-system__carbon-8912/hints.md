@@ -1,0 +1,2 @@
+Looks like the issue is that it's no longer getting a default size, which was changed in this PR: https://github.com/carbon-design-system/carbon/pull/8824/files
+@tw15egan Is there a reason we aren't providing a default size anymore (for sizes other than small)? Otherwise, we should add a specific size to the story, or add a default height to `bx--search` styles.

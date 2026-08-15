@@ -1,0 +1,2 @@
+I was able to reproduce this bug on [demo.bpmn.io](https://demo.bpmn.io) (latest bpmn-js `v3.0.3`). 
+This is still an issue. Deleting labels unsets their label targets name. The label shape is still copied but won't be visible afterward since the label target has no name. Since we don't serialize business objects when copying we need to copy the name to the descriptor.

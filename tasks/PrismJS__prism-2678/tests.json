@@ -1,0 +1,26 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'markdown' – should pass test case 'italic_feature'",
+    "Testing language 'markdown' – should pass test case 'strike_feature'",
+    "Testing language 'markdown' – should pass test case 'bold_feature'",
+    "Testing language 'markdown' – should pass test case 'url_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'markdown' – should pass test case 'blockquote_feature'",
+    "Testing language 'markdown+haml' – should pass test case 'markdown_inclusion'",
+    "Testing language 'markdown' – should pass test case 'title_feature'",
+    "Testing language 'markdown' – should pass test case 'list_feature'",
+    "Testing language 'markdown' – should pass test case 'code_feature'",
+    "Testing language 'markdown+graphql' – should pass test case 'description_feature'",
+    "Testing language 'markdown' – should pass test case 'front-matter-block_empty_feature'",
+    "Testing language 'markdown' – should pass test case 'code_block_language_detection_feature'",
+    "Testing language 'markdown' – should pass test case 'front-matter-block_feature'",
+    "Testing language 'markdown' – should pass test case 'hr_feature'",
+    "Testing language 'markdown' – should pass test case 'table_feature'",
+    "Testing language 'javascript!+markdown+js-templates' – should pass test case 'markdown_inclusion'",
+    "Testing language 'markdown+pug' – should pass test case 'markdown_inclusion'",
+    "Testing language 'markdown' – should pass test case 'nested_bold_italic_feature'",
+    "Testing language 'yaml+markdown' – should pass test case 'front-matter_feature'",
+    "Testing language 'markdown' – should pass test case 'url-reference_feature'"
+  ]
+}

@@ -1,0 +1,3 @@
+It looks like this was introduced in #13212.  During rendering, the layer states are calculated so that group visibility is applied to a layer's "own" state.  For WebGL tile layers after #13212, calling `layer.getSourceState()` [now calls](https://github.com/openlayers/openlayers/pull/13212/files#diff-e6aa1bc5744c53b52762df50d5018adadcf0ac8be998c596f064e38801e5351eR353-R358) `layer.getLayerState()` which modifies the layer's own state so that it again represents its own visibility.
+
+Generating layer states tries to avoid unnecessary allocation, but the resulting code is fragile due to all of the mutability.  Digging around for a fix...

@@ -1,0 +1,2 @@
+Do you have any clue what the reason for that behavior is, @mike-000 ?
+I suspect it is related to the transform used to construct the CanvasImmediateRenderer.  I resurrected an old codesandbox of the Icon and Label Scale example which included vector context, and added a option for using the context of either layer https://codesandbox.io/s/icon-scale-new-forked-h6ghu3?file=/main.js  Icon and text scale and rotate with view are all inconsistent when the raster layer context is used when rotated.

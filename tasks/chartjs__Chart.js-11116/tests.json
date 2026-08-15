@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Linear Scale Should not generate any ticks > max if max is specified "
+  ],
+  "PASS_TO_PASS": []
+}

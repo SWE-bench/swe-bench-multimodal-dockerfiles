@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "features/create-append-anything - editor actions #appendElement should open create element if append not allowed ",
+    "features/create-append-anything - editor actions #appendElement should open create element if no selection ",
+    "features/create-append-anything - editor actions #appendElement should open create element if multiple elements selected "
+  ],
+  "PASS_TO_PASS": []
+}

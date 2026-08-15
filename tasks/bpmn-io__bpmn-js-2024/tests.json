@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/behavior - IsHorizontalFix set on change should keep isHorizontal=false when participant is moved ",
+    "features - label-editing sizes bounds vertical pools/lanes [zoom 1] should have width of element width, height of 30 ",
+    "features/modeling/behavior - IsHorizontalFix set on change should keep isHorizontal=false when lane is moved ",
+    "features - label-editing sizes bounds vertical pools/lanes [zoom 1.5] should have width of element width, height of 30 ",
+    "features - label-editing sizes bounds vertical collapsed pools [zoom 1] should have width/height of element ",
+    "features - label-editing sizes bounds vertical collapsed pools [zoom 1.5] should have width/height of element "
+  ],
+  "PASS_TO_PASS": []
+}

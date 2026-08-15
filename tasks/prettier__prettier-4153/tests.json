@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/multiparser_markdown_js/jsfmt.spec.js"
+  ],
+  "PASS_TO_PASS": [
+    "tests/multiparser_markdown_json/jsfmt.spec.js"
+  ]
+}

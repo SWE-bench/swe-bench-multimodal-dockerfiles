@@ -1,0 +1,1 @@
+@holmansze would it help if we wired this up automatically for you? In other words, the `<fieldset>` by default would have `aria-labelledby` pointed to the legend that is used as the label.

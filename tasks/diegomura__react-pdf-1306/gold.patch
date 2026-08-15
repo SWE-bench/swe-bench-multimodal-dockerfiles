@@ -1,0 +1,101 @@
+diff --git a/packages/layout/src/image/fetchImage.js b/packages/layout/src/image/fetchImage.js
+index c7d8c3f38..d7dbc9888 100644
+--- a/packages/layout/src/image/fetchImage.js
++++ b/packages/layout/src/image/fetchImage.js
+@@ -3,15 +3,7 @@
+ import resolveImage from '@react-pdf/image';
+ 
+ import getSource from './getSource';
+-
+-/**
+- * Resolves async src if passed
+- *
+- * @param {string | Function} src
+- * @returns {object} resolved src
+- */
+-const resolveSrc = async src =>
+-  typeof src === 'function' ? { uri: await src() } : src;
++import resolveSource from './resolveSource';
+ 
+ /**
+  * Fetches image and append data to node
+@@ -29,7 +21,7 @@ const fetchImage = async node => {
+   }
+ 
+   try {
+-    const source = await resolveSrc(src);
++    const source = await resolveSource(src);
+     node.image = await resolveImage(source, { cache });
+   } catch (e) {
+     node.image = { width: 0, height: 0 };
+diff --git a/packages/layout/src/image/getSource.js b/packages/layout/src/image/getSource.js
+index 86963f879..0618cba28 100644
+--- a/packages/layout/src/image/getSource.js
++++ b/packages/layout/src/image/getSource.js
+@@ -2,11 +2,9 @@
+  * Get image source
+  *
+  * @param {Object} image node
+- * @returns {String} image src
++ * @returns {String | Object} image src
+  */
+-const getSource = node => {
+-  const value = node.props?.src || node.props?.source || node.props?.href;
+-  return typeof value === 'string' ? { uri: value } : value;
+-};
++const getSource = node =>
++  node.props?.src || node.props?.source || node.props?.href;
+ 
+ export default getSource;
+diff --git a/packages/layout/src/image/resolveSource.js b/packages/layout/src/image/resolveSource.js
+new file mode 100644
+index 000000000..f8859bcbf
+--- /dev/null
++++ b/packages/layout/src/image/resolveSource.js
+@@ -0,0 +1,14 @@
++/**
++ * Resolves `src` to `@react-pdf/image` interface.
++ *
++ * Also it handles factories and async sources.
++ *
++ * @param {string | Object | Function} src
++ * @returns {object} resolved src
++ */
++const resolveSource = async src => {
++  const source = typeof src === 'function' ? await src() : await src;
++  return typeof source === 'string' ? { uri: source } : source;
++};
++
++export default resolveSource;
+diff --git a/packages/types/image.d.ts b/packages/types/image.d.ts
+index 9024db7ce..ba7adca36 100644
+--- a/packages/types/image.d.ts
++++ b/packages/types/image.d.ts
+@@ -1,6 +1,23 @@
+ type HTTPMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+ 
+-export type SourceObject =
+-  | string
+-  | { data: Buffer; format: 'png' | 'jpg' }
+-  | { uri: string; method: HTTPMethod; body: any; headers: any };
++type SourceURL = string
++
++type SourceBuffer = Buffer
++
++type SourceDataBuffer = { data: Buffer; format: 'png' | 'jpg' }
++
++type SourceURLObject =  { uri: string; method: HTTPMethod; body: any; headers: any }
++
++type Source =
++  | SourceURL
++  | SourceBuffer
++  | SourceDataBuffer
++  | SourceURLObject
++
++type SourceFactory = () => Source
++
++type SourceAsync = Promise<Source>
++
++type SourceAsyncFactory = () => Promise<Source>
++
++export type SourceObject = Source | SourceFactory | SourceAsync | SourceAsyncFactory

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/behavior - detach events basics should execute on batch "
+  ],
+  "PASS_TO_PASS": []
+}

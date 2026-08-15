@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/runner-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "lighthouse-core/test/index-test.js"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "features - drilldown Navigation - Collaboration should not reset scroll on create collaboration - undo ",
+    "features - drilldown Navigation - Collaboration should not reset scroll on create collaboration - redo ",
+    "features - drilldown Navigation - Collaboration should remember scroll and zoom after morph ",
+    "features - drilldown Navigation - Collaboration should not reset scroll on create collaboration "
+  ],
+  "PASS_TO_PASS": []
+}

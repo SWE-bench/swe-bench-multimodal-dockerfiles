@@ -1,0 +1,3 @@
+Adding note - mermaid/dot appear to be preserving leading whitespace in code cells (and I saw intermittently it preserving trailing whitespace, though I couldn't cause consistent behavior in this regard).
+I can fix this, but it's going to be prone to regressions. This would need to be done inside break-quarto-md, which is fairly fragile. I think we should push to after 1.0
+I found a more localized fix for this, it's included in https://github.com/quarto-dev/quarto-cli/pull/1650 now.

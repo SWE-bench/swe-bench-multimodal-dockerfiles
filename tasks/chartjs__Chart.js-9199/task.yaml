@@ -1,0 +1,27 @@
+base_commit: 599e23abfd1bb3545e350d62647f19911125872b
+created_at: '2021-05-31T22:52:09Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-9199:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/fixtures/plugin.legend/label-textAlign/horizontal-left.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/063c62693f5f0e73a5882bd4f9b25bcb7ce54f40/test/fixtures/plugin.legend/label-textAlign/horizontal-left.png
+  - path: test/fixtures/plugin.legend/label-textAlign/horizontal-right.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/063c62693f5f0e73a5882bd4f9b25bcb7ce54f40/test/fixtures/plugin.legend/label-textAlign/horizontal-right.png
+  - path: test/fixtures/plugin.legend/label-textAlign/horizontal-rtl-left.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/063c62693f5f0e73a5882bd4f9b25bcb7ce54f40/test/fixtures/plugin.legend/label-textAlign/horizontal-rtl-left.png
+  - path: test/fixtures/plugin.legend/label-textAlign/horizontal-rtl-right.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/063c62693f5f0e73a5882bd4f9b25bcb7ce54f40/test/fixtures/plugin.legend/label-textAlign/horizontal-rtl-right.png
+  - path: test/fixtures/plugin.legend/label-textAlign/rtl-left.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/063c62693f5f0e73a5882bd4f9b25bcb7ce54f40/test/fixtures/plugin.legend/label-textAlign/rtl-left.png
+  - path: test/fixtures/plugin.legend/label-textAlign/rtl-right.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/063c62693f5f0e73a5882bd4f9b25bcb7ce54f40/test/fixtures/plugin.legend/label-textAlign/rtl-right.png
+instance_id: chartjs__Chart.js-9199
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.3'

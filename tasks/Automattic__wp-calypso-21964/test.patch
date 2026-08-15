@@ -1,0 +1,16 @@
+diff --git a/client/lib/paths/login/test/index.js b/client/lib/paths/login/test/index.js
+index 393fd9ddc64ef..ca7bc6d480f1c 100644
+--- a/client/lib/paths/login/test/index.js
++++ b/client/lib/paths/login/test/index.js
+@@ -63,5 +63,11 @@ describe( 'index', () => {
+ 
+ 			expect( url ).to.equal( '/log-in?email_address=foo%40bar.com' );
+ 		} );
++
++		test( 'should return the login url with encoded OAuth2 client ID param', () => {
++			const url = login( { isNative: true, oauth2ClientId: 12345 } );
++
++			expect( url ).to.equal( '/log-in?client_id=12345' );
++		} );
+ 	} );
+ } );

@@ -1,0 +1,10 @@
+{
+  "FAIL_TO_PASS": [
+    "indent valid <div> { ( 1 ) } </div>:",
+    "indent invalid <div> { ( 1 ) } </div>:",
+    "indent valid function A() { return ( <div> { b && ( <div> </div> ) } </div> ); }:",
+    "indent invalid <div> { /* foo */ } </div>:",
+    "indent valid <div> { /* foo */ } </div>:"
+  ],
+  "PASS_TO_PASS": []
+}

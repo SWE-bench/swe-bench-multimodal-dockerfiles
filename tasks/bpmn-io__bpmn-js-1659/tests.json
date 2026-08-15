@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "behavior - LabelBehavior move label connection labels should center position visible ",
+    "behavior - LayoutConnectionBehavior incomming association should reconnect on waypoint update ",
+    "behavior - LayoutConnectionBehavior outgoing association should reconnect on waypoint update "
+  ],
+  "PASS_TO_PASS": []
+}

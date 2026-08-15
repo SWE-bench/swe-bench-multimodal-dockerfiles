@@ -1,0 +1,15 @@
+Welcome! 👋 Thanks for opening your first issue here! And to ensure the community is able to respond to your issue, be sure to follow the issue template if you haven't already.
+
+This is probably because of the way TRIANGLE_FAN joins vertices. WebGL has no way of knowing that the middle part of the shape needs to be hollow. One way to get around this is to draw the letter C as three separate rectangular shapes. Otherwise, we might have to use the triangulation library libtess, which is already being used for filling curves, to handle irregular polygons like this one.
+> This is probably because of the way TRIANGLE_FAN joins vertices. WebGL has no way of knowing that the middle part of the shape needs to be hollow. One way to get around this is to draw the letter C as three separate rectangular shapes. Otherwise, we might have to use the triangulation library libtess, which is already being used for filling curves, to handle irregular polygons like this one.
+
+Yes, that is my belief also, it is even more clear if you use a semi-transparent color for the fill. The problem in hand is not solving this for C as it is a proof of concept (Cs, Es, Fs all will have problems with the fill). This bug in practice limits the usability of `textToPoints` in WebGL and creates inconsistencies between the behaviour of `beginShape/vertex/endShape` between 2D and 3D. 
+
+It’s not really a bug, more a natural consequence of adding another dimension.
+The concepts ‘polygon’ and ‘winding rule’ don’t really exist in 3D, and their 3D equivalents are either way too complex or not adequately defined for a library like p5 to implement. 
+> It’s not really a bug, more a natural consequence of adding another dimension.
+> The concepts ‘polygon’ and ‘winding rule’ don’t really exist in 3D, and their 3D equivalents are either way too complex or not adequately defined for a library like p5 to implement.
+
+Should there be a note in the docs about this saying 3D Custom Shapes are not properly implemented and that results may vary? Or just add a note "broken in Webgl mode"?
+I agree that this isn't really a bug in the sense that WebGL is behaving as is expected but it also probably isn't the best teaching moment for users. Processing handles the tesellation without explicit user knowledge [with GLUTesellator](https://github.com/processing/processing/blob/master/core/src/processing/opengl/PJOGL.java#L598). As @AdilRabbani says he introduced [the libtess library for curves ](https://github.com/processing/p5.js/blob/master/src/webgl/p5.RendererGL.js#L1207)so the todo here may be to see how much of a performance hit is taken if all custom shapes are [triangulated through the tesellator](https://github.com/processing/p5.js/blob/master/src/webgl/p5.RendererGL.js#L1244).
+@stalgiag I'll submit a PR soon so the performance of the library can be tested with custom shapes.

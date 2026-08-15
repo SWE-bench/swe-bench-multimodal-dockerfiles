@@ -1,0 +1,148 @@
+diff --git a/client/components/happiness-support/index.jsx b/client/components/happiness-support/index.jsx
+index bf543264cee37..e297781adb099 100644
+--- a/client/components/happiness-support/index.jsx
++++ b/client/components/happiness-support/index.jsx
+@@ -128,8 +128,10 @@ export class HappinessSupport extends Component {
+ 
+ 	renderIllustration() {
+ 		return (
+-			<div className="happiness-support__illustration">
+-				<img alt="" src="/calypso/images/illustrations/dotcom-support.svg" />
++			<div className="happiness-support__image">
++				<div className="happiness-support__icon">
++					<img alt="" src="/calypso/images/illustrations/dotcom-support.svg" />
++				</div>
+ 			</div>
+ 		);
+ 	}
+@@ -164,11 +166,11 @@ export class HappinessSupport extends Component {
+ 			<div className={ classNames( 'happiness-support', classes ) }>
+ 				{ this.renderIllustration() }
+ 
+-				<h3 className="happiness-support__heading">{ this.getHeadingText() }</h3>
+-
+-				<p className="happiness-support__text">{ this.getSupportText() }</p>
+-
+-				{ this.getSupportButtons() }
++				<div className="happiness-support__text">
++					<h3 className="happiness-support__heading">{ this.getHeadingText() }</h3>
++					<p className="happiness-support__description">{ this.getSupportText() }</p>
++					{ this.getSupportButtons() }
++				</div>
+ 			</div>
+ 		);
+ 	}
+diff --git a/client/components/happiness-support/style.scss b/client/components/happiness-support/style.scss
+index e3d99d41bebc7..b157c4e8e35c1 100644
+--- a/client/components/happiness-support/style.scss
++++ b/client/components/happiness-support/style.scss
+@@ -1,3 +1,11 @@
++.happiness-support {
++	display: flex;
++
++	@include breakpoint( '<660px' ) {
++		flex-wrap: wrap;
++	}
++}
++
+ .happiness-support.is-placeholder {
+ 	.happiness-support__heading,
+ 	.happiness-support__text {
+@@ -12,7 +20,7 @@
+ 		width: 82%;
+ 	}
+ 
+-	.happiness-support__illustration {
++	.happiness-support__image {
+ 		display: none;
+ 	}
+ 
+@@ -29,42 +37,44 @@
+ 	font-size: 21px;
+ }
+ 
+-.happiness-support__text {
++.happiness-support__description {
+ 	color: var( --color-text-subtle );
+ 	margin-bottom: 16px;
+ 	margin-top: 16px;
+ }
+ 
+-.happiness-support__illustration {
+-	float: right;
+-	width: 150px;
+-	margin-left: 30px;
+-	text-align: center;
++.happiness-support__image {
++	flex-shrink: 0;
++	margin: 0 auto;
++	width: 128px;
+ 
+-	@include breakpoint( '<660px' ) {
+-		width: 68px;
++	@include breakpoint( '>660px' ) {
++		width: 178px;
+ 	}
+ }
+ 
+-.happiness-support__buttons {
+-	clear: both;
++.happiness-support__icon {
++	margin-bottom: 20px;
+ 
+-	@include breakpoint( '<660px' ) {
+-		margin-top: 6px;
+-		text-align: center;
++	@include breakpoint( '>660px' ) {
++		width: 150px;
++		margin: 0 auto;
+ 	}
++}
++
++.happiness-support__buttons {
++	width: 100%;
+ 
+ 	.button {
+ 		@include breakpoint( '<660px' ) {
+-			margin-top: 10px;
+ 			width: 80%;
+ 		}
+ 
+ 		@include breakpoint( '>660px' ) {
+-			margin-top: 10px;
+ 
+ 			&:first-of-type {
+ 				margin-right: 16px;
++				margin-bottom: 6px;
+ 			}
+ 		}
+ 	}
+@@ -72,5 +82,9 @@
+ 	.happiness-support__support-button {
+ 		padding-bottom: 11px;
+ 		padding-top: 2px;
++
++		@include breakpoint( '<660px' ) {
++			margin-top: 16px;
++		}
+ 	}
+ }
+diff --git a/client/my-sites/checkout/checkout-thank-you/style.scss b/client/my-sites/checkout/checkout-thank-you/style.scss
+index db953a17f6676..85d88849caea8 100644
+--- a/client/my-sites/checkout/checkout-thank-you/style.scss
++++ b/client/my-sites/checkout/checkout-thank-you/style.scss
+@@ -192,12 +192,12 @@
+ 
+ // Footer Subcomponent styles
+ .checkout-thank-you__footer {
+-	font-size: 16px;
+ 	padding: 32px 20px;
+-	text-align: left;
+ 
+ 	@include breakpoint( '>660px' ) {
++		font-size: 16px;
+ 		padding: 60px 24px;
++		text-align: left;
+ 	}
+ 
+ 	.happiness-support {

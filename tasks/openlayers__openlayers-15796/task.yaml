@@ -1,0 +1,21 @@
+base_commit: b28273044fbe7c7fd6335c73f428e0d890a7e33d
+created_at: '2024-05-03T20:39:36Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15796:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/layer-vector-extent-rotation-declutter/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/9d7208e87d98c3350c2e56d2241ac5b3d4030663/test/rendering/cases/layer-vector-extent-rotation-declutter/expected.png
+  - path: test/rendering/cases/layer-vector-multi-world-declutter/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/9d7208e87d98c3350c2e56d2241ac5b3d4030663/test/rendering/cases/layer-vector-multi-world-declutter/expected.png
+  - path: test/rendering/cases/vector-layer-opacity-declutter/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/9d7208e87d98c3350c2e56d2241ac5b3d4030663/test/rendering/cases/vector-layer-opacity-declutter/expected.png
+instance_id: openlayers__openlayers-15796
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '9.1'

@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "handleTransferSuccess() - should return a success notice action and a function"
+  ],
+  "PASS_TO_PASS": [
+    "requestPlanOwnershipTransfer() - should return an action for HTTP request to transfer the site plan to another user",
+    "handleTransferError() - should return an error notice action"
+  ]
+}

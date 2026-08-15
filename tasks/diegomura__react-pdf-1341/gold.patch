@@ -1,0 +1,35 @@
+diff --git a/packages/stylesheet/src/flex.js b/packages/stylesheet/src/flex.js
+index 1fdcf8f26..6bb33c6d7 100644
+--- a/packages/stylesheet/src/flex.js
++++ b/packages/stylesheet/src/flex.js
+@@ -1,11 +1,13 @@
+ import { castFloat } from './utils';
+ 
++const flexDefaults = [1, 1, 0];
++
+ const processFlex = (key, value) => {
+-  const matches = value.split(' ');
++  const matches = `${value}`.split(' ');
+ 
+-  const flexGrow = castFloat(matches[0] || value);
+-  const flexShrink = castFloat(matches[1] || value);
+-  const flexBasis = castFloat(matches[2] || value);
++  const flexGrow = castFloat(matches[0] || flexDefaults[0]);
++  const flexShrink = castFloat(matches[1] || flexDefaults[1]);
++  const flexBasis = castFloat(matches[2] || flexDefaults[2]);
+ 
+   return { flexGrow, flexShrink, flexBasis };
+ };
+diff --git a/packages/textkit/src/layout/index.js b/packages/textkit/src/layout/index.js
+index eeb4d474a..7507f13c7 100644
+--- a/packages/textkit/src/layout/index.js
++++ b/packages/textkit/src/layout/index.js
+@@ -18,7 +18,7 @@ import applyDefaultStyles from './applyDefaultStyles';
+  * layout behavior.
+  *
+  * @param  {Object}  engines
+- * @param  {Object}  attributted string
++ * @param  {Object}  attributed string
+  * @param  {Object}  container rect
+  * @param  {Object}  layout options
+  * @return {Array} paragraph blocks

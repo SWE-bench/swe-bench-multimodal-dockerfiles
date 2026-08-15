@@ -1,0 +1,18 @@
+base_commit: 5c3dc932b615afa61580d06950712f79cfc7c4ef
+created_at: '2022-04-15T22:50:27Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-10301:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/58777964/157239796-95ccabbb-7ac1-4e58-89ca-c902b1df0dfe.png
+  - https://user-images.githubusercontent.com/58777964/157240018-395c6e62-d8e3-431f-8926-7644d5441078.png
+  - https://user-images.githubusercontent.com/58777964/157241538-f55bf466-916f-4763-b0ea-ef78ef847127.png
+  test_patch: []
+instance_id: chartjs__Chart.js-10301
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.7'

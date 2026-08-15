@@ -1,0 +1,16 @@
+base_commit: 0cd85983ce810c5f833c939cdf66b341dc2d6825
+created_at: '2020-05-12T21:05:44Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.markedjs_1776_marked-1674:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/1694410/81624131-6de74400-93c3-11ea-8eb7-ac3a1145afc4.png
+  test_patch: []
+instance_id: markedjs__marked-1674
+log_parser: parse_log_marked
+repo: markedjs/marked
+split: dev
+version: '1.0'

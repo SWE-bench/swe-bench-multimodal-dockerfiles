@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/ListBox/__tests__/ListBoxSelection-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBoxField-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/ListBox/__tests__/ListBoxMenu-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBoxMenuIcon-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBoxMenuItem-test.js",
+    "packages/react/src/components/ListBox/__tests__/ListBox-test.js"
+  ]
+}

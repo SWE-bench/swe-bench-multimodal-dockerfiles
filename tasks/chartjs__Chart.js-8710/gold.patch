@@ -1,0 +1,25 @@
+diff --git a/src/scales/scale.linearbase.js b/src/scales/scale.linearbase.js
+index e8a122199af..a215c7571c6 100644
+--- a/src/scales/scale.linearbase.js
++++ b/src/scales/scale.linearbase.js
+@@ -275,6 +275,6 @@ export default class LinearScaleBase extends Scale {
+   }
+ 
+   getLabelForValue(value) {
+-    return formatNumber(value, this.options.locale);
++    return formatNumber(value, this.chart.options.locale);
+   }
+ }
+diff --git a/src/scales/scale.logarithmic.js b/src/scales/scale.logarithmic.js
+index 66751af7aee..2223f1cff88 100644
+--- a/src/scales/scale.logarithmic.js
++++ b/src/scales/scale.logarithmic.js
+@@ -149,7 +149,7 @@ export default class LogarithmicScale extends Scale {
+ 	 * @return {string}
+ 	 */
+   getLabelForValue(value) {
+-    return value === undefined ? '0' : formatNumber(value, this.options.locale);
++    return value === undefined ? '0' : formatNumber(value, this.chart.options.locale);
+   }
+ 
+   /**

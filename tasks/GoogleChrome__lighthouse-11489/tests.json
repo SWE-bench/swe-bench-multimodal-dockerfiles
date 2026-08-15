@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/report/html/renderer/i18n-test.js",
+    "lighthouse-core/test/report/html/renderer/report-ui-features-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

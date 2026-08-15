@@ -1,0 +1,17 @@
+base_commit: 1a356332f341e60ede7c07b1bc182e8826de8432
+created_at: '2020-08-06T09:22:57Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-11401:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: rendering/cases/icon-scale/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/9468a088c0b0d510c8ab382717a5267ca46bc9b3/rendering/cases/icon-scale/expected.png
+instance_id: openlayers__openlayers-11401
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.4'

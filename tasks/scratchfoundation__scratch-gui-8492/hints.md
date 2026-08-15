@@ -1,0 +1,1 @@
+Dependency bump won't solve this, as that PR only fixed dragging on text input. (also, react-modal is 3.9 so it should have been fixed if that's the case!)

@@ -1,0 +1,1 @@
+@kimsjason Yes, thanks for catching this, `caption` is not used in ActionableNotification. It was part of the experimental API during v11 development and we forgot to remove it.

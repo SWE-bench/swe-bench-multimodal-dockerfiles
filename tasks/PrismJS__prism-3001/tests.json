@@ -1,0 +1,14 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'typescript' – should pass test case 'issue3000'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'typescript' – should pass test case 'builtin_feature'",
+    "Testing language 'typescript' – should pass test case 'issue2819'",
+    "Testing language 'typescript' – should pass test case 'function_feature'",
+    "Testing language 'typescript' – should pass test case 'issue2860'",
+    "Testing language 'typescript' – should pass test case 'keyword_feature'",
+    "Testing language 'typescript' – should pass test case 'decorator_feature'",
+    "Testing language 'typescript' – should pass test case 'class-name_feature'"
+  ]
+}

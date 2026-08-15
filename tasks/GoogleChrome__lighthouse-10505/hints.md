@@ -1,0 +1,3 @@
+Ahhhh thanks very much @mattzeunert I think this might explain https://github.com/GoogleChrome/lighthouse/issues/10410 as well. We wait 5250 ms after load, CPU quiet, and network quiet, but if FCP was after all of those then we'll bump into this error.
+
+You might already be aware but increasing `cpuQuietThresholdMs`/`pauseAfterLoadMs`/`networkQuietThresholdMs` in the defaultPass config should fix this in the meantime.

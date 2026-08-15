@@ -1,0 +1,158 @@
+diff --git a/packages/layout/src/text/getAttributedString.js b/packages/layout/src/text/getAttributedString.js
+index 59d173a49..08423257e 100644
+--- a/packages/layout/src/text/getAttributedString.js
++++ b/packages/layout/src/text/getAttributedString.js
+@@ -21,14 +21,13 @@ const isTextInstance = isType(P.TextInstance);
+  * @param {Object} instance node
+  * @returns {Array} text fragments
+  */
+-const getFragments = (fontStore, instance) => {
++const getFragments = (fontStore, instance, level = 0) => {
+   if (!instance) return [{ string: '' }];
+ 
+   let fragments = [];
+ 
+   const {
+     color = 'black',
+-    backgroundColor,
+     fontFamily = 'Helvetica',
+     fontWeight,
+     fontStyle,
+@@ -48,6 +47,9 @@ const getFragments = (fontStore, instance) => {
+   const obj = fontStore ? fontStore.getFont(opts) : null;
+   const font = obj ? obj.data : fontFamily;
+ 
++  // Don't pass main background color to textkit. Will be rendered by the render packace instead
++  const backgroundColor = level === 0 ? null : instance.style.backgroundColor;
++
+   const attributes = {
+     font,
+     color,
+@@ -88,7 +90,7 @@ const getFragments = (fontStore, instance) => {
+         attributes,
+       });
+     } else if (child) {
+-      fragments.push(...getFragments(fontStore, child));
++      fragments.push(...getFragments(fontStore, child, level + 1));
+     }
+   }
+ 
+diff --git a/packages/render/src/index.js b/packages/render/src/index.js
+index 99df1c33e..9297abecf 100644
+--- a/packages/render/src/index.js
++++ b/packages/render/src/index.js
+@@ -1,10 +1,10 @@
+-import * as R from 'ramda';
+-
+ import renderNode from './primitives/renderNode';
+ import addMetadata from './operations/addMetadata';
+ 
+-const renderDocument = ctx =>
+-  R.compose(R.forEach(renderNode(ctx)), R.pathOr([], ['children']));
++const renderDocument = ctx => doc => {
++  const pages = doc.children || [];
++  pages.forEach(renderNode(ctx));
++};
+ 
+ const render = (ctx, doc) => {
+   addMetadata(ctx)(doc);
+diff --git a/packages/render/src/primitives/renderBackground.js b/packages/render/src/primitives/renderBackground.js
+index 3b62a972a..ee16fa908 100644
+--- a/packages/render/src/primitives/renderBackground.js
++++ b/packages/render/src/primitives/renderBackground.js
+@@ -1,17 +1,9 @@
+ import * as R from 'ramda';
+-import colorString from 'color-string';
+ 
+ import save from '../operations/save';
+ import restore from '../operations/restore';
+ import clipNode from '../operations/clipNode';
+-
+-const parseColor = hex => {
+-  const parsed = colorString.get(hex);
+-  const value = colorString.to.hex(parsed.value.slice(0, 3));
+-  const opacity = parsed.value[3];
+-
+-  return { value, opacity };
+-};
++import parseColor from '../utils/parseColor';
+ 
+ const drawBackground = (ctx, node) => {
+   if (node.box && node.style.backgroundColor) {
+diff --git a/packages/render/src/primitives/renderText.js b/packages/render/src/primitives/renderText.js
+index 165f010ed..4f3b3ef14 100644
+--- a/packages/render/src/primitives/renderText.js
++++ b/packages/render/src/primitives/renderText.js
+@@ -7,6 +7,7 @@ import advanceWidth from '@react-pdf/textkit/lib/run/advanceWidth';
+ import ascent from '@react-pdf/textkit/lib/attributedString/ascent';
+ 
+ import renderGlyphs from './renderGlyphs';
++import parseColor from '../utils/parseColor';
+ 
+ const DEST_REGEXP = /^#.+/;
+ 
+@@ -50,7 +51,9 @@ const renderAttachments = (ctx, run) => {
+ };
+ 
+ const renderRun = (ctx, run, options) => {
+-  const { font, fontSize, color, link, opacity } = run.attributes;
++  const { font, fontSize, link } = run.attributes;
++  const color = parseColor(run.attributes.color);
++  const opacity = R.defaultTo(color.opacity, run.attributes.opacity);
+ 
+   const height = runHeight(run);
+   const descent = runDescent(run);
+@@ -60,7 +63,7 @@ const renderRun = (ctx, run, options) => {
+     ctx.rect(0, -height, runAdvanceWidth, height).stroke();
+   }
+ 
+-  ctx.fillColor(color);
++  ctx.fillColor(color.value);
+   ctx.fillOpacity(opacity);
+ 
+   if (link) {
+@@ -105,8 +108,13 @@ const renderRun = (ctx, run, options) => {
+ };
+ 
+ const renderBackground = (ctx, rect, backgroundColor) => {
++  const color = parseColor(backgroundColor);
++
++  ctx.save();
++  ctx.fillOpacity(color.opacity);
+   ctx.rect(rect.x, rect.y, rect.width, rect.height);
+-  ctx.fill(backgroundColor);
++  ctx.fill(color.value);
++  ctx.restore();
+ };
+ 
+ const renderDecorationLine = (ctx, line) => {
+diff --git a/packages/render/src/utils/parseColor.js b/packages/render/src/utils/parseColor.js
+new file mode 100644
+index 000000000..581e95d10
+--- /dev/null
++++ b/packages/render/src/utils/parseColor.js
+@@ -0,0 +1,11 @@
++import colorString from 'color-string';
++
++const parseColor = hex => {
++  const parsed = colorString.get(hex);
++  const value = colorString.to.hex(parsed.value.slice(0, 3));
++  const opacity = parsed.value[3];
++
++  return { value, opacity };
++};
++
++export default parseColor;
+diff --git a/packages/textkit/src/layout/applyDefaultStyles.js b/packages/textkit/src/layout/applyDefaultStyles.js
+index 424d97abe..4397ffd0a 100644
+--- a/packages/textkit/src/layout/applyDefaultStyles.js
++++ b/packages/textkit/src/layout/applyDefaultStyles.js
+@@ -30,7 +30,7 @@ const applyRunStyles = R.evolve({
+     link: a.link || null,
+     marginLeft: a.marginLeft || a.margin || 0,
+     marginRight: a.marginRight || a.margin || 0,
+-    opacity: R.isNil(a.opacity) ? 1 : a.opacity,
++    opacity: a.opacity,
+     paddingTop: a.paddingTop || a.padding || 0,
+     paragraphSpacing: a.paragraphSpacing || 0,
+     underline: a.underline || false,

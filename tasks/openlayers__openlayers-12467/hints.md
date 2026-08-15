@@ -1,0 +1,7 @@
+During each step of your animation, you could set `frameState.animate = true` to indicate that you're running an animation, and then pixel snapping will be turned off.
+Thank you for your answer @ahocevar!
+
+I tried experimenting with setting `frameState.animate` value to `true` based on the [Custom Animation example](https://openlayers.org/en/latest/examples/feature-animation.html) available on the project's page. However, I don't really think that this parameter affects the animation in any way (at least in the case of a circle style). What's more, I am pretty sure that the circle's jitter is also visible on the page with already mentioned Custom Animation example (the issue may be slightly less pronounced due to the smaller circle's width).
+
+The second thing is that in our application we are animating features by using `StyleFunction` directly. It is most convenient for us since we have one place for all the styles, we can synchronize multiple animations for features and we have a direct access to the currently animated `Feature` object. Assuming `frameState.animate` property is working properly - is there any possibility to access current render frame state while using `StyleFunction`?
+@piotr-przebieracz I was wrong about `frameState.animate`, so please scratch that. @MoonE is working on a fix, see #12467.

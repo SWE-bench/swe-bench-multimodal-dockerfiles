@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "features/copy-paste basic diagram rules should allow copying boundary event without host ",
+    "features/modeling/rules - BpmnRules copy elements copy boundary event without host ",
+    "features/modeling/behavior - detach events basics should execute on pasting a BoundaryEvent outside ",
+    "features/copy-paste basic diagram copy should copy boundary events without host should copy/paste "
+  ],
+  "PASS_TO_PASS": []
+}

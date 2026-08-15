@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.interaction.Draw drawing with a condition finishes draw sequence correctly"
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "getJetpackOnboardingPendingSteps() - should return pending status for the contact form step"
+  ],
+  "PASS_TO_PASS": [
+    "getJetpackOnboardingPendingSteps() - should return pending status for the stats step",
+    "getJetpackOnboardingPendingSteps() - should return pending status for the woocommerce step"
+  ]
+}

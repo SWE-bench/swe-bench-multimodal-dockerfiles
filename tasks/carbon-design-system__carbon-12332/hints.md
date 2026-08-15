@@ -1,0 +1,2 @@
+I think this is due to errant padding on the label. The vertical modifier class on the parent could be used to reconfigure the padding to be removed when configured as vertical.
+Hello, I would like to take this :)

@@ -1,0 +1,15 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'coffeescript' – should pass test case 'inline-javascript_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'coffeescript+pug' – should pass test case 'coffeescript_inclusion'",
+    "Testing language 'coffeescript+haml' – should pass test case 'coffeescript_inclusion'",
+    "Testing language 'coffeescript' – should pass test case 'class-member_feature'",
+    "Testing language 'coffeescript' – should pass test case 'comment_feature'",
+    "Testing language 'coffeescript' – should pass test case 'string_feature'",
+    "Testing language 'coffeescript' – should pass test case 'block-regex_feature'",
+    "Testing language 'coffeescript' – should pass test case 'property_feature'",
+    "Testing language 'coffeescript' – should pass test case 'keyword_feature'"
+  ]
+}

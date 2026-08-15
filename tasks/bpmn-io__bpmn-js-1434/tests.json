@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - replace element behavior shape.create should replace Timer Start Event with None Start Event when created in SubProcess "
+  ],
+  "PASS_TO_PASS": []
+}

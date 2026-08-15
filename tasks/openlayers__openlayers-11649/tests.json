@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.proj Proj4js integration creates ol.proj.Projection instance from EPSG:4258"
+  ],
+  "PASS_TO_PASS": []
+}

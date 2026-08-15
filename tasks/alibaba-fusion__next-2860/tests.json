@@ -1,0 +1,36 @@
+{
+  "FAIL_TO_PASS": [
+    "number-picker - behavior - should work with value and onChange and min under control",
+    "number-picker - behavior - should support defaultValue and can be changed",
+    "number-picker - behavior - should support input with -.x or .x",
+    "number-picker - behavior - should accept disabled ",
+    "number-picker - behavior - should support Integer & Float ",
+    "number-picker - behavior - should ignore more than one . or -, cut at second . or -",
+    "number-picker - behavior - should avoid input - when min >= 0",
+    "number-picker - behavior - should be equal max while next value > max by click -",
+    "number-picker - behavior - simulates onChange/onClick/onFocus/onDisabled events",
+    "number-picker - behavior - should support value and can not be changed",
+    "number-picker - render - should not tab trigger ",
+    "number-picker - behavior - should support click add && reduce",
+    "number-picker - behavior - should support onKeyDown & onFocus & onBlur",
+    "number-picker - behavior - should be equal min while next value < min by click +",
+    "number-picker - behavior - should support input with -/-0/-0./0./0.0 ",
+    "number-picker - behavior - should support input with -0 ",
+    "number-picker - behavior - should support editable",
+    "number-picker - behavior - should support max & min",
+    "number-picker - behavior - will render value in custom if `format` is settled",
+    "number-picker - behavior - should work with value and onChange under control",
+    "number-picker - behavior - should consider [。] as [.]",
+    "number-picker - behavior - should support precision",
+    "number-picker - behavior - should leave out digits larger than precision set",
+    "number-picker - behavior - should support e.triggerType ",
+    "number-picker - behavior - should support onCorrect"
+  ],
+  "PASS_TO_PASS": [
+    "number-picker - render - should accept type ",
+    "number-picker - chrome bug hack - 0.28 + 0.01 should be 0.29 not 0.29000000000000004",
+    "number-picker - chrome bug hack - 0.29 - 0.01 should be 0.28 not 0.27999999999999997",
+    "number-picker - react api - calls componentWillReceiveProps",
+    "number-picker - render - should accept defaultValue & value"
+  ]
+}

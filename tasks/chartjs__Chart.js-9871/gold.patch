@@ -1,0 +1,145 @@
+diff --git a/src/elements/element.arc.js b/src/elements/element.arc.js
+index 5c2182fb88e..66b51677115 100644
+--- a/src/elements/element.arc.js
++++ b/src/elements/element.arc.js
+@@ -1,6 +1,6 @@
+ import Element from '../core/core.element';
+-import {_angleBetween, getAngleFromPoint, TAU, HALF_PI} from '../helpers/index';
+-import {PI, _limitValue} from '../helpers/helpers.math';
++import {_angleBetween, getAngleFromPoint, TAU, HALF_PI, valueOrDefault} from '../helpers/index';
++import {PI, _isBetween, _limitValue} from '../helpers/helpers.math';
+ import {_readValueToProps} from '../helpers/helpers.options';
+ 
+ function clipArc(ctx, element, endAngle) {
+@@ -282,8 +282,9 @@ export default class ArcElement extends Element {
+       'circumference'
+     ], useFinalPosition);
+     const rAdjust = this.options.spacing / 2;
+-    const betweenAngles = circumference >= TAU || _angleBetween(angle, startAngle, endAngle);
+-    const withinRadius = (distance >= innerRadius + rAdjust && distance <= outerRadius + rAdjust);
++    const _circumference = valueOrDefault(circumference, endAngle - startAngle);
++    const betweenAngles = _circumference >= TAU || _angleBetween(angle, startAngle, endAngle);
++    const withinRadius = _isBetween(distance, innerRadius + rAdjust, outerRadius + rAdjust);
+ 
+     return (betweenAngles && withinRadius);
+   }
+diff --git a/src/elements/element.bar.js b/src/elements/element.bar.js
+index 41a609b75e4..3805671a2fa 100644
+--- a/src/elements/element.bar.js
++++ b/src/elements/element.bar.js
+@@ -1,5 +1,5 @@
+ import Element from '../core/core.element';
+-import {isObject, _limitValue} from '../helpers';
++import {isObject, _isBetween, _limitValue} from '../helpers';
+ import {addRoundedRectPath} from '../helpers/helpers.canvas';
+ import {toTRBL, toTRBLCorners} from '../helpers/helpers.options';
+ 
+@@ -105,8 +105,8 @@ function inRange(bar, x, y, useFinalPosition) {
+   const bounds = bar && !skipBoth && getBarBounds(bar, useFinalPosition);
+ 
+   return bounds
+-		&& (skipX || x >= bounds.left && x <= bounds.right)
+-		&& (skipY || y >= bounds.top && y <= bounds.bottom);
++		&& (skipX || _isBetween(x, bounds.left, bounds.right))
++		&& (skipY || _isBetween(y, bounds.top, bounds.bottom));
+ }
+ 
+ function hasRadius(radius) {
+diff --git a/src/helpers/helpers.math.js b/src/helpers/helpers.math.js
+index fea406c0fc6..1b1e4ff5355 100644
+--- a/src/helpers/helpers.math.js
++++ b/src/helpers/helpers.math.js
+@@ -173,6 +173,21 @@ export function _limitValue(value, min, max) {
+   return Math.max(min, Math.min(max, value));
+ }
+ 
++/**
++ * @param {number} value
++ * @private
++ */
+ export function _int16Range(value) {
+   return _limitValue(value, -32768, 32767);
+ }
++
++/**
++ * @param {number} value
++ * @param {number} start
++ * @param {number} end
++ * @param {number} [epsilon]
++ * @private
++ */
++export function _isBetween(value, start, end, epsilon = 1e-6) {
++  return value >= Math.min(start, end) - epsilon && value <= Math.max(start, end) + epsilon;
++}
+diff --git a/src/helpers/helpers.segment.js b/src/helpers/helpers.segment.js
+index 3bbfebb0dfa..13e4e28d9c9 100644
+--- a/src/helpers/helpers.segment.js
++++ b/src/helpers/helpers.segment.js
+@@ -1,4 +1,4 @@
+-import {_angleBetween, _angleDiff, _normalizeAngle} from './helpers.math';
++import {_angleBetween, _angleDiff, _isBetween, _normalizeAngle} from './helpers.math';
+ import {createContext} from './helpers.options';
+ 
+ /**
+@@ -16,7 +16,7 @@ function propertyFn(property) {
+     };
+   }
+   return {
+-    between: (n, s, e) => n >= Math.min(s, e) && n <= Math.max(e, s),
++    between: _isBetween,
+     compare: (a, b) => a - b,
+     normalize: x => x
+   };
+diff --git a/src/plugins/plugin.filler.js b/src/plugins/plugin.filler.js
+index 28a1df2ee89..8650248cfb4 100644
+--- a/src/plugins/plugin.filler.js
++++ b/src/plugins/plugin.filler.js
+@@ -8,7 +8,7 @@ import LineElement from '../elements/element.line';
+ import {_boundSegment, _boundSegments} from '../helpers/helpers.segment';
+ import {clipArea, unclipArea} from '../helpers/helpers.canvas';
+ import {isArray, isFinite, isObject, valueOrDefault} from '../helpers/helpers.core';
+-import {TAU, _normalizeAngle} from '../helpers/helpers.math';
++import {TAU, _isBetween, _normalizeAngle} from '../helpers/helpers.math';
+ 
+ /**
+  * @typedef { import('../core/core.controller').default } Chart
+@@ -293,7 +293,7 @@ function findPoint(line, sourcePoint, property) {
+     const segment = segments[i];
+     const firstValue = linePoints[segment.start][property];
+     const lastValue = linePoints[segment.end][property];
+-    if (pointValue >= firstValue && pointValue <= lastValue) {
++    if (_isBetween(pointValue, firstValue, lastValue)) {
+       first = pointValue === firstValue;
+       last = pointValue === lastValue;
+       break;
+diff --git a/src/plugins/plugin.legend.js b/src/plugins/plugin.legend.js
+index ccd31800a67..d0bcb82761c 100644
+--- a/src/plugins/plugin.legend.js
++++ b/src/plugins/plugin.legend.js
+@@ -5,7 +5,7 @@ import {addRoundedRectPath, drawPoint, renderText} from '../helpers/helpers.canv
+ import {
+   callback as call, valueOrDefault, toFont,
+   toPadding, getRtlAdapter, overrideTextDirection, restoreTextDirection,
+-  clipArea, unclipArea
++  clipArea, unclipArea, _isBetween
+ } from '../helpers/index';
+ import {_toLeftRightCenter, _alignStartEnd, _textX} from '../helpers/helpers.extras';
+ import {toTRBLCorners} from '../helpers/helpers.options';
+@@ -493,13 +493,15 @@ export class Legend extends Element {
+   _getLegendItemAt(x, y) {
+     let i, hitBox, lh;
+ 
+-    if (x >= this.left && x <= this.right && y >= this.top && y <= this.bottom) {
++    if (_isBetween(x, this.left, this.right)
++      && _isBetween(y, this.top, this.bottom)) {
+       // See if we are touching one of the dataset boxes
+       lh = this.legendHitBoxes;
+       for (i = 0; i < lh.length; ++i) {
+         hitBox = lh[i];
+ 
+-        if (x >= hitBox.left && x <= hitBox.left + hitBox.width && y >= hitBox.top && y <= hitBox.top + hitBox.height) {
++        if (_isBetween(x, hitBox.left, hitBox.left + hitBox.width)
++          && _isBetween(y, hitBox.top, hitBox.top + hitBox.height)) {
+           // Touching an element
+           return this.legendItems[i];
+         }

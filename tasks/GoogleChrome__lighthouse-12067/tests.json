@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/lib/minification-estimator-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

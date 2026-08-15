@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "Start-url gatherer returns an error when origin is not the same",
+    "Start-url gatherer returns a debugString when manifest cannot be found",
+    "Start-url gatherer returns an artifact set to -1 when offline loading fails",
+    "Start-url gatherer returns an artifact set to 200 when offline loading succeeds"
+  ],
+  "PASS_TO_PASS": []
+}

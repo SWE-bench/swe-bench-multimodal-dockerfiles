@@ -1,0 +1,1 @@
+Looks like clicking the chevron on the right doesn't actually move focus -- so it's not throwing blur. I'm taking a look at this today 👍🏽 

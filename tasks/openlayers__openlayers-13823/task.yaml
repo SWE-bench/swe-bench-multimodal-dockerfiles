@@ -1,0 +1,23 @@
+base_commit: 492458a141d9df7819589fd421ec41b26f8b1984
+created_at: '2022-07-08T15:30:11Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13823:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/image-no-stretch-interpolate-false/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/96e2400c466ccb49d01a979955ef2d09cd478b1b/test/rendering/cases/image-no-stretch-interpolate-false/expected.png
+  - path: test/rendering/cases/image-stretched-interpolate-false/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/96e2400c466ccb49d01a979955ef2d09cd478b1b/test/rendering/cases/image-stretched-interpolate-false/expected.png
+  - path: test/rendering/cases/layer-image/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/96e2400c466ccb49d01a979955ef2d09cd478b1b/test/rendering/cases/layer-image/expected.png
+  - path: test/rendering/cases/postrender-immediate/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/96e2400c466ccb49d01a979955ef2d09cd478b1b/test/rendering/cases/postrender-immediate/expected.png
+instance_id: openlayers__openlayers-13823
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.14'

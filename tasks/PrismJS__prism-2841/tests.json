@@ -1,0 +1,17 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'ruby' – should pass test case 'regex_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'ruby' – should pass test case 'builtin_feature'",
+    "Testing language 'ruby' – should pass test case 'issue1336'",
+    "Testing language 'ruby' – should pass test case 'keyword_feature'",
+    "Testing language 'ruby' – should pass test case 'constant_feature'",
+    "Testing language 'ruby' – should pass test case 'method_definition_feature'",
+    "Testing language 'ruby' – should pass test case 'symbol_feature'",
+    "Testing language 'ruby' – should pass test case 'boolean_feature'",
+    "Testing language 'ruby' – should pass test case 'string_feature'",
+    "Testing language 'ruby' – should pass test case 'variable_feature'",
+    "Testing language 'ruby' – should pass test case 'comment_feature'"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - create participant process fitting participant (only groups) should fit participant "
+  ],
+  "PASS_TO_PASS": []
+}

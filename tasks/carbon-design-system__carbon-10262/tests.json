@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/Tooltip/next/__tests__/DefinitionTooltip-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/Tooltip/next/__tests__/Tooltip-test.js"
+  ]
+}

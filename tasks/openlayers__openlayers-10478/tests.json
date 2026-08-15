@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.renderer.canvas.VectorTileLayer #prepareFrame re-renders when layer changed",
+    "ol.render.canvas.LabelCache #expireCache()"
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,16 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'markdown' – should pass test case 'nested_bold_italic_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'markdown' – should pass test case 'blockquote_feature'",
+    "Testing language 'markdown+haml' – should pass test case 'markdown_inclusion'",
+    "Testing language 'markdown' – should pass test case 'url_feature'",
+    "Testing language 'markdown' – should pass test case 'title_feature'",
+    "Testing language 'markdown' – should pass test case 'list_feature'",
+    "Testing language 'markdown' – should pass test case 'code_feature'",
+    "Testing language 'markdown' – should pass test case 'hr_feature'",
+    "Testing language 'markdown+pug' – should pass test case 'markdown_inclusion'",
+    "Testing language 'markdown' – should pass test case 'url-reference_feature'"
+  ]
+}

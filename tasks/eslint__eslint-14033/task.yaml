@@ -1,0 +1,16 @@
+base_commit: f6602d569427e9e2a4f3b5ca3fc3a8bffb28d15e
+created_at: '2021-01-24T13:43:38Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.eslint_1776_eslint-14033:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/15704333/100765799-a89fe080-33d6-11eb-8aae-160e28610e24.gif
+  test_patch: []
+instance_id: eslint__eslint-14033
+log_parser: parse_log_eslint
+repo: eslint/eslint
+split: test
+version: '7.18'

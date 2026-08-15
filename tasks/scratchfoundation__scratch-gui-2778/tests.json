@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "test/unit/components/sprite-selector-item.test.jsx"
+  ],
+  "PASS_TO_PASS": [
+    "test/unit/components/sound-editor.test.jsx",
+    "test/unit/components/controls.test.jsx",
+    "test/unit/components/button.test.jsx",
+    "test/unit/components/icon-button.test.jsx"
+  ]
+}

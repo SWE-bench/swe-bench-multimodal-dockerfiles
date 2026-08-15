@@ -1,0 +1,17 @@
+base_commit: 3004f5707fc73365f7f50af13fa60c2599ef66b4
+created_at: '2021-09-04T15:01:27Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-12695:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/43833528/131180120-202b13a4-5cad-4508-83d2-86b21f78eaff.png
+  - https://user-images.githubusercontent.com/43833528/131180163-d67c73f5-00fa-4dbd-b559-623c8b786b92.png
+  test_patch: []
+instance_id: openlayers__openlayers-12695
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.6'

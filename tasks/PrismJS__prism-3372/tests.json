@@ -1,0 +1,16 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'plant-uml' – should pass test case 'arrow_feature'",
+    "Testing language 'plant-uml' – should pass test case 'comment_feature'",
+    "Testing language 'plant-uml' – should pass test case 'color_feature'",
+    "Testing language 'plant-uml' – should pass test case 'delimiter_feature'",
+    "Testing language 'plant-uml' – should pass test case 'divider_feature'",
+    "Testing language 'plant-uml' – should pass test case 'time_feature'",
+    "Testing language 'plant-uml' – should pass test case 'text_feature'",
+    "Testing language 'plant-uml' – should pass test case 'variable_feature'",
+    "Testing language 'plant-uml' – should pass test case 'keyword_feature'",
+    "Testing language 'plant-uml' – should pass test case 'preprocessor_feature'",
+    "Testing language 'plant-uml' – should pass test case 'string_feature'"
+  ],
+  "PASS_TO_PASS": []
+}

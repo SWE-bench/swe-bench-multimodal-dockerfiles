@@ -1,0 +1,3 @@
+Tiles which are partly within the layer extent are not being clipped https://codesandbox.io/s/webgl-tiles-forked-ydphy?file=/main.js
+
+As a workaround when the view is not rotated a scissor box similar to https://openlayers.org/en/latest/examples/webgl-layer-swipe.html could be used - but if the view is rotated the unrotatable scissor box must be enlarged to accommodate the rotated layer extent  https://codesandbox.io/s/webgl-tiles-forked-zz625?file=/main.js

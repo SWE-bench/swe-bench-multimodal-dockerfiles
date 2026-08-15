@@ -1,0 +1,1 @@
+I've run into this on several occasions as well. The only solution is to pull the switcher onto the background which eats up more vertical space and often not 'correct' if there is something sitting below that area. Seems like it's something that definitely should be addressed. 

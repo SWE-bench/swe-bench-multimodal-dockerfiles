@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/config/default-config-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

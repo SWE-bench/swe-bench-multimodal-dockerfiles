@@ -1,0 +1,16 @@
+base_commit: 265d9563a108137480b4225a74bf36b80b570f54
+created_at: '2018-08-28T22:46:08Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.googlechrome_1776_lighthouse-5925:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/32260852/43211529-9a016f6a-9029-11e8-8fa6-e622b6a012e6.png
+  test_patch: []
+instance_id: GoogleChrome__lighthouse-5925
+log_parser: parse_log_lighthouse
+repo: GoogleChrome/lighthouse
+split: test
+version: '3.1'

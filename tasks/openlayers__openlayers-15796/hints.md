@@ -1,0 +1,1 @@
+Thanks for reporting this, @malaretv. Working on a fix now.

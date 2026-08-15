@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/lib/minification-estimator-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "lighthouse-core/test/audits/byte-efficiency/unminified-css-test.js"
+  ]
+}

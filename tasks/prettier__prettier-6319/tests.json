@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/pipeline_operator/jsfmt.spec.js"
+  ],
+  "PASS_TO_PASS": []
+}

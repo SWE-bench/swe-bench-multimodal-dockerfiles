@@ -1,0 +1,1 @@
+@oguzeroglu I've added the `bug` label since it's a bug. 😉 

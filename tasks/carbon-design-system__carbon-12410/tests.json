@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/Slider/__tests__/Slider-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/Slider/Slider-test.js"
+  ]
+}

@@ -1,0 +1,110 @@
+diff --git a/client/lib/post-normalizer/index.js b/client/lib/post-normalizer/index.js
+index e683a7f16c4a3..472dfd50402da 100644
+--- a/client/lib/post-normalizer/index.js
++++ b/client/lib/post-normalizer/index.js
+@@ -119,6 +119,7 @@ import makeEmbedsSafe from './rule-content-make-embeds-safe';
+ import detectMedia from './rule-content-detect-media';
+ import { disableAutoPlayOnMedia, disableAutoPlayOnEmbeds } from './rule-content-disable-autoplay';
+ import detectPolls from './rule-content-detect-polls';
++import detectSurveys from './rule-content-detect-surveys';
+ import makeContentLinksSafe from './rule-content-make-links-safe';
+ 
+ normalizePost.content = {
+@@ -131,6 +132,7 @@ normalizePost.content = {
+ 	disableAutoPlayOnMedia,
+ 	disableAutoPlayOnEmbeds,
+ 	detectPolls,
++	detectSurveys,
+ };
+ 
+ export default normalizePost;
+diff --git a/client/lib/post-normalizer/rule-content-detect-polls.js b/client/lib/post-normalizer/rule-content-detect-polls.js
+index b2e37c491c32e..e49ecca06dfb8 100644
+--- a/client/lib/post-normalizer/rule-content-detect-polls.js
++++ b/client/lib/post-normalizer/rule-content-detect-polls.js
+@@ -26,7 +26,7 @@ export default function detectPolls( post, dom ) {
+ 			return;
+ 		}
+ 
+-		// some browers don't require this and let us query the dom inside a noscript. some do not. maybe just jsdom.
++		// some browsers don't require this and let us query the dom inside a noscript. some do not. maybe just jsdom.
+ 		const noscriptDom = domForHtml( noscript.innerHTML );
+ 
+ 		const pollLink = noscriptDom.querySelector( 'a[href^="http://polldaddy.com/poll/"]' );
+diff --git a/client/lib/post-normalizer/rule-content-detect-surveys.js b/client/lib/post-normalizer/rule-content-detect-surveys.js
+new file mode 100644
+index 0000000000000..5ce557997e678
+--- /dev/null
++++ b/client/lib/post-normalizer/rule-content-detect-surveys.js
+@@ -0,0 +1,51 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++import { forEach } from 'lodash';
++import i18n from 'i18n-calypso';
++
++export default function detectSurveys( post, dom ) {
++	if ( ! dom ) {
++		throw new Error( 'this transform must be used as part of withContentDOM' );
++	}
++
++	const surveys = dom.querySelectorAll( '.pd-embed' );
++
++	if ( ! surveys ) {
++		return post;
++	}
++
++	forEach( surveys, survey => {
++		// Get survey details
++		let surveyDetails = null;
++
++		try {
++			surveyDetails = JSON.parse( survey.getAttribute( 'data-settings' ) );
++		} catch ( e ) {
++			return;
++		}
++
++		const { domain: surveyDomain, id: surveySlug } = surveyDetails;
++
++		if ( ! surveyDomain || ! surveySlug ) {
++			return;
++		}
++
++		// Construct a survey link
++		const p = document.createElement( 'p' );
++		p.innerHTML =
++			'<a target="_blank" rel="external noopener noreferrer" href="https://' +
++			surveyDomain +
++			surveySlug +
++			'">' +
++			i18n.translate( 'Take our survey' ) +
++			'</a>';
++
++		// Replace the .pd-embed div with the new paragraph
++		survey.parentNode.replaceChild( p, survey );
++	} );
++
++	return post;
++}
+diff --git a/client/state/reader/posts/normalization-rules.js b/client/state/reader/posts/normalization-rules.js
+index 4cb621567d4f2..0daab2012434e 100644
+--- a/client/state/reader/posts/normalization-rules.js
++++ b/client/state/reader/posts/normalization-rules.js
+@@ -15,6 +15,7 @@ import DISPLAY_TYPES from './display-types';
+ import createBetterExcerpt from 'lib/post-normalizer/rule-create-better-excerpt';
+ import detectMedia from 'lib/post-normalizer/rule-content-detect-media';
+ import detectPolls from 'lib/post-normalizer/rule-content-detect-polls';
++import detectSurveys from 'lib/post-normalizer/rule-content-detect-surveys';
+ import makeEmbedsSafe from 'lib/post-normalizer/rule-content-make-embeds-safe';
+ import removeStyles from 'lib/post-normalizer/rule-content-remove-styles';
+ import makeImagesSafe from 'lib/post-normalizer/rule-content-make-images-safe';
+@@ -114,6 +115,7 @@ const fastPostNormalizationRules = flow( [
+ 		disableAutoPlayOnMedia,
+ 		detectMedia,
+ 		detectPolls,
++		detectSurveys,
+ 		linkJetpackCarousels,
+ 	] ),
+ 	createBetterExcerpt,

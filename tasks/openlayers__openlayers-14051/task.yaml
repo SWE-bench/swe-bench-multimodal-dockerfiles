@@ -1,0 +1,17 @@
+base_commit: 08ad881d5e50aa752c694b91d1eba290d832867c
+created_at: '2022-08-24T20:26:02Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14051:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-tile-preload/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/aa61e850c0b333bb4d404bd6dfbfc1c59d777f30/test/rendering/cases/webgl-tile-preload/expected.png
+instance_id: openlayers__openlayers-14051
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.0'

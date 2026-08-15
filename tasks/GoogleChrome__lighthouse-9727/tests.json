@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/computed/page-dependency-graph-test.js",
+    "lighthouse-core/test/computed/metrics/lantern-interactive-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

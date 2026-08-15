@@ -1,0 +1,72 @@
+diff --git a/test/fixtures/controller.bar/bar-base-value.png b/test/fixtures/controller.bar/bar-base-value.png
+index 87219e676a9..98c6797511e 100644
+Binary files a/test/fixtures/controller.bar/bar-base-value.png and b/test/fixtures/controller.bar/bar-base-value.png differ
+diff --git a/test/fixtures/controller.bar/bar-thickness-flex-offset.png b/test/fixtures/controller.bar/bar-thickness-flex-offset.png
+index 59171e08cf3..14491751df7 100644
+Binary files a/test/fixtures/controller.bar/bar-thickness-flex-offset.png and b/test/fixtures/controller.bar/bar-thickness-flex-offset.png differ
+diff --git a/test/fixtures/controller.bar/bar-thickness-flex.png b/test/fixtures/controller.bar/bar-thickness-flex.png
+index 791a29d25d3..62fb2307db9 100644
+Binary files a/test/fixtures/controller.bar/bar-thickness-flex.png and b/test/fixtures/controller.bar/bar-thickness-flex.png differ
+diff --git a/test/fixtures/controller.bar/bar-thickness-offset.png b/test/fixtures/controller.bar/bar-thickness-offset.png
+index 8dcecac88a4..6b35e925708 100644
+Binary files a/test/fixtures/controller.bar/bar-thickness-offset.png and b/test/fixtures/controller.bar/bar-thickness-offset.png differ
+diff --git a/test/fixtures/controller.bar/bar-thickness-reverse.png b/test/fixtures/controller.bar/bar-thickness-reverse.png
+index cf6d621cc55..0913be22e00 100644
+Binary files a/test/fixtures/controller.bar/bar-thickness-reverse.png and b/test/fixtures/controller.bar/bar-thickness-reverse.png differ
+diff --git a/test/fixtures/controller.bar/bar-thickness-stacked.png b/test/fixtures/controller.bar/bar-thickness-stacked.png
+index 696829ee39b..7392dd57c6a 100644
+Binary files a/test/fixtures/controller.bar/bar-thickness-stacked.png and b/test/fixtures/controller.bar/bar-thickness-stacked.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/bottom.png b/test/fixtures/controller.bar/baseLine/bottom.png
+index 87e982e1e23..c689dd3c689 100644
+Binary files a/test/fixtures/controller.bar/baseLine/bottom.png and b/test/fixtures/controller.bar/baseLine/bottom.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/left.png b/test/fixtures/controller.bar/baseLine/left.png
+index 19b328c3bee..340f71e7e86 100644
+Binary files a/test/fixtures/controller.bar/baseLine/left.png and b/test/fixtures/controller.bar/baseLine/left.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/mid-x.png b/test/fixtures/controller.bar/baseLine/mid-x.png
+index d6b37767769..e12c967d25a 100644
+Binary files a/test/fixtures/controller.bar/baseLine/mid-x.png and b/test/fixtures/controller.bar/baseLine/mid-x.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/mid-y.png b/test/fixtures/controller.bar/baseLine/mid-y.png
+index 646fd805184..eca057a6366 100644
+Binary files a/test/fixtures/controller.bar/baseLine/mid-y.png and b/test/fixtures/controller.bar/baseLine/mid-y.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/right.png b/test/fixtures/controller.bar/baseLine/right.png
+index 2f98f893a72..9de9a9e58ba 100644
+Binary files a/test/fixtures/controller.bar/baseLine/right.png and b/test/fixtures/controller.bar/baseLine/right.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/top.png b/test/fixtures/controller.bar/baseLine/top.png
+index e04b9b0bd7e..efe34e9186f 100644
+Binary files a/test/fixtures/controller.bar/baseLine/top.png and b/test/fixtures/controller.bar/baseLine/top.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/value-x.png b/test/fixtures/controller.bar/baseLine/value-x.png
+index 23ed06dd6aa..bb8407e9396 100644
+Binary files a/test/fixtures/controller.bar/baseLine/value-x.png and b/test/fixtures/controller.bar/baseLine/value-x.png differ
+diff --git a/test/fixtures/controller.bar/baseLine/value-y.png b/test/fixtures/controller.bar/baseLine/value-y.png
+index 7063fd102a1..f0de922650f 100644
+Binary files a/test/fixtures/controller.bar/baseLine/value-y.png and b/test/fixtures/controller.bar/baseLine/value-y.png differ
+diff --git a/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png b/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png
+index 0c96f07f537..7449d7fa4a1 100644
+Binary files a/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png and b/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png differ
+diff --git a/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png b/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png
+index 2635b2792ab..fa769073c5c 100644
+Binary files a/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png and b/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png differ
+diff --git a/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png b/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png
+index 13b82c32a89..951b2eb634a 100644
+Binary files a/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png and b/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png differ
+diff --git a/test/fixtures/controller.bar/borderRadius/border-radius.png b/test/fixtures/controller.bar/borderRadius/border-radius.png
+index ec5e8a63d31..196b00db5f5 100644
+Binary files a/test/fixtures/controller.bar/borderRadius/border-radius.png and b/test/fixtures/controller.bar/borderRadius/border-radius.png differ
+diff --git a/test/fixtures/controller.bar/borderSkipped/middle.png b/test/fixtures/controller.bar/borderSkipped/middle.png
+index 89796e0ca51..41fd2019597 100644
+Binary files a/test/fixtures/controller.bar/borderSkipped/middle.png and b/test/fixtures/controller.bar/borderSkipped/middle.png differ
+diff --git a/test/fixtures/controller.bar/borderWidth/indexable.png b/test/fixtures/controller.bar/borderWidth/indexable.png
+index 88428927ec1..0929ef0e61f 100644
+Binary files a/test/fixtures/controller.bar/borderWidth/indexable.png and b/test/fixtures/controller.bar/borderWidth/indexable.png differ
+diff --git a/test/fixtures/controller.bar/borderWidth/object.png b/test/fixtures/controller.bar/borderWidth/object.png
+index 3b36d96cb2f..ed251dfa77d 100644
+Binary files a/test/fixtures/controller.bar/borderWidth/object.png and b/test/fixtures/controller.bar/borderWidth/object.png differ
+diff --git a/test/fixtures/controller.bar/borderWidth/value.png b/test/fixtures/controller.bar/borderWidth/value.png
+index 58fec25d81b..4f6aca6142f 100644
+Binary files a/test/fixtures/controller.bar/borderWidth/value.png and b/test/fixtures/controller.bar/borderWidth/value.png differ
+diff --git a/test/fixtures/controller.bar/horizontal-borders.png b/test/fixtures/controller.bar/horizontal-borders.png
+index 96f16777ae3..8398645351f 100644
+Binary files a/test/fixtures/controller.bar/horizontal-borders.png and b/test/fixtures/controller.bar/horizontal-borders.png differ
+diff --git a/test/fixtures/controller.bar/minBarLength/vertical.png b/test/fixtures/controller.bar/minBarLength/vertical.png
+index 2074397ea0f..0595425bcfc 100644
+Binary files a/test/fixtures/controller.bar/minBarLength/vertical.png and b/test/fixtures/controller.bar/minBarLength/vertical.png differ

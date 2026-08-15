@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol/source/WMTS when creating tileUrlFunction can replace dimensions"
+  ],
+  "PASS_TO_PASS": []
+}

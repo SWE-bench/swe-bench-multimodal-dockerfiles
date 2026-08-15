@@ -1,0 +1,1 @@
+We should added these missing types to `ecmascript#TYPES`.

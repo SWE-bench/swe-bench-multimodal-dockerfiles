@@ -1,0 +1,17 @@
+base_commit: 96759f639a84f91e98361ebe212c8c8b51f6b064
+created_at: '2021-04-01T10:11:29Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-12172:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: rendering/cases/regularshape-style/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/4a6db3d2f8d98607cdad0656f857f9248851b2ba/rendering/cases/regularshape-style/expected.png
+instance_id: openlayers__openlayers-12172
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.5'

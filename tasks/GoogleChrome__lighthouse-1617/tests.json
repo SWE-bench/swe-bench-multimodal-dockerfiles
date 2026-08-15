@@ -1,0 +1,10 @@
+{
+  "FAIL_TO_PASS": [
+    "Manifest: short_name_length audit fails when an empty manifest is present"
+  ],
+  "PASS_TO_PASS": [
+    "Manifest: short_name_length audit fails when a manifest contains a too long short_name",
+    "Manifest: short_name_length audit succeeds when a manifest contains a short_name",
+    "Manifest: short_name_length audit fails when a manifest contains no short_name and too long name"
+  ]
+}

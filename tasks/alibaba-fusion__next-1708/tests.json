@@ -1,0 +1,40 @@
+{
+  "FAIL_TO_PASS": [
+    "Tree - should support setting indeterminate key when checkStrictly true"
+  ],
+  "PASS_TO_PASS": [
+    "Tree - should support defaultSelectedKeys and onSelect",
+    "Tree - should support defaultCheckedKeys and onCheck",
+    "Tree - should support expandedKeys and onExpand",
+    "Tree - should render by children",
+    "Tree - should support checkStrictly",
+    "Tree - should support right clicking node",
+    "Tree A11y - should not have any violations for line Tree",
+    "Tree - should render by dataSource",
+    "Tree - should support setting checkedStrategy to parent",
+    "Tree A11y - should not have any violations for checkable Tree",
+    "Tree - should support editing node",
+    "Tree - should support checkable = false",
+    "Tree - should ignore children contain null or string",
+    "Tree - should support showLine",
+    "Tree - should support selectedKeys and onSelect",
+    "Tree A11y - should not have any violations for default Tree",
+    "Tree - should test defaultCheckKeys in disabled node",
+    "Tree - should support render child nodes",
+    "Tree - should load data asynchronously",
+    "Tree - should support dragging node after drop node",
+    "Tree - should support setting checkedStrategy to all",
+    "Tree - should support dragging node before drop node",
+    "Tree - should support disabled",
+    "Tree - should support dragging node into dropNode",
+    "Tree - should support checkedKeys and onCheck",
+    "Tree - should stop dragover event propagation whatever could drop or not",
+    "Tree - should support defaultExpandedKeys and onExpand",
+    "Tree - should support setting checkedStrategy to child",
+    "Tree - should support filterTreeNode",
+    "Tree - should support isLabelBlock and isNodeBlock",
+    "Tree - should support rtl",
+    "Tree - should support keyboard",
+    "Tree - should support update indeterminate key when dataSource change"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "modeling/behavior - AdaptiveLabelPositioningBehavior basics on label creation through <create.shape> should create at LEFT "
+  ],
+  "PASS_TO_PASS": []
+}

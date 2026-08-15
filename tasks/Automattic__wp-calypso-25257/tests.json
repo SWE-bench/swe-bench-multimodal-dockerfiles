@@ -1,0 +1,16 @@
+{
+  "FAIL_TO_PASS": [
+    "handlers - #onFetchSuccess() - should dispatch a success action with product category information when request completes",
+    "handlers - #onFetchError() - should dispatch error",
+    "handlers - #fetch() - should dispatch a get action"
+  ],
+  "PASS_TO_PASS": [
+    "handlers - #handleProductCategoryUpdate - should dispatch a success action with extra properties",
+    "handlers - #handleProductCategoryCreate - should dispatch a post action",
+    "handlers - #handleProductCategoryCreate - should dispatch a success action with extra properties",
+    "handlers - #handleProductCategoryDelete - should dispatch a deleted action on success",
+    "handlers - #handleProductCategoryUpdate - should dispatch a put action",
+    "handlers - #handleProductCategoryDelete - should dispatch a delete action",
+    "handlers - #handleProductCategoryCreate - should dispatch a success function with extra parameters"
+  ]
+}

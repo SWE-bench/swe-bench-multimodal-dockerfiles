@@ -1,0 +1,3 @@
+The `translate` will result in any context `rotate` needed to perform the rendering being incorrectly anchored.  It also renders incorrectly when the view is rotated.
+@mike-000 Thanks for your assessment. Do you think you'd be able to provide a fix?
+I don't think a prerender translate is compatible with the renderer's requirement to draw rotated text or images.  A better option might be to use superimposed maps sharing a view as in https://codesandbox.io/s/layer-spy-forked-i4rwq0?file=/main.js  As in other examples `getRenderPixel` must be used to correctly handle view rotation.

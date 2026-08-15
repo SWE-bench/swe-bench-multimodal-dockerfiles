@@ -1,0 +1,201 @@
+diff --git a/client/blocks/get-apps/README.md b/client/blocks/get-apps/README.md
+new file mode 100644
+index 00000000000000..926e7dc6346203
+--- /dev/null
++++ b/client/blocks/get-apps/README.md
+@@ -0,0 +1,4 @@
++Get Apps
++=======
++
++Used to render a set of download links and prompts for both the mobile and desktop apps.
+diff --git a/client/me/get-apps/apps-badge.jsx b/client/blocks/get-apps/apps-badge.jsx
+similarity index 100%
+rename from client/me/get-apps/apps-badge.jsx
+rename to client/blocks/get-apps/apps-badge.jsx
+diff --git a/client/me/get-apps/desktop-download-card.jsx b/client/blocks/get-apps/desktop-download-card.jsx
+similarity index 100%
+rename from client/me/get-apps/desktop-download-card.jsx
+rename to client/blocks/get-apps/desktop-download-card.jsx
+diff --git a/client/me/get-apps/illustration.jsx b/client/blocks/get-apps/illustration.jsx
+similarity index 100%
+rename from client/me/get-apps/illustration.jsx
+rename to client/blocks/get-apps/illustration.jsx
+diff --git a/client/blocks/get-apps/index.jsx b/client/blocks/get-apps/index.jsx
+new file mode 100644
+index 00000000000000..e9cd3a891b6faa
+--- /dev/null
++++ b/client/blocks/get-apps/index.jsx
+@@ -0,0 +1,30 @@
++/**
++ * External dependencies
++ */
++
++import React from 'react';
++
++/**
++ * Internal dependencies
++ */
++import GetAppsIllustration from './illustration.jsx';
++import DesktopDownloadCard from './desktop-download-card.jsx';
++import MobileDownloadCard from './mobile-download-card.jsx';
++import config from 'config';
++
++/**
++ * Style dependencies
++ */
++import './style.scss';
++
++export const GetApps = () => {
++	return (
++		<div className="get-apps__wrapper">
++			<GetAppsIllustration />
++			<MobileDownloadCard />
++			{ ! config( 'env_id' ).startsWith( 'desktop' ) && <DesktopDownloadCard /> }
++		</div>
++	);
++};
++
++export default GetApps;
+diff --git a/client/me/get-apps/mobile-download-card.jsx b/client/blocks/get-apps/mobile-download-card.jsx
+similarity index 99%
+rename from client/me/get-apps/mobile-download-card.jsx
+rename to client/blocks/get-apps/mobile-download-card.jsx
+index 4834f404fcb850..6ba46f13206e36 100644
+--- a/client/me/get-apps/mobile-download-card.jsx
++++ b/client/blocks/get-apps/mobile-download-card.jsx
+@@ -12,7 +12,7 @@ import i18n, { localize } from 'i18n-calypso';
+ /**
+  * Internal dependencies
+  */
+-import AppsBadge from 'me/get-apps/apps-badge';
++import AppsBadge from './apps-badge';
+ import ReauthRequired from 'me/reauth-required';
+ import Card from 'components/card';
+ import Button from 'components/button';
+diff --git a/client/me/get-apps/style.scss b/client/blocks/get-apps/style.scss
+similarity index 98%
+rename from client/me/get-apps/style.scss
+rename to client/blocks/get-apps/style.scss
+index 08968333a879ff..250ef267737000 100644
+--- a/client/me/get-apps/style.scss
++++ b/client/blocks/get-apps/style.scss
+@@ -1,9 +1,9 @@
+-.get-apps {
++.get-apps__wrapper {
+ 	display: flex;
+ 	flex-direction: column;
+ }
+ 
+-.get-apps > div {
++.get-apps__wrapper > div {
+ 	width: 100%;
+ }
+ 
+@@ -17,8 +17,6 @@
+ }
+ 
+ .get-apps__desktop {
+-	margin-bottom: 0;
+-
+ 	@include breakpoint('>480px') {
+ 		display: flex;
+ 		flex-direction: row;
+@@ -70,7 +68,7 @@
+ 	}
+ 
+ 	.get-apps__sms-subpanel {
+-		
++
+ 		// This is a hack to allow us to use a feature flag to hide this subpanel
+ 		// without the parent card having a big ugly blank space at the bottom.
+ 		margin-top: 64px;
+@@ -105,7 +103,7 @@
+ 				margin: 0;
+ 				padding-right: 16px;
+ 			}
+-			
++
+ 			@include breakpoint('<480px') {
+ 
+ 				p {
+diff --git a/client/me/get-apps/index.jsx b/client/me/get-apps/index.jsx
+index db7e54001c12b4..b7fc2a5e87c0fe 100644
+--- a/client/me/get-apps/index.jsx
++++ b/client/me/get-apps/index.jsx
+@@ -9,25 +9,15 @@ import React from 'react';
+  */
+ import MeSidebarNavigation from 'me/sidebar-navigation';
+ import Main from 'components/main';
+-import GetAppsIllustration from './illustration.jsx';
+-import DesktopDownloadCard from './desktop-download-card.jsx';
+-import MobileDownloadCard from './mobile-download-card.jsx';
+ import PageViewTracker from 'lib/analytics/page-view-tracker';
+-import config from 'config';
+-
+-/**
+- * Style dependencies
+- */
+-import './style.scss';
++import GetAppsBlock from 'blocks/get-apps';
+ 
+ export const GetApps = () => {
+ 	return (
+ 		<Main className="get-apps">
+ 			<PageViewTracker path="/me/get-apps" title="Me > Get Apps" />
+ 			<MeSidebarNavigation />
+-			<GetAppsIllustration />
+-			<MobileDownloadCard />
+-			{ ! config( 'env_id' ).startsWith( 'desktop' ) && <DesktopDownloadCard /> }
++			<GetAppsBlock />
+ 		</Main>
+ 	);
+ };
+diff --git a/client/my-sites/checklist/main.jsx b/client/my-sites/checklist/main.jsx
+index 6eaa176920deac..1cdc7457bc70eb 100644
+--- a/client/my-sites/checklist/main.jsx
++++ b/client/my-sites/checklist/main.jsx
+@@ -9,16 +9,21 @@ import { localize } from 'i18n-calypso';
+ /**
+  * Internal dependencies
+  */
+-import ChecklistShowShare from './share';
+ import DocumentHead from 'components/data/document-head';
+ import FormattedHeader from 'components/formatted-header';
+-import isSiteAutomatedTransfer from 'state/selectors/is-site-automated-transfer';
+-import isSiteOnPaidPlan from 'state/selectors/is-site-on-paid-plan';
+ import Main from 'components/main';
+ import PageViewTracker from 'lib/analytics/page-view-tracker';
+ import QuerySiteChecklist from 'components/data/query-site-checklist';
+ import SidebarNavigation from 'my-sites/sidebar-navigation';
+ import WpcomChecklist from './wpcom-checklist';
++import ChecklistShowShare from './share';
++import GetAppsBlock from 'blocks/get-apps';
++
++/**
++ * State dependencies
++ */
++import isSiteAutomatedTransfer from 'state/selectors/is-site-automated-transfer';
++import isSiteOnPaidPlan from 'state/selectors/is-site-on-paid-plan';
+ import { getCurrentUser } from 'state/current-user/selectors';
+ import { getSelectedSiteId } from 'state/ui/selectors';
+ import { getSiteSlug, isJetpackSite, isNewSite } from 'state/sites/selectors';
+@@ -128,6 +133,7 @@ class ChecklistMain extends PureComponent {
+ 						) }
+ 					/>
+ 					<ChecklistShowShare className="checklist__share" siteSlug={ this.props.siteSlug } />
++					<GetAppsBlock />
+ 				</>
+ 			);
+ 		}
+diff --git a/client/my-sites/checklist/style.scss b/client/my-sites/checklist/style.scss
+index 2c20a557e40a6c..5ead1d3609408d 100644
+--- a/client/my-sites/checklist/style.scss
++++ b/client/my-sites/checklist/style.scss
+@@ -22,3 +22,7 @@
+ 	width: 100%;
+ 	text-align: left;
+ }
++
++.checklist .get-apps__wrapper {
++	margin-bottom: 24px;
++}

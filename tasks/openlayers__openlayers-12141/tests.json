@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.source.Vector #loadFeatures fires the FEATURESLOADEND event after the features are added"
+  ],
+  "PASS_TO_PASS": []
+}

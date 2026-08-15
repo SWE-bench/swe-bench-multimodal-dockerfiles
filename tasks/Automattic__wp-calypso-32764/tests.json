@@ -1,0 +1,16 @@
+{
+  "FAIL_TO_PASS": [
+    "PendingPayments - Non empty list - Main.pending-payments Connect(Localized(PurchasesHeader))[section=\"pending\"]",
+    "PendingPayments - Loading Placeholder - Main.pending-payments Connect(Localized(PurchasesHeader))[section=\"pending\"]",
+    "PendingPayments - Empty placeholder - Main.pending-payments Connect(Localized(PurchasesHeader))[section=\"pending\"]"
+  ],
+  "PASS_TO_PASS": [
+    "PendingPayments - Loading Placeholder - Main.pending-payments Localized(MeSidebarNavigation)",
+    "PendingPayments - Empty placeholder - Main.pending-payments Localized(MeSidebarNavigation)",
+    "PendingPayments - Non empty list - Main.pending-payments Localized(MeSidebarNavigation)",
+    "PendingPayments requestId - returns the same requestId on multiple calls",
+    "PendingPayments - Non empty list - Main.pending-payments Connect(Localized(PendingListItem))",
+    "PendingPayments - Loading Placeholder - Connect(PurchasesSite)[isPlaceholder=true]",
+    "PendingPayments - Empty placeholder - .pending-payments .pending-payments__no-content EmptyContent"
+  ]
+}

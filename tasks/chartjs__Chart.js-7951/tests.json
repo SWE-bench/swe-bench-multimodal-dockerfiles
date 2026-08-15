@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Chart.controllers.bar auto /base/test/fixtures/controller.bar/horizontal-borders.js "
+  ],
+  "PASS_TO_PASS": []
+}

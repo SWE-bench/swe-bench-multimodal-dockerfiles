@@ -1,0 +1,17 @@
+base_commit: 435e0bb9e8c2975843212d382b032a1b00e962f7
+created_at: '2022-08-12T15:11:55Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13974:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-data-tile-6-band/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/e6b4b08cac819a04db74a862c4e2501a9e5cafc5/test/rendering/cases/webgl-data-tile-6-band/expected.png
+instance_id: openlayers__openlayers-13974
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.0'

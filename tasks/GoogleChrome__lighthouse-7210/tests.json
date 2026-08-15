@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/audits/byte-efficiency/byte-efficiency-audit-test.js",
+    "lighthouse-core/test/audits/byte-efficiency/unused-css-rules-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

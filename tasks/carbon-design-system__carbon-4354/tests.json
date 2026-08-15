@@ -1,0 +1,27 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/UIShell/__tests__/HeaderMenu-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/UIShell/__tests__/HeaderMenuButton-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavFooter-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavMenu-test.js",
+    "packages/react/src/components/UIShell/__tests__/HeaderGlobalBar-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavMenuItem-test.js",
+    "packages/react/src/components/UIShell/__tests__/Header-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNav-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavSwitcher-test.js",
+    "packages/react/src/components/UIShell/__tests__/Link-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavLinkText-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavDetails-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavLink-test.js",
+    "packages/react/src/components/UIShell/__tests__/HeaderName-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavItems-test.js",
+    "packages/react/src/components/UIShell/__tests__/HeaderGlobalAction-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavHeader-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavIcon-test.js",
+    "packages/react/src/components/UIShell/__tests__/HeaderMenuItem-test.js",
+    "packages/react/src/components/UIShell/__tests__/SideNavItem-test.js",
+    "packages/react/src/components/UIShell/__tests__/SkipToContent-test.js"
+  ]
+}

@@ -1,0 +1,19 @@
+base_commit: c35d0c6e48ece06b2f420e3804c5f7267820d129
+created_at: '2022-10-18T10:04:54Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-10806:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/fixtures/controller.doughnut/single-slice-circumference-405.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/ec852acd62f04c73dd38afd13cbce117737b2f75/test/fixtures/controller.doughnut/single-slice-circumference-405.png
+  - path: test/fixtures/controller.doughnut/single-slice-offset.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/ec852acd62f04c73dd38afd13cbce117737b2f75/test/fixtures/controller.doughnut/single-slice-offset.png
+instance_id: chartjs__Chart.js-10806
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '4.0'

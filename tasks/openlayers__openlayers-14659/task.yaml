@@ -1,0 +1,17 @@
+base_commit: 75a918c3f986f121720064f73ec779868cfa9940
+created_at: '2023-04-11T13:02:55Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14659:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/immediate-geographic-feature/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/6476ced785d8e441d0cccd0ace238d2c518f41f0/test/rendering/cases/immediate-geographic-feature/expected.png
+instance_id: openlayers__openlayers-14659
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.3'

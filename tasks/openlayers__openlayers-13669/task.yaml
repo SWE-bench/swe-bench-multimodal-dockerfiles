@@ -1,0 +1,21 @@
+base_commit: 6341ed3a643c0c98fba2d1abfc007b0b87c0d659
+created_at: '2022-05-12T01:04:27Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13669:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/cog-f32-nodata-explicit-nan/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/25b20076360a1b25cd092dcb2abc6da750ca663e/test/rendering/cases/cog-f32-nodata-explicit-nan/expected.png
+  - path: test/rendering/cases/cog-f32-nodata/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/25b20076360a1b25cd092dcb2abc6da750ca663e/test/rendering/cases/cog-f32-nodata/expected.png
+  - path: test/rendering/cases/cog-i16-nodata/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/25b20076360a1b25cd092dcb2abc6da750ca663e/test/rendering/cases/cog-i16-nodata/expected.png
+instance_id: openlayers__openlayers-13669
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.14'

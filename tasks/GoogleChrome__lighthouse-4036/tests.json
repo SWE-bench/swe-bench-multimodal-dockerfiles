@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "External anchors use rel=\\\"noopener\\\" passes when links have mailto in href attribute"
+  ],
+  "PASS_TO_PASS": [
+    "External anchors use rel=\\\"noopener\\\" passes when links are from same hosts as the page host",
+    "External anchors use rel=\\\"noopener\\\" fails when links have no href attribute",
+    "External anchors use rel=\\\"noopener\\\" passes when links have javascript in href attribute",
+    "External anchors use rel=\\\"noopener\\\" fails when links are from different hosts than the page host",
+    "External anchors use rel=\\\"noopener\\\" fails when links have href attribute starting with a protocol"
+  ]
+}

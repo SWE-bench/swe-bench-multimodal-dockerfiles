@@ -1,0 +1,18 @@
+base_commit: 201ddffa1d0d0bf61a4372ff1386dbcffd606850
+created_at: '2023-06-15T15:45:37Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-11352:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/12361341/236559775-b3c7823e-816b-43cd-b6eb-c44d0ca8dc7b.gif
+  test_patch:
+  - path: test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/d922d221ea46d4b240d0b08691d84cb465dbe9e4/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png
+instance_id: chartjs__Chart.js-11352
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '4.3'

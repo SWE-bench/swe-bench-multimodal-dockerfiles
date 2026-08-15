@@ -1,0 +1,22 @@
+base_commit: ba84cc5c2aaf500739b202702fac24da74ede50d
+created_at: '2021-04-10T07:48:28Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-8867:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/1318466/28313802-11565fca-6bb0-11e7-9f1c-578591f0cf33.png
+  - https://user-images.githubusercontent.com/1318466/28313834-359aaae4-6bb0-11e7-9793-3bbd5e5725cd.png
+  - https://user-images.githubusercontent.com/1318466/28313889-62bea084-6bb0-11e7-977e-5e7d3364c29e.png
+  test_patch:
+  - path: test/fixtures/core.scale/ticks-mirror-x.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/fbd999d4ec922713155cbb7b2c91a72281673c76/test/fixtures/core.scale/ticks-mirror-x.png
+  - path: test/fixtures/core.scale/ticks-mirror.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/fbd999d4ec922713155cbb7b2c91a72281673c76/test/fixtures/core.scale/ticks-mirror.png
+instance_id: chartjs__Chart.js-8867
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.0'

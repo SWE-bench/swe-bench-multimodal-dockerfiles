@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/popup-menu - replace menu provider integration conditional flows should keep ConditionalFlow when changing target to bpmn:IntermediateCatchEvent "
+  ],
+  "PASS_TO_PASS": []
+}

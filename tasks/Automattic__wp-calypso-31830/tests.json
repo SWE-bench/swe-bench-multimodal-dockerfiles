@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "mobile-app - should identify the Android mobile app",
+    "mobile-app - should identify the iOS mobile app",
+    "mobile-app - should not identify an unknown user agent"
+  ],
+  "PASS_TO_PASS": []
+}

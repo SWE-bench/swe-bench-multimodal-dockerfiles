@@ -1,0 +1,17 @@
+base_commit: 61f05fae7464d3e91b7c233e031ec66eb075ce95
+created_at: '2021-12-21T17:18:12Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13150:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/heatmap-layer-opacity/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/351ca5866b0eaac45103021f51b5b92f7eefd4d6/test/rendering/cases/heatmap-layer-opacity/expected.png
+instance_id: openlayers__openlayers-13150
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.9'

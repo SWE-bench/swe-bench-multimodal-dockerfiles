@@ -1,0 +1,19 @@
+base_commit: 38bff05e43316b718904d38cb927178346d5285c
+created_at: '2021-12-01T16:36:50Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13069:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/cog-math/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/04ac30009b7a6e459b27792677159268509fa340/test/rendering/cases/cog-math/expected.png
+  - path: test/rendering/cases/cog-stats/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/04ac30009b7a6e459b27792677159268509fa340/test/rendering/cases/cog-stats/expected.png
+instance_id: openlayers__openlayers-13069
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.9'

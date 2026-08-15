@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Core.scale auto /base/test/fixtures/core.scale/x-axis-position-dynamic.json "
+  ],
+  "PASS_TO_PASS": []
+}

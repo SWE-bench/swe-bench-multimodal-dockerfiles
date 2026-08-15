@@ -1,0 +1,10 @@
+{
+  "FAIL_TO_PASS": [
+    "Handlebar helpers `getAggregationScoreRating` calculates rating"
+  ],
+  "PASS_TO_PASS": [
+    "Handlebar helpers `not` works properly",
+    "Handlebar helpers `kebabCase` works properly",
+    "Handlebar helpers `nameToLink` works properly"
+  ]
+}

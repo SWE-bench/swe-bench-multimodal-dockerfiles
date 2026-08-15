@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.interaction.Modify #getOverlay returns the feature overlay layer",
+    "ol.interaction.Draw #getOverlay returns the feature overlay layer",
+    "ol.interaction.Select #getOverlay returns the feature overlay layer",
+    "ol.layer.Layer #setMap (unmanaged layer) zIndex for unmanaged layers respects the configured zIndex"
+  ],
+  "PASS_TO_PASS": []
+}

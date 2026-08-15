@@ -1,0 +1,43 @@
+{
+  "FAIL_TO_PASS": [
+    "CardUpload - [request] - should support onChange/onCancel events",
+    "CardUpload - [behavior] - should support showDownload",
+    "CardUpload - [behavior] - should support reUpload",
+    "CardUpload - [request] - should support change Data/Action/Headers in BeforeUpload",
+    "CardUpload - [request] - should support onChange/onRemove events",
+    "CardUpload - [request] - should support header"
+  ],
+  "PASS_TO_PASS": [
+    "util function test - previewFile",
+    "Upload - [behavior] Upload Request - should throw error when return false in BeforeUpload",
+    "request - upload request success",
+    "ImageUpload - render - should render a imageList upload",
+    "util function test - removeFileItem not find one to remove",
+    "Upload - [behavior] Upload Request - should throw error when response json invalid",
+    "Upload - [behavior] Upload Request - should throw error when response.success=false",
+    "request - get headers",
+    "TextUpload - render - should render a error item with text",
+    "TextUpload - render - should render a wrapper upload",
+    "util function test - uid generate",
+    "util function test - removeFileItem remove one",
+    "Upload - [behavior] Upload Request - should support header",
+    "Upload - [behavior] Upload Request - should throw error when return Promise.reject() in BeforeUpload",
+    "TextUpload - render - should render a error item without text",
+    "request - 40x code should be error",
+    "ImageUpload - render - should render a imageList upload with error msg",
+    "Upload - behavior - should support onChange/onRemove events",
+    "CardUpload - [behavior] - should support prefix",
+    "Upload - [behavior] Upload Request - should throw error when return Promise.resolve(false) in BeforeUpload",
+    "TextUpload - render - should render a upload item",
+    "Upload - render - should render a wrapper upload",
+    "Upload - [render] drag - should render a drag upload",
+    "request - upload request timeout for 5e3",
+    "Upload - [behavior] Upload Request - should support custom request",
+    "util function test - fileToObject",
+    "util function test - errCode",
+    "Upload - behavior - should support defaultValue and can be changed",
+    "util function test - getFileItem",
+    "Upload - behavior - should support limit",
+    "CardUpload - [behavior] - should support controlled `value`"
+  ]
+}

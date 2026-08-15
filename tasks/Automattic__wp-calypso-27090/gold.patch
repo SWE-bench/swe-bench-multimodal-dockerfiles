@@ -1,0 +1,572 @@
+diff --git a/client/components/data/query-stats-recent-post-views/README.md b/client/components/data/query-stats-recent-post-views/README.md
+new file mode 100644
+index 00000000000000..5b4fe40ef7da47
+--- /dev/null
++++ b/client/components/data/query-stats-recent-post-views/README.md
+@@ -0,0 +1,61 @@
++Query Recent Post Views
++===========
++
++`<QueryRecentPostViews />` is a React component used to request views of a set of posts across a given time period.
++
++## Usage
++
++Render the component, passing `siteId` and `postIds`. It does not accept any children, nor does it render any element to the page. You can use it adjacent to other sibling components which make use of the fetched data made available through the global application state.
++
++```jsx
++import React from 'react';
++import QueryRecentPostViews from 'components/data/query-stats-recent-post-views';
++
++export default function ViewCount( { viewCount } ) {
++	return (
++		<div>
++			<QueryPostsViews siteId={ 12345678 } postIds={ [ 1,2,3,4 ] } num={ 30 } />
++			<div>{ viewCount }</div>
++		</div>
++	);
++}
++```
++
++## Props
++
++### `siteId`
++
++<table>
++	<tr><th>Type</th><td>Number</td></tr>
++	<tr><th>Required</th><td>Yes</td></tr>
++</table>
++
++The site ID.
++
++
++### `postIds`
++
++<table>
++	<tr><th>Type</th><td>Array[Number]</td></tr>
++	<tr><th>Required</th><td>Yes</td></tr>
++</table>
++
++An array of post IDs for which we'll retrieve view data.
++
++### `date`
++
++<table>
++	<tr><th>Type</th><td>String</td></tr>
++	<tr><th>Required</th><td>No</td></tr>
++</table>
++
++The most recent day from which to query views for `postIds` in `YYYY-MM-DD` format. Defaults to current date.
++
++### `num`
++
++<table>
++	<tr><th>Type</th><td>Number</td></tr>
++	<tr><th>Required</th><td>No</td></tr>
++</table>
++
++The number of days from `date` to query views for `postIds`. Defaults to 1.
+diff --git a/client/components/data/query-stats-recent-post-views/index.jsx b/client/components/data/query-stats-recent-post-views/index.jsx
+new file mode 100644
+index 00000000000000..f2f13ebadbc85f
+--- /dev/null
++++ b/client/components/data/query-stats-recent-post-views/index.jsx
+@@ -0,0 +1,61 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++
++import { Component } from 'react';
++import PropTypes from 'prop-types';
++import { connect } from 'react-redux';
++import { chunk, isEqual } from 'lodash';
++
++/**
++ * Internal dependencies
++ */
++import { requestRecentPostViews } from 'state/stats/recent-post-views/actions';
++
++class QueryRecentPostViews extends Component {
++	static propTypes = {
++		siteId: PropTypes.number.isRequired,
++		postIds: PropTypes.arrayOf( PropTypes.number ).isRequired,
++		num: PropTypes.number,
++		date: PropTypes.string,
++	};
++
++	componentDidMount() {
++		this.request();
++	}
++
++	componentDidUpdate( prevProps ) {
++		if ( isEqual( { ...this.props }, { ...prevProps } ) ) {
++			return;
++		}
++
++		this.request();
++	}
++
++	request() {
++		const { siteId, postIds, num, date } = this.props;
++
++		// Only request stats if site ID and a list of post IDs is provided.
++		if ( ! siteId || postIds.length < 1 ) {
++			return;
++		}
++
++		// Break post_ids into chunks of 100 because `stats/views/posts`
++		// is limited to 100 post_ids per query.
++		const postIdsChunks = chunk( postIds, 100 );
++		postIdsChunks.forEach( postIdsChunk =>
++			this.props.requestRecentPostViews( siteId, postIdsChunk, num, date )
++		);
++	}
++
++	render() {
++		return null;
++	}
++}
++
++export default connect(
++	null,
++	{ requestRecentPostViews }
++)( QueryRecentPostViews );
+diff --git a/client/my-sites/post-type-list/index.jsx b/client/my-sites/post-type-list/index.jsx
+index 04878ccc25f131..b6ea8ba6ce0b00 100644
+--- a/client/my-sites/post-type-list/index.jsx
++++ b/client/my-sites/post-type-list/index.jsx
+@@ -8,7 +8,7 @@ import PropTypes from 'prop-types';
+ import React, { Component } from 'react';
+ import classnames from 'classnames';
+ import { connect } from 'react-redux';
+-import { isEqual, range, throttle } from 'lodash';
++import { isEqual, range, throttle, difference, isEmpty } from 'lodash';
+ import { localize } from 'i18n-calypso';
+ 
+ /**
+@@ -16,6 +16,7 @@ import { localize } from 'i18n-calypso';
+  */
+ import afterLayoutFlush from 'lib/after-layout-flush';
+ import QueryPosts from 'components/data/query-posts';
++import QueryRecentPostViews from 'components/data/query-stats-recent-post-views';
+ import { DEFAULT_POST_QUERY } from 'lib/query-manager/post/constants';
+ import { getSelectedSiteId } from 'state/ui/selectors';
+ import {
+@@ -65,6 +66,8 @@ class PostTypeList extends Component {
+ 		const maxRequestedPage = this.estimatePageCountFromPosts( this.props.posts );
+ 		this.state = {
+ 			maxRequestedPage,
++			// Request recent views for posts loaded from hydrated state.
++			recentViewIds: this.postIdsFromPosts( this.props.posts ),
+ 		};
+ 	}
+ 
+@@ -73,7 +76,7 @@ class PostTypeList extends Component {
+ 		window.addEventListener( 'scroll', this.maybeLoadNextPageThrottled );
+ 	}
+ 
+-	componentWillReceiveProps( nextProps ) {
++	UNSAFE_componentWillReceiveProps( nextProps ) {
+ 		if (
+ 			! isEqual( this.props.query, nextProps.query ) ||
+ 			! isEqual( this.props.siteId, nextProps.siteId )
+@@ -83,6 +86,16 @@ class PostTypeList extends Component {
+ 				maxRequestedPage,
+ 			} );
+ 		}
++
++		if ( ! isEqual( this.props.posts, nextProps.posts ) ) {
++			const postIds = this.postIdsFromPosts( this.props.posts );
++			const nextPostIds = this.postIdsFromPosts( nextProps.posts );
++
++			// Request updated recent view counts for posts added to list.
++			this.setState( {
++				recentViewIds: difference( nextPostIds, postIds ),
++			} );
++		}
+ 	}
+ 
+ 	componentDidUpdate( prevProps ) {
+@@ -118,6 +131,10 @@ class PostTypeList extends Component {
+ 		return Math.min( pageCount, 5 );
+ 	}
+ 
++	postIdsFromPosts( posts ) {
++		return ! isEmpty( posts ) ? posts.map( post => post.ID ) : [];
++	}
++
+ 	getPostsPerPageCount() {
+ 		const query = this.props.query || {};
+ 		return query.number || DEFAULT_POST_QUERY.number;
+@@ -206,7 +223,7 @@ class PostTypeList extends Component {
+ 
+ 	render() {
+ 		const { query, siteId, isRequestingPosts, translate } = this.props;
+-		const { maxRequestedPage } = this.state;
++		const { maxRequestedPage, recentViewIds } = this.state;
+ 		const posts = this.props.posts || [];
+ 		const isLoadedAndEmpty = query && ! posts.length && ! isRequestingPosts;
+ 		const classes = classnames( 'post-type-list', {
+@@ -225,6 +242,9 @@ class PostTypeList extends Component {
+ 					range( 1, maxRequestedPage + 1 ).map( page => (
+ 						<QueryPosts key={ `query-${ page }` } siteId={ siteId } query={ { ...query, page } } />
+ 					) ) }
++				{ recentViewIds.length > 0 && (
++					<QueryRecentPostViews siteId={ siteId } postIds={ recentViewIds } num={ 30 } />
++				) }
+ 				{ posts.slice( 0, 10 ).map( this.renderPost ) }
+ 				{ showUpgradeNudge && (
+ 					<UpgradeNudge
+diff --git a/client/my-sites/post-type-list/post-action-counts/index.jsx b/client/my-sites/post-type-list/post-action-counts/index.jsx
+index 19c55c0965273e..de8b80f09fe286 100644
+--- a/client/my-sites/post-type-list/post-action-counts/index.jsx
++++ b/client/my-sites/post-type-list/post-action-counts/index.jsx
+@@ -19,6 +19,8 @@ import { getSiteSlug, isJetpackModuleActive, isJetpackSite } from 'state/sites/s
+ import { recordTracksEvent } from 'state/analytics/actions';
+ import { hideActiveLikesPopover, toggleLikesPopover } from 'state/ui/post-type-list/actions';
+ import { isLikesPopoverOpen } from 'state/ui/post-type-list/selectors';
++import { getRecentViewsForPost } from 'state/stats/recent-post-views/selectors';
++import ScreenReaderText from 'components/screen-reader-text';
+ 
+ class PostActionCounts extends PureComponent {
+ 	static propTypes = {
+@@ -79,6 +81,50 @@ class PostActionCounts extends PureComponent {
+ 		);
+ 	}
+ 
++	renderViewCount() {
++		const { viewCount: count, numberFormat, postId, showViews, siteSlug, translate } = this.props;
++		if ( ! count || count < 1 || ! showViews ) {
++			return null;
++		}
++		const recentViewsText = translate(
++			'%(count)s Recent View{{srText}}in the past 30 days{{/srText}}',
++			'%(count)s Recent Views{{srText}}in the past 30 days{{/srText}}',
++			{
++				count,
++				args: {
++					count: numberFormat( count ),
++				},
++				comment:
++					'text wrapped by "srText" is not visible on screen for brevity, but is read by screen readers to provide more context',
++				components: {
++					srText: <ScreenReaderText />,
++				},
++			}
++		);
++		const linkTitleText = translate(
++			'%(count)s recent view in the past 30 days',
++			'%(count)s recent views in the past 30 days',
++			{
++				count,
++				args: {
++					count: numberFormat( count ),
++				},
++			}
++		);
++
++		return (
++			<li>
++				<a
++					href={ `/stats/post/${ postId }/${ siteSlug }` }
++					onClick={ this.onActionClick( 'stats' ) }
++					title={ linkTitleText }
++				>
++					{ recentViewsText }
++				</a>
++			</li>
++		);
++	}
++
+ 	renderLikeCount() {
+ 		const {
+ 			likeCount: count,
+@@ -120,6 +166,7 @@ class PostActionCounts extends PureComponent {
+ 	render() {
+ 		return (
+ 			<ul className="post-action-counts">
++				{ this.renderViewCount() }
+ 				{ this.renderLikeCount() }
+ 				{ this.renderCommentCount() }
+ 			</ul>
+@@ -155,6 +202,7 @@ export default connect(
+ 			siteId,
+ 			siteSlug: getSiteSlug( state, siteId ),
+ 			type: get( post, 'type', 'unknown' ),
++			viewCount: getRecentViewsForPost( state, siteId, postId ),
+ 			isCurrentLikesPopoverOpen: isLikesPopoverOpen( state, globalId ),
+ 		};
+ 	},
+diff --git a/client/state/action-types.js b/client/state/action-types.js
+index b6a0c3be8937cf..932978690e015a 100644
+--- a/client/state/action-types.js
++++ b/client/state/action-types.js
+@@ -983,6 +983,8 @@ export const SOCIAL_DISCONNECT_ACCOUNT_REQUEST_FAILURE =
+ export const ORDER_TRANSACTION_FETCH = 'ORDER_TRANSACTION_FETCH';
+ export const ORDER_TRANSACTION_SET = 'ORDER_TRANSACTION_SET';
+ export const ORDER_TRANSACTION_FETCH_ERROR = 'ORDER_TRANSACTION_FETCH_ERROR';
++export const STATS_RECENT_POST_VIEWS_REQUEST = 'STATS_RECENT_POST_VIEWS_REQUEST';
++export const STATS_RECENT_POST_VIEWS_RECEIVE = 'STATS_RECENT_POST_VIEWS_RECEIVE';
+ export const STORED_CARDS_ADD_COMPLETED = 'STORED_CARDS_ADD_COMPLETED';
+ export const STORED_CARDS_DELETE = 'STORED_CARDS_DELETE';
+ export const STORED_CARDS_DELETE_COMPLETED = 'STORED_CARDS_DELETE_COMPLETED';
+diff --git a/client/state/data-layer/wpcom/sites/index.js b/client/state/data-layer/wpcom/sites/index.js
+index ac8bc8313f96e3..733d4e18e271dc 100644
+--- a/client/state/data-layer/wpcom/sites/index.js
++++ b/client/state/data-layer/wpcom/sites/index.js
+@@ -20,7 +20,7 @@ import postTypes from './post-types';
+ import posts from './posts';
+ import simplePayments from './simple-payments';
+ import users from './users';
+-import statsGoogleMyBusiness from './stats/google-my-business';
++import stats from './stats';
+ 
+ import { registerHandlers } from 'state/data-layer/handler-registry';
+ 
+@@ -41,7 +41,7 @@ registerHandlers(
+ 		posts,
+ 		simplePayments,
+ 		users,
+-		statsGoogleMyBusiness
++		stats,
+ 	)
+ );
+ 
+diff --git a/client/state/data-layer/wpcom/sites/stats/index.js b/client/state/data-layer/wpcom/sites/stats/index.js
+new file mode 100644
+index 00000000000000..dfbc99a02f2436
+--- /dev/null
++++ b/client/state/data-layer/wpcom/sites/stats/index.js
+@@ -0,0 +1,10 @@
++/** @format */
++
++/**
++ * Internal dependencies
++ */
++import { mergeHandlers } from 'state/action-watchers/utils';
++import recentPostViews from './views/posts';
++import googleMyBusiness from './google-my-business';
++
++export default mergeHandlers( recentPostViews, googleMyBusiness );
+diff --git a/client/state/data-layer/wpcom/sites/stats/views/posts/index.js b/client/state/data-layer/wpcom/sites/stats/views/posts/index.js
+new file mode 100644
+index 00000000000000..dd9cdb43808bb9
+--- /dev/null
++++ b/client/state/data-layer/wpcom/sites/stats/views/posts/index.js
+@@ -0,0 +1,44 @@
++/**
++ * External Dependencies
++ *
++ * @format
++ */
++
++/**
++ * Internal Dependencies
++ */
++import { STATS_RECENT_POST_VIEWS_REQUEST } from 'state/action-types';
++import { dispatchRequestEx } from 'state/data-layer/wpcom-http/utils';
++import { http } from 'state/data-layer/wpcom-http/actions';
++import { receiveRecentPostViews } from 'state/stats/recent-post-views/actions';
++
++export const fetch = action => {
++	const { siteId, postIds, num, date, offset } = action;
++
++	return http(
++		{
++			method: 'GET',
++			path: `/sites/${ siteId }/stats/views/posts`,
++			apiVersion: '1.1',
++			query: {
++				post_ids: postIds.join( ',' ),
++				num,
++				date,
++				offset,
++			},
++		},
++		action
++	);
++};
++
++export const onSuccess = ( { siteId }, data ) => receiveRecentPostViews( siteId, data );
++
++export default {
++	[ STATS_RECENT_POST_VIEWS_REQUEST ]: [
++		dispatchRequestEx( {
++			fetch,
++			onSuccess,
++			onError: () => {},
++		} ),
++	],
++};
+diff --git a/client/state/stats/recent-post-views/actions.js b/client/state/stats/recent-post-views/actions.js
+new file mode 100644
+index 00000000000000..e8259039fc4f18
+--- /dev/null
++++ b/client/state/stats/recent-post-views/actions.js
+@@ -0,0 +1,45 @@
++/** @format */
++
++/**
++ * Internal dependencies
++ */
++import {
++	STATS_RECENT_POST_VIEWS_REQUEST,
++	STATS_RECENT_POST_VIEWS_RECEIVE,
++} from 'state/action-types';
++
++/**
++ * Returns an action thunk which, when invoked, triggers a network request to
++ * retrieve views for a post or posts.
++ *
++ * @param  {Number}   siteId   Site ID
++ * @param  {String}   postIds  Comma separated list of Post IDs
++ * @param  {Number}   num      Number of days to include in the query
++ * @param  {String}   date     The most recent day to include in results (YYYY-MM-DD format)
++ * @return {Object}  Action object
++ */
++export function requestRecentPostViews( siteId, postIds, num, date ) {
++	return {
++		type: STATS_RECENT_POST_VIEWS_REQUEST,
++		siteId,
++		postIds,
++		num,
++		date,
++	};
++}
++
++/**
++ * Returns an action object to be used in signalling that a post views object has
++ * been received.
++ *
++ * @param  {Number}  siteId   Site ID
++ * @return {Object}  Action object
++ */
++export function receiveRecentPostViews( siteId, { date, posts } ) {
++	return {
++		type: STATS_RECENT_POST_VIEWS_RECEIVE,
++		siteId,
++		date,
++		posts,
++	};
++}
+diff --git a/client/state/stats/recent-post-views/reducer.js b/client/state/stats/recent-post-views/reducer.js
+new file mode 100644
+index 00000000000000..c36f67732f1cd6
+--- /dev/null
++++ b/client/state/stats/recent-post-views/reducer.js
+@@ -0,0 +1,48 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++
++import { get } from 'lodash';
++
++/**
++ * Internal dependencies
++ */
++import { combineReducers } from 'state/utils';
++import { items as itemsSchemas } from './schema';
++import { STATS_RECENT_POST_VIEWS_RECEIVE } from 'state/action-types';
++
++/**
++ * Returns the updated items state after an action has been dispatched. The
++ * state maps site ID, post ID and stat keys to the value of the stat.
++ *
++ * @param  {Object} state  Current state
++ * @param  {Object} action Action payload
++ * @return {Object}        Updated state
++ */
++export function items( state = {}, action ) {
++	switch ( action.type ) {
++		case STATS_RECENT_POST_VIEWS_RECEIVE: {
++			const viewsForState = {};
++			action.posts.forEach( post => {
++				viewsForState[ post.ID ] = { views: post.views };
++			} );
++
++			return {
++				...state,
++				[ action.siteId ]: {
++					...get( state, [ action.siteId ], {} ),
++					...viewsForState,
++				},
++			};
++		}
++	}
++
++	return state;
++}
++items.schema = itemsSchemas;
++
++export default combineReducers( {
++	items,
++} );
+diff --git a/client/state/stats/recent-post-views/schema.js b/client/state/stats/recent-post-views/schema.js
+new file mode 100644
+index 00000000000000..d9d0940a68cfe2
+--- /dev/null
++++ b/client/state/stats/recent-post-views/schema.js
+@@ -0,0 +1,21 @@
++/** @format */
++export const items = {
++	type: 'object',
++	additionalProperties: false,
++	patternProperties: {
++		// Site Id
++		'^\\d+$': {
++			type: 'object',
++			additionalProperties: false,
++			patternProperties: {
++				// Post Id
++				'^\\d+$': {
++					type: 'object',
++					properties: {
++						views: { type: 'number' },
++					},
++				},
++			},
++		},
++	},
++};
+diff --git a/client/state/stats/recent-post-views/selectors.js b/client/state/stats/recent-post-views/selectors.js
+new file mode 100644
+index 00000000000000..207563d5f01fd6
+--- /dev/null
++++ b/client/state/stats/recent-post-views/selectors.js
+@@ -0,0 +1,18 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++import { get } from 'lodash';
++
++/**
++ * Returns the number of views for a given post, or `null`.
++ *
++ * @param   {Object}  state    Global state tree
++ * @param   {Number}  siteId   Site ID
++ * @param   {Number}  postId   Post ID
++ * @returns {?String}          Post views.
++ */
++export function getRecentViewsForPost( state, siteId, postId ) {
++	return get( state, [ 'stats', 'recentPostViews', 'items', siteId, postId, 'views' ], null );
++}
+diff --git a/client/state/stats/reducer.js b/client/state/stats/reducer.js
+index 1e2dcd0d03707a..59f7bb164fa4e5 100644
+--- a/client/state/stats/reducer.js
++++ b/client/state/stats/reducer.js
+@@ -7,8 +7,10 @@
+ import posts from './posts/reducer';
+ import { combineReducers } from 'state/utils';
+ import lists from './lists/reducer';
++import recentPostViews from './recent-post-views/reducer';
+ 
+ export default combineReducers( {
+ 	posts,
+ 	lists,
++	recentPostViews,
+ } );

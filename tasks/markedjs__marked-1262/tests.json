@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "Marked Table cells should pass example 9",
+    "Marked Table cells should pass example 8",
+    "Marked Table cells should pass example 5",
+    "Marked Table cells should pass example 7"
+  ],
+  "PASS_TO_PASS": []
+}

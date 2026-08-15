@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "cli when given an async formatter path should execute without any errors:"
+  ],
+  "PASS_TO_PASS": []
+}

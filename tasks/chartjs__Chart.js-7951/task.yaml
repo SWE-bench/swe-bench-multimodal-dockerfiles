@@ -1,0 +1,19 @@
+base_commit: 6dbb7e74462d5b7dedf2124a622a3e678964dd83
+created_at: '2020-10-24T16:53:03Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-7951:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/fixtures/controller.bar/border-radius.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/0201cc341087557af5a57fedf08b00477d724783/test/fixtures/controller.bar/border-radius.png
+  - path: test/fixtures/controller.bar/horizontal-borders.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/0201cc341087557af5a57fedf08b00477d724783/test/fixtures/controller.bar/horizontal-borders.png
+instance_id: chartjs__Chart.js-7951
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.0'

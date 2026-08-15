@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.render.canvas drawImageOrLabel draws the image with correct parameters"
+  ],
+  "PASS_TO_PASS": []
+}

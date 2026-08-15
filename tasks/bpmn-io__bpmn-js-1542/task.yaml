@@ -1,0 +1,16 @@
+base_commit: 0f4d30829d4965699aee2ff0622efc0b2ffdb84c
+created_at: '2021-12-02T22:05:57Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.bpmn-io_1776_bpmn-js-1542:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/58601/144435022-881cace6-c2d4-45bc-b2b2-08118f04a74e.gif
+  test_patch: []
+instance_id: bpmn-io__bpmn-js-1542
+log_parser: parse_log_bpmn_js
+repo: bpmn-io/bpmn-js
+split: test
+version: '8.8'

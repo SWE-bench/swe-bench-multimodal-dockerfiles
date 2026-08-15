@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/format/angular/bracket-same-line/jsfmt.spec.js",
+    "tests/format/angular/angular/jsfmt.spec.js",
+    "tests/format/angular/interpolation/jsfmt.spec.js"
+  ],
+  "PASS_TO_PASS": []
+}

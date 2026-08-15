@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "prefer-const invalid /*eslint no-undef-init:error*/ let foo = undefined;:",
+    "prefer-const invalid let someFunc = () => { let a = 1, b = 2; foo(a, b) }:"
+  ],
+  "PASS_TO_PASS": []
+}

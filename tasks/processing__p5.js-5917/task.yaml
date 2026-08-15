@@ -1,0 +1,20 @@
+base_commit: ce831a839b6ab8792adc31cdf1942ea89d69e29b
+created_at: '2022-12-22T19:53:39Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.processing_1776_p5.js-5917:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/5315059/206325019-7879028e-85f1-4de3-81bb-896e06fd53ab.png
+  - https://user-images.githubusercontent.com/5315059/206325076-3630d492-55fd-41b5-b999-6d6e2a1bc872.png
+  - https://user-images.githubusercontent.com/5315059/206326621-b6ea1410-b8be-4e13-bd81-39f537731c4d.png
+  - https://user-images.githubusercontent.com/5315059/206327415-76c55a18-f26d-4581-b353-95bc185168fd.png
+  - https://user-images.githubusercontent.com/5315059/206326541-988089d8-e985-497f-998c-580979f71cb0.png
+  test_patch: []
+instance_id: processing__p5.js-5917
+log_parser: parse_log_p5js
+repo: processing/p5.js
+split: dev
+version: '1.5'

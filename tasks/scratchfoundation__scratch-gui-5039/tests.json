@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "test/unit/util/drag-recognizer.test.js"
+  ],
+  "PASS_TO_PASS": []
+}

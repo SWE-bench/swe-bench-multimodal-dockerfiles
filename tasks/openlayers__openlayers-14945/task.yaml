@@ -1,0 +1,23 @@
+base_commit: b210679c53af6162e968e15bb2d6ae6bbca957de
+created_at: '2023-07-25T22:19:13Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14945:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/browser/spec/ol/data/blank.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/2522fd76be64dffa843e60652fccadb45a43763e/test/browser/spec/ol/data/blank.png
+  - path: test/rendering/cases/image-stretched-interpolate-false/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/2522fd76be64dffa843e60652fccadb45a43763e/test/rendering/cases/image-stretched-interpolate-false/expected.png
+  - path: test/rendering/cases/reproj-image-stretched-interpolate-false/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/2522fd76be64dffa843e60652fccadb45a43763e/test/rendering/cases/reproj-image-stretched-interpolate-false/expected.png
+  - path: test/rendering/cases/source-image-wms-blurry/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/2522fd76be64dffa843e60652fccadb45a43763e/test/rendering/cases/source-image-wms-blurry/expected.png
+instance_id: openlayers__openlayers-14945
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.5'

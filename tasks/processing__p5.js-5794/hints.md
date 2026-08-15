@@ -1,0 +1,1 @@
+It looks like manually calling `drawingContext.enable(drawingContext.BLEND)` fixes this. Maybe something should be setting this internally

@@ -1,0 +1,19 @@
+base_commit: 7a88544d0f02253088bedaf8c0adf3a73d24739b
+created_at: '2024-03-28T21:50:47Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15685:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/layer-vectortile-overlap-declutter/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/da3ef00a2abbb84811f069f1068f1d46ab3e1692/test/rendering/cases/layer-vectortile-overlap-declutter/expected.png
+  - path: test/rendering/cases/layer-vectortile-overlap-no-declutter/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/da3ef00a2abbb84811f069f1068f1d46ab3e1692/test/rendering/cases/layer-vectortile-overlap-no-declutter/expected.png
+instance_id: openlayers__openlayers-15685
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '9.1'

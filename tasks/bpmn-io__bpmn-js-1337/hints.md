@@ -1,0 +1,2 @@
+See [BPMN 2.0 spec](https://www.omg.org/spec/BPMN/2.0/PDF) on page 241 `There is only one type of Start Event for Sub-Processes in BPMN (see Figure 10.82): None.`
+See [BPMN 2.0 spec](https://www.omg.org/spec/BPMN/2.0/PDF) on page 241 `There is only one type of Start Event for Sub-Processes in BPMN (see Figure 10.82): None.`

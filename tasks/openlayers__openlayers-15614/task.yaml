@@ -1,0 +1,17 @@
+base_commit: cc711b7cbd2af43036145583010cab2a001a2b6f
+created_at: '2024-03-05T22:32:22Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15614:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/layer-vector-declutter/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/237286f9a7183750946fcb289c68072a93be4b9c/test/rendering/cases/layer-vector-declutter/expected.png
+instance_id: openlayers__openlayers-15614
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '9.0'

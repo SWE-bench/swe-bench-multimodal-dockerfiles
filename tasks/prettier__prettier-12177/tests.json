@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/format/js/switch/jsfmt.spec.js"
+  ],
+  "PASS_TO_PASS": []
+}

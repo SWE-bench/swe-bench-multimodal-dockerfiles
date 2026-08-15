@@ -1,0 +1,10 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'gcode' – should pass test case 'comment_feature'",
+    "Testing language 'gcode' – should pass test case 'checksum_feature'",
+    "Testing language 'gcode' – should pass test case 'keyword_feature'",
+    "Testing language 'gcode' – should pass test case 'property_feature'",
+    "Testing language 'gcode' – should pass test case 'string_feature'"
+  ],
+  "PASS_TO_PASS": []
+}

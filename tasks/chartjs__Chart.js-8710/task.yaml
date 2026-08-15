@@ -1,0 +1,16 @@
+base_commit: bbf298f4614c058e2ec86329566a56bfcd8bc685
+created_at: '2021-03-24T12:54:00Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-8710:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/30198737/112266299-161c9900-8c74-11eb-9ea9-9c05719f195a.png
+  test_patch: []
+instance_id: chartjs__Chart.js-8710
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.0'

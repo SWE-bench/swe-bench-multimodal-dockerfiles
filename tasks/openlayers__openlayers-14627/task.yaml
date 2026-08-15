@@ -1,0 +1,17 @@
+base_commit: 309ca077a36338c8bfc4874b437ce794afd48dcb
+created_at: '2023-03-31T12:54:11Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14627:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/22017489/228728865-77f2f818-e6b8-4965-aac7-42d39694ef0c.png
+  - https://user-images.githubusercontent.com/22017489/228727872-7b7dac45-0b75-4027-b0d0-cd9634426f47.png
+  test_patch: []
+instance_id: openlayers__openlayers-14627
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.3'

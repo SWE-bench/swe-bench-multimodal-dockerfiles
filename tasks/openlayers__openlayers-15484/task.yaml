@@ -1,0 +1,19 @@
+base_commit: 73f4636c85e569c6aca36f2ad478b677b7929872
+created_at: '2024-01-13T22:02:59Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15484:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-data-tile-clip-extent-reproj/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/bac8ed3e703b020ef565d3d3d27163f0e28031aa/test/rendering/cases/webgl-data-tile-clip-extent-reproj/expected.png
+  - path: test/rendering/cases/webgl-data-tile-clip-extent/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/bac8ed3e703b020ef565d3d3d27163f0e28031aa/test/rendering/cases/webgl-data-tile-clip-extent/expected.png
+instance_id: openlayers__openlayers-15484
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '9.0'

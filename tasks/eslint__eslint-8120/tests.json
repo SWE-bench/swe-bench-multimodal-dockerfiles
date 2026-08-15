@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "no-unused-vars invalid (({a, ...rest}) => {}):",
+    "no-unused-vars valid (({a, ...rest}) => rest):"
+  ],
+  "PASS_TO_PASS": []
+}

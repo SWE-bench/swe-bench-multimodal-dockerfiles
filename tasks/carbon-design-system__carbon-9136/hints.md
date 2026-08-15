@@ -1,0 +1,1 @@
+Definitely interested in seeing this issue resolved. The lack of ref breaks extensions that our PAL has built on top of ComboBox component. We are unable to upgrade Carbon without breaking existing applications.

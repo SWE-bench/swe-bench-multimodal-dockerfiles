@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/report/html/renderer/category-renderer-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

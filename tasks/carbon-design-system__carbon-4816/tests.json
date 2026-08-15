@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/NumberInput/NumberInput-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

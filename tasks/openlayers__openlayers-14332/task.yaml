@@ -1,0 +1,17 @@
+base_commit: 0f828dd3acd8bc435780d65c96d7c20a69942c98
+created_at: '2022-11-22T13:46:09Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14332:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/postrender-immediate/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/84b226d93f6a4ec1270ebd7a57b527f34f933ae6/test/rendering/cases/postrender-immediate/expected.png
+instance_id: openlayers__openlayers-14332
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.1'

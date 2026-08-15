@@ -1,0 +1,16 @@
+base_commit: bcc8e2ee4ec5a0d30fabc995d9ebeedfed0a8fe0
+created_at: '2018-05-29T14:06:23Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.automattic_1776_wp-calypso-25160:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/3696121/39901035-903bb366-548b-11e8-97a4-966e20bb6c6a.png
+  test_patch: []
+instance_id: Automattic__wp-calypso-25160
+log_parser: parse_log_calypso
+repo: Automattic/wp-calypso
+split: dev
+version: 8.11.2

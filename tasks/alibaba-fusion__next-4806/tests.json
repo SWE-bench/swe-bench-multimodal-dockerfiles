@@ -1,0 +1,32 @@
+{
+  "FAIL_TO_PASS": [
+    "CascaderSelect: should support empty search value after selection , close #3008"
+  ],
+  "PASS_TO_PASS": [
+    "CascaderSelect: should support visible by keyboard",
+    "CascaderSelect: should support focus api",
+    "CascaderSelect: should show dropdown when click select box",
+    "CascaderSelect: should render single cascader select",
+    "CascaderSelect: should show dropdown when set defaultVisible to true",
+    "CascaderSelect: should change select box display when expand item if set changeOnSelect to true",
+    "CascaderSelect: should support onSearch",
+    "CascaderSelect: should support setting resultAutoWidth to false",
+    "CascaderSelect: should render multiple cascader when set checkStrictly to true",
+    "CascaderSelect: should render multiple cascader",
+    "CascaderSelect: keep value && label after dataSource updated",
+    "CascaderSelect: should support keyboard",
+    "CascaderSelect: should support searching when it is a multiple cascader select",
+    "CascaderSelect: should support searching when it is a single cascader select",
+    "CascaderSelect: should render single cascader under control",
+    "CascaderSelect A11y: should not have any violations",
+    "CascaderSelect: should support preview mode render",
+    "CascaderSelect issues: When using virtual scrolling, the background color should be white",
+    "CascaderSelect: should support expandedValue",
+    "CascaderSelect: should ignore case when searching",
+    "CascaderSelect: should support signle value not in dataSource",
+    "CascaderSelect: should support popup v2",
+    "CascaderSelect: should support immutable data",
+    "CascaderSelect: should support multiple value not in dataSource",
+    "CascaderSelect issues: should sync expandedValue when visible=false and props.value changed"
+  ]
+}

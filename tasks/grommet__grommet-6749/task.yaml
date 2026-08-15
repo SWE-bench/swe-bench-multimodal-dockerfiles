@@ -1,0 +1,18 @@
+base_commit: f1ea50db8b8d9236c616f4114934f29acc21a0b7
+created_at: '2023-04-14T00:14:56Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.grommet_1776_grommet-6749:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/8231064/229930828-44bd4dbf-d733-4b24-8d51-81d61e9798a2.png
+  - https://user-images.githubusercontent.com/8231064/229931489-0d37675d-27a8-4278-90d4-6fdc856518d2.png
+  - https://user-images.githubusercontent.com/8231064/229931024-c1380156-2248-42cd-ac5d-bcf96c3a6977.png
+  test_patch: []
+instance_id: grommet__grommet-6749
+log_parser: parse_log_grommet
+repo: grommet/grommet
+split: test
+version: '2.31'

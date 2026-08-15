@@ -1,0 +1,19 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'elixir' – should pass test case 'attr-name_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'elixir' – should pass test case 'regex_feature'",
+    "Testing language 'elixir' – should pass test case 'atom_feature'",
+    "Testing language 'elixir' – should pass test case 'attribute_feature'",
+    "Testing language 'elixir' – should pass test case 'issue775'",
+    "Testing language 'elixir' – should pass test case 'comment_feature'",
+    "Testing language 'elixir' – should pass test case 'string_feature'",
+    "Testing language 'elixir' – should pass test case 'issue1392'",
+    "Testing language 'elixir' – should pass test case 'keyword_feature'",
+    "Testing language 'elixir' – should pass test case 'number_feature'",
+    "Testing language 'elixir' – should pass test case 'boolean_feature'",
+    "Testing language 'elixir' – should pass test case 'operator_feature'",
+    "Testing language 'elixir' – should pass test case 'capture_feature'"
+  ]
+}

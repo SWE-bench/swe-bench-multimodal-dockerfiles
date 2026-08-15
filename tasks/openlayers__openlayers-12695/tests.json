@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.format.KML without parameters #readFeatures styles can read a feature's IconStyle, load the image and reset the scale",
+    "ol.format.KML without parameters #readFeatures styles can read a complex feature's IconStyle",
+    "ol.format.KML without parameters #readFeatures styles can write an feature's icon style"
+  ],
+  "PASS_TO_PASS": []
+}

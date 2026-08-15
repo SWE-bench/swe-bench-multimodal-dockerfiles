@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Ebanx payment processing methods - isValidCPF - should return true for valid CPF (Brazilian tax identification number)"
+  ],
+  "PASS_TO_PASS": []
+}

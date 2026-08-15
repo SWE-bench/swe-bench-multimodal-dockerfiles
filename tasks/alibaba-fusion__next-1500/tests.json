@@ -1,0 +1,30 @@
+{
+  "FAIL_TO_PASS": [
+    "Overlay - should support autoFit"
+  ],
+  "PASS_TO_PASS": [
+    "Overlay - should support safeNode",
+    "Popup - should support setting canCloseByTrigger to false",
+    "Popup - should support rendering trigger and overlay",
+    "Popup - should support controling",
+    "Popup - should support setting triggerType to click",
+    "Overlay - should support onClick",
+    "Overlay A11y - should not have any violations",
+    "Overlay - should not destory overlay node if set cache to true",
+    "Overlay - should support stop Child Click propagation by default",
+    "Overlay - should support canCloseByOutSideClick",
+    "Popup - should support setting triggerType to click with custom triggerClickKeycode",
+    "Overlay - should support setting animation to false",
+    "Overlay - should support getContent",
+    "Popup - should support setting custom container",
+    "Overlay - should support canCloseByEsc",
+    "Overlay - should support disableScroll",
+    "Popup - should support setting triggerType to focus",
+    "Overlay - should support rendering overlay and mask",
+    "Popup - should support triggerType",
+    "Overlay - should support function children",
+    "Overlay - should support autoFocus",
+    "Overlay - should support canCloseByMask",
+    "Overlay A11y - should not have any violations for Popup"
+  ]
+}

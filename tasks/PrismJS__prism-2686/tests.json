@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'shell-session' – should pass test case 'issue2685'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'shell-session' – should pass test case 'info_feature'",
+    "Testing language 'shell-session' – should pass test case 'issue2644'",
+    "Testing language 'shell-session' – should pass test case 'command_feature'",
+    "Testing language 'shell-session' – should pass test case 'command_string_feature'"
+  ]
+}

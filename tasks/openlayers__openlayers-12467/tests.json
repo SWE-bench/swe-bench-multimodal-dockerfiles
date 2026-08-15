@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/postrender-immediate/main.js'",
+    "./cases/icon-opacity/main.js'"
+  ],
+  "PASS_TO_PASS": []
+}

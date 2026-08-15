@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/lib/network-request-test.js",
+    "lighthouse-core/test/lib/url-shim-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "lighthouse-core/test/audits/byte-efficiency/render-blocking-resources-test.js",
+    "lighthouse-core/test/computed/resource-summary-test.js",
+    "lighthouse-core/test/computed/load-simulator-test.js"
+  ]
+}

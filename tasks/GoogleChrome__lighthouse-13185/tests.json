@@ -1,0 +1,13 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/audits/byte-efficiency/uses-optimized-images-test.js",
+    "lighthouse-core/test/audits/byte-efficiency/modern-image-formats-test.js",
+    "lighthouse-core/test/audits/byte-efficiency/uses-responsive-images-snapshot-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "lighthouse-core/test/audits/image-size-responsive-test.js",
+    "lighthouse-core/test/audits/image-aspect-ratio-test.js",
+    "lighthouse-core/test/audits/byte-efficiency/offscreen-images-test.js",
+    "lighthouse-core/test/audits/byte-efficiency/uses-responsive-images-test.js"
+  ]
+}

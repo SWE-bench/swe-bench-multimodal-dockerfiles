@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.extent #applyTransform() can use the stops option"
+  ],
+  "PASS_TO_PASS": []
+}

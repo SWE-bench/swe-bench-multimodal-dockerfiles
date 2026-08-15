@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/behavior - groups creation should always create new Category in definitions "
+  ],
+  "PASS_TO_PASS": []
+}

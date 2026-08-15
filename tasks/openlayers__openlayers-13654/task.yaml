@@ -1,0 +1,21 @@
+base_commit: 3bf5dd6537e3887ef3308efb7bcf1b19b651d2f8
+created_at: '2022-05-08T15:21:03Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13654:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-reproj-float/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/36be9248369357a069573ec48b15308d25434db1/test/rendering/cases/webgl-reproj-float/expected.png
+  - path: test/rendering/cases/webgl-reproj-non-parallel/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/36be9248369357a069573ec48b15308d25434db1/test/rendering/cases/webgl-reproj-non-parallel/expected.png
+  - path: test/rendering/cases/webgl-reproj/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/36be9248369357a069573ec48b15308d25434db1/test/rendering/cases/webgl-reproj/expected.png
+instance_id: openlayers__openlayers-13654
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.1'

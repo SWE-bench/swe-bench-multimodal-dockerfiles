@@ -1,0 +1,13 @@
+{
+  "FAIL_TO_PASS": [
+    "index - #login() - should return the login url with encoded OAuth2 client ID param"
+  ],
+  "PASS_TO_PASS": [
+    "index - #login() - should return the legacy login url",
+    "index - #login() - should return the login url with encoded redirect url param",
+    "index - #login() - should return the login url with encoded email_address param",
+    "index - #login() - should return the login url when the two factor auth page is supplied",
+    "index - #login() - should return the legacy login url with encoded redirect url param",
+    "index - #login() - should return the login url"
+  ]
+}

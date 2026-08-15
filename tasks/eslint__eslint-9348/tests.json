@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "constructor-super valid class A extends B { constructor(props) { super(props); try { let arr = []; for (let a of arr) { } } catch (err) { } } } :",
+    "no-this-before-super valid class A extends B { constructor(props) { super(props); try { let arr = []; for (let a of arr) { } } catch (err) { } } } :",
+    "CodePathAnalyzer completed code paths are correct try--try-with-for-inof-1.js:"
+  ],
+  "PASS_TO_PASS": []
+}

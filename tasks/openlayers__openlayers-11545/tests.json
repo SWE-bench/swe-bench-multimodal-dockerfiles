@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.layer.Heatmap constructor has a default className"
+  ],
+  "PASS_TO_PASS": []
+}

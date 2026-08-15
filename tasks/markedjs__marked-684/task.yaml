@@ -1,0 +1,18 @@
+base_commit: 86214bbce13ab5f2cd5faac3adb5d31653be782e
+created_at: '2015-11-16T23:47:30Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.markedjs_1776_marked-684:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://cloud.githubusercontent.com/assets/87356/5483878/54978340-8639-11e4-961b-7f5f293980c6.jpg
+  - https://cloud.githubusercontent.com/assets/87356/5483883/66d6c32c-8639-11e4-87cf-a18d96fd59e8.jpg
+  - https://cloud.githubusercontent.com/assets/87356/5483887/7d846408-8639-11e4-9201-a86ded31a5d1.jpg
+  test_patch: []
+instance_id: markedjs__marked-684
+log_parser: parse_log_marked
+repo: markedjs/marked
+split: dev
+version: '0.5'

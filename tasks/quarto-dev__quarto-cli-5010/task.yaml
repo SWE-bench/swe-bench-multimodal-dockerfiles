@@ -1,0 +1,16 @@
+base_commit: 7f8bc06d2ddbc5ddd1b8ae21e63d4ed5ee0c5861
+created_at: '2023-03-29T00:55:17Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.quarto-dev_1776_quarto-cli-5010:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - http://assets.bonappetit.com/photos/57bf31396a6acdf3485df7f9/5:4/w_1028,c_limit/koji-steak-1.jpg
+  test_patch: []
+instance_id: quarto-dev__quarto-cli-5010
+log_parser: parse_log_quarto_cli
+repo: quarto-dev/quarto-cli
+split: deprecated
+version: ''

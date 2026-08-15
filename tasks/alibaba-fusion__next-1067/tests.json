@@ -1,0 +1,43 @@
+{
+  "FAIL_TO_PASS": [
+    "slider - action - should have correct disabled class for next/prev arrow"
+  ],
+  "PASS_TO_PASS": [
+    "slider - action - should click dots",
+    "slider - action - should call onChange onBeforeChange hook",
+    "slider - action rtl - should click dots",
+    "Slider A11y - should not have any violations for single slider",
+    "slider - render - should autoplay",
+    "slider - render multiple - too more slidesToShow ",
+    "slider - action rtl - should autoplay",
+    "slider - action - should hover next/prev arrow",
+    "slider - render - should not show render",
+    "slider - render - should fade",
+    "slider - render - using slideDirection",
+    "slider - render - should render single slider",
+    "slider - action rtl - should hover next/prev arrow",
+    "Slider A11y - should not have any violations",
+    "slider - render multiple - should centerMode",
+    "slider - action rtl - should call onChange hook",
+    "slider - render - using vertical deprecated",
+    "Slider A11y - should not have any violations with lazyLoad",
+    "slider - render - infinite",
+    "slider - render - should render with lazyLoad",
+    "slider - render - should rtl",
+    "slider - action rtl - should click next/prev arrow",
+    "slider - render multiple - should infinite",
+    "slider - action rtl - should render with lazyLoad",
+    "Slider A11y - should not have any violations in centerMode",
+    "slider - render multiple - should variableWidth",
+    "slider - render multiple - should centerMode and not infinite",
+    "slider - action - should click next/prev arrow",
+    "slider - render - should render with custom arrow",
+    "slider - action rtl - too more slidesToShow ",
+    "slider - render - should basic render",
+    "Slider A11y - should not have any violations when set slideDirection",
+    "slider - render - should render dots",
+    "slider - render - using prefixCls deprecated",
+    "Slider A11y - should not have any violations in vertical mode",
+    "slider - render - should slickGoTo"
+  ]
+}

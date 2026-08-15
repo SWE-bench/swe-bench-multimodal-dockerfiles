@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/popup-menu - replace menu provider integration default flows should keep DefaultFlow when changing target to bpmn:IntermediateCatchEvent "
+  ],
+  "PASS_TO_PASS": []
+}

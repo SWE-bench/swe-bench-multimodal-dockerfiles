@@ -1,0 +1,59 @@
+diff --git a/client/blocks/app-banner/index.jsx b/client/blocks/app-banner/index.jsx
+index 39e8825d8432e..cab7348d02d4c 100644
+--- a/client/blocks/app-banner/index.jsx
++++ b/client/blocks/app-banner/index.jsx
+@@ -43,6 +43,7 @@ import {
+ 	APP_BANNER_DISMISS_TIMES_PREFERENCE,
+ } from './utils';
+ import versionCompare from 'lib/version-compare';
++import { isWpMobileApp } from 'lib/mobile-app';
+ 
+ /**
+  * Style dependencies
+@@ -91,7 +92,7 @@ export class AppBanner extends Component {
+ 	isVisible() {
+ 		const { dismissedUntil, currentSection } = this.props;
+ 
+-		return this.isMobile() && ! isDismissed( dismissedUntil, currentSection );
++		return this.isMobile() && ! isWpMobileApp() && ! isDismissed( dismissedUntil, currentSection );
+ 	}
+ 
+ 	isiOS() {
+diff --git a/client/lib/mobile-app/README.md b/client/lib/mobile-app/README.md
+new file mode 100644
+index 0000000000000..197a95851f3a5
+--- /dev/null
++++ b/client/lib/mobile-app/README.md
+@@ -0,0 +1,15 @@
++# mobile-app
++
++This module contains a function to identify whether requests are coming from the WordPress mobile apps.
++
++### Usage
++
++Simple usage:
++
++```js
++import { isWpMobileApp } from 'lib/mobile-app';
++
++if ( isWpMobileApp() ) {
++	// Perform a mobile app-specific logic.
++}
++```
+\ No newline at end of file
+diff --git a/client/lib/mobile-app/index.js b/client/lib/mobile-app/index.js
+new file mode 100644
+index 0000000000000..6e368cb5ccd28
+--- /dev/null
++++ b/client/lib/mobile-app/index.js
+@@ -0,0 +1,10 @@
++/** @format **/
++
++/**
++ * Returns whether user is using a WordPress mobile app.
++ *
++ * @returns {Boolean} Whether the user agent matches the ones used on the WordPress mobile apps.
++ */
++export function isWpMobileApp() {
++	return navigator && /wp-(android|iphone)/.test( navigator.userAgent );
++}

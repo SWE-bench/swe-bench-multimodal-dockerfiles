@@ -1,0 +1,1 @@
+Testing this needs a fix to test-utils: https://github.com/chartjs/chartjs-test-utils/pull/14

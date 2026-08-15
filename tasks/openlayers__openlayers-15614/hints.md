@@ -1,0 +1,1 @@
+Thanks @malaretv for the bug report and the reproduction case. I think I should be able to fix it quickly with the information you provided. Stay tuned for a pull request with a fix.

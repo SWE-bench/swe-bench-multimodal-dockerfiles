@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - create participant process turning process into collaboration creating two participants redo ",
+    "features/popup-menu - replace menu provider replace menu data store positioned against participant should contain no reference "
+  ],
+  "PASS_TO_PASS": []
+}

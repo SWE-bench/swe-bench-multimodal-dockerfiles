@@ -1,0 +1,31 @@
+diff --git a/client/extensions/woocommerce/state/sites/locations/test/selectors.js b/client/extensions/woocommerce/state/sites/locations/test/selectors.js
+index 32562f41e8db49..947719ee442ee6 100644
+--- a/client/extensions/woocommerce/state/sites/locations/test/selectors.js
++++ b/client/extensions/woocommerce/state/sites/locations/test/selectors.js
+@@ -14,6 +14,7 @@ import {
+ 	getContinents,
+ 	getCountries,
+ 	getCountryName,
++	getCountriesWithStates,
+ 	getStates,
+ 	hasStates,
+ } from '../selectors';
+@@ -259,4 +260,18 @@ describe( 'selectors', () => {
+ 			expect( hasStates( loadedState, 'US' ) ).to.be.true;
+ 		} );
+ 	} );
++
++	describe( '#getCountriesWithStates', () => {
++		test( 'should return an empty list if the locations are not loaded', () => {
++			expect( getCountriesWithStates( emptyState ) ).to.deep.equal( [] );
++		} );
++
++		test( 'should return an empty list if the locations are being loaded', () => {
++			expect( getCountriesWithStates( loadingState ) ).to.deep.equal( [] );
++		} );
++
++		test( 'should return the countries with states, sorted', () => {
++			expect( getCountriesWithStates( loadedState ) ).to.deep.equal( [ 'CA', 'US' ] );
++		} );
++	} );
+ } );

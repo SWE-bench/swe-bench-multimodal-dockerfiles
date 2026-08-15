@@ -1,0 +1,3 @@
+It is also crucial to point out that the WebGL context limit is a global limit for a browser process. So running out of contexts in one tab may result in other apps in the same browser (different sites in different tabs) to misbehave.
+
+This JSFiddle is a handy way to test this out: https://jsfiddle.net/greggman/2dua40b6/ - If you open the fiddle in two tabs and add context to both so that the total number exceeds 16, you can see adding context in one tab causing destruction of contexts in the other one.

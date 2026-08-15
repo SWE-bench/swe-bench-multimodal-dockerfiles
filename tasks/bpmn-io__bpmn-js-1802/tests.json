@@ -1,0 +1,20 @@
+{
+  "FAIL_TO_PASS": [
+    "features/popup-menu - append menu provider rules should get entries when custom rule returns true ",
+    "features/popup-menu - append menu provider menu should not appear as append option Start Event ",
+    "features/modeling/rules - BpmnRules element append should not allow for event subprocess ",
+    "features/popup-menu - append menu provider menu should not appear as append option Participant ",
+    "features/popup-menu - append menu provider rules should get entries by default ",
+    "features - context-pad append should show wrench if replacement is allowed ",
+    "features - context-pad available entries should provide Task entries ",
+    "features - context-pad available entries should provide Compensation Activity entries ",
+    "features - context-pad available entries should provide EventBasedGateway entries ",
+    "features - context-pad append should show append menu in the correct position ",
+    "features/modeling/rules - BpmnRules element append should not allow for given element types ",
+    "features/modeling/rules - BpmnRules element append should not allow for link intermediate throw event ",
+    "features - context-pad available entries should provide Compensate Boundary entries ",
+    "features/popup-menu - append menu provider menu should not appear as append option None Boundary Event ",
+    "features/popup-menu - append menu provider rules should get no entries when custom rule returns false "
+  ],
+  "PASS_TO_PASS": []
+}

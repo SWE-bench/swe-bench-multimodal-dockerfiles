@@ -1,0 +1,16 @@
+base_commit: 4eb662d3347a06102e23ba1c642c6fd5f6492fe6
+created_at: '2022-04-03T19:43:52Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.highlightjs_1776_highlight.js-3516:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/49649786/161419104-e5bacabb-b4ee-4b54-b246-c480cb68646f.png
+  test_patch: []
+instance_id: highlightjs__highlight.js-3516
+log_parser: parse_log_highlightjs
+repo: highlightjs/highlight.js
+split: test
+version: '11.5'

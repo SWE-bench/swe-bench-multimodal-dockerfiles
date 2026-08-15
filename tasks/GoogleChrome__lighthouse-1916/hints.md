@@ -1,0 +1,1 @@
+heh, good catch but different fix. We skip the image (and show debug string) if the area is 0 when we should flag it instead :)

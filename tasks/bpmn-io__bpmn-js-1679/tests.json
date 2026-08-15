@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/popup-menu - replace menu provider toggle sequential toggle button should set loop characteristics type ",
+    "features/popup-menu - replace menu provider toggle parallel toggle button should set loop characteristics type "
+  ],
+  "PASS_TO_PASS": []
+}

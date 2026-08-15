@@ -1,0 +1,22 @@
+base_commit: 91628c144944029505de093c43733961ab4f420f
+created_at: '2021-03-04T14:03:39Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-8567:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/2039538/74322233-88d1fa00-4d7b-11ea-825d-58ec7fae41b9.png
+  test_patch:
+  - path: test/fixtures/core.layouts/long-labels.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/15613ba048b1440f34032c8a5d9a0c8d1eb73e2e/test/fixtures/core.layouts/long-labels.png
+  - path: test/fixtures/core.layouts/refit-vertical-boxes.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/15613ba048b1440f34032c8a5d9a0c8d1eb73e2e/test/fixtures/core.layouts/refit-vertical-boxes.png
+  - path: test/fixtures/scale.time/invalid-data.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/15613ba048b1440f34032c8a5d9a0c8d1eb73e2e/test/fixtures/scale.time/invalid-data.png
+instance_id: chartjs__Chart.js-8567
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.0'

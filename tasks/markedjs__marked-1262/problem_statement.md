@@ -1,0 +1,26 @@
+table render error
+This markdown 
+
+```
+| 参数 | 说明 | 类型 | 可选值 | 默认值 |
+| --- | --- | --- | --- | --- |
+| itemRender | 自定义链接函数，和 react-router 配置使用 | (route, params, routes, paths) => ReactNode |  | - |
+| params | 路由的参数 | object |  | - |
+| routes | router 的路由栈信息 | object\[] |  | - |
+| separator | 分隔符自定义 | string\|ReactNode |  | '/' |
+```
+
+Will be rendered by `Marked` as ( **Marked Version** : 0.4.0 )
+
+<img width="783" alt="screen shot 2018-06-11 at 8 56 07 pm" src="https://user-images.githubusercontent.com/2193211/41232736-e1a5fd5a-6db9-11e8-9f18-0b0ac28e018f.png">
+
+
+Actually it should be
+
+| 参数 | 说明 | 类型 | 可选值 | 默认值 |
+| --- | --- | --- | --- | --- |
+| itemRender | 自定义链接函数，和 react-router 配置使用 | (route, params, routes, paths) => ReactNode |  | - |
+| params | 路由的参数 | object |  | - |
+| routes | router 的路由栈信息 | object\[] |  | - |
+| separator | 分隔符自定义 | string\|ReactNode |  | '/' |
+

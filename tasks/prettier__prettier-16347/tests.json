@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/format/misc/embedded_language_formatting/in-markdown/format.test.js"
+  ],
+  "PASS_TO_PASS": []
+}

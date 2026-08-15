@@ -1,0 +1,13 @@
+{
+  "FAIL_TO_PASS": [
+    "Trace of Tab computed artifact: handles traces missing a paints (captured in background tab)"
+  ],
+  "PASS_TO_PASS": [
+    "Trace of Tab computed artifact: finds correct FMP if there was a tracingStartedInPage after the frame's navStart",
+    "Trace of Tab computed artifact: gathers the events from the tab's process",
+    "Trace of Tab computed artifact: finds correct FMP from candidates if no defined FMP exists",
+    "Trace of Tab computed artifact: finds correct FMP if there was a tracingStartedInPage after the frame's navStart #2",
+    "Trace of Tab computed artifact: handles traces missing an FCP",
+    "Trace of Tab computed artifact: finds correct FMP if it appears slightly before the fCP"
+  ]
+}

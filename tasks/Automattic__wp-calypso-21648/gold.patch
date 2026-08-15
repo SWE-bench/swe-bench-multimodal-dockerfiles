@@ -1,0 +1,387 @@
+diff --git a/client/extensions/woocommerce/app/settings/email/email-settings/components/customer-notification.js b/client/extensions/woocommerce/app/settings/email/email-settings/components/customer-notification.js
+index e82ffcbf9e9779..9b6550034ab1dd 100644
+--- a/client/extensions/woocommerce/app/settings/email/email-settings/components/customer-notification.js
++++ b/client/extensions/woocommerce/app/settings/email/email-settings/components/customer-notification.js
+@@ -15,7 +15,7 @@ import FormSettingExplanation from 'components/forms/form-setting-explanation';
+ import ListItem from 'woocommerce/components/list/list-item';
+ import ListItemField from 'woocommerce/components/list/list-item-field';
+ 
+-const CustomerNotification = ( { item, checked, onChange, isPlaceholder } ) => {
++const CustomerNotification = ( { item, checked, onChange, loaded } ) => {
+ 	//Add field name to returned value
+ 	const toggle = value => {
+ 		onChange( {
+@@ -28,19 +28,19 @@ const CustomerNotification = ( { item, checked, onChange, isPlaceholder } ) => {
+ 	return (
+ 		<ListItem className="components__notification-component-item">
+ 			<ListItemField className="components__notification-component-title-long">
+-				{ ! isPlaceholder ? (
++				{ loaded ? (
+ 					<FormLabel>{ item.title }</FormLabel>
+ 				) : (
+ 					<p className="components__is-placeholder" />
+ 				) }
+-				{ ! isPlaceholder ? (
++				{ loaded ? (
+ 					<FormSettingExplanation>{ item.subtitle }</FormSettingExplanation>
+ 				) : (
+ 					<p className="components__is-placeholder" />
+ 				) }
+ 			</ListItemField>
+ 			<ListItemField className="components__notification-component-toggle">
+-				{ ! isPlaceholder ? (
++				{ loaded ? (
+ 					<CompactFormToggle checked={ checked } onChange={ toggle } id={ item.field } />
+ 				) : (
+ 					<p className="components__is-placeholder" />
+@@ -54,6 +54,7 @@ CustomerNotification.propTypes = {
+ 	checked: PropTypes.bool,
+ 	item: PropTypes.object,
+ 	onChange: PropTypes.func.isRequired,
++	loaded: PropTypes.bool,
+ };
+ 
+ export default CustomerNotification;
+diff --git a/client/extensions/woocommerce/app/settings/email/email-settings/components/internal-notification.js b/client/extensions/woocommerce/app/settings/email/email-settings/components/internal-notification.js
+index e6d4404f554cfa..e086d3f27dd51c 100644
+--- a/client/extensions/woocommerce/app/settings/email/email-settings/components/internal-notification.js
++++ b/client/extensions/woocommerce/app/settings/email/email-settings/components/internal-notification.js
+@@ -3,9 +3,9 @@
+ /**
+  * External dependencies
+  */
+-
+ import PropTypes from 'prop-types';
+ import React from 'react';
++import { localize } from 'i18n-calypso';
+ 
+ /**
+  * Internal dependencies
+@@ -19,14 +19,7 @@ import FormSettingExplanation from 'components/forms/form-setting-explanation';
+ import FormTextValidation from 'components/forms/form-input-validation';
+ import { checkEmails } from './helpers';
+ 
+-const InternalNotification = ( {
+-	item,
+-	recipient,
+-	checked,
+-	onChange,
+-	isPlaceholder,
+-	placeholder,
+-} ) => {
++const InternalNotification = ( { item, recipient, checked, onChange, loaded, translate } ) => {
+ 	//Add field name to returned value
+ 	const toggle = value => {
+ 		onChange( {
+@@ -51,8 +44,8 @@ const InternalNotification = ( {
+ 	return (
+ 		<ListItem className="components__notification-component-item">
+ 			<ListItemField className="components__notification-component-title">
+-				{ ! isPlaceholder ? <FormLabel>{ item.title }</FormLabel> : placeholderComponent }
+-				{ ! isPlaceholder ? (
++				{ loaded ? <FormLabel>{ item.title }</FormLabel> : placeholderComponent }
++				{ loaded ? (
+ 					<FormSettingExplanation>{ item.subtitle }</FormSettingExplanation>
+ 				) : (
+ 					placeholderComponent
+@@ -60,19 +53,19 @@ const InternalNotification = ( {
+ 			</ListItemField>
+ 			<ListItemField className="components__notification-component-input">
+ 				<FormTextInput
+-					className={ isPlaceholder ? 'components__is-placeholder' : null }
+-					isError={ emailValidationError }
++					className={ ! loaded ? 'components__is-placeholder' : null }
++					isError={ checked && emailValidationError }
+ 					name={ item.field }
+ 					onChange={ change }
+ 					value={ recipient }
+-					placeholder={ placeholder }
++					placeholder={ translate( 'Recipient email address(es).' ) }
+ 				/>
+ 				{ emailValidationError && (
+-					<FormTextValidation isError={ true } text={ checkedEmails.messages[ 0 ].msg } />
++					<FormTextValidation isError text={ checkedEmails.messages[ 0 ].msg } />
+ 				) }
+ 			</ListItemField>
+ 			<ListItemField className="components__notification-component-toggle">
+-				{ ! isPlaceholder ? (
++				{ loaded ? (
+ 					<CompactFormToggle checked={ checked } onChange={ toggle } id={ item.field } />
+ 				) : (
+ 					placeholderComponent
+@@ -86,7 +79,8 @@ InternalNotification.propTypes = {
+ 	checked: PropTypes.bool,
+ 	recipient: PropTypes.string,
+ 	item: PropTypes.object,
++	loaded: PropTypes.bool,
+ 	onChange: PropTypes.func.isRequired,
+ };
+ 
+-export default InternalNotification;
++export default localize( InternalNotification );
+diff --git a/client/extensions/woocommerce/app/settings/email/email-settings/components/notifications-origin.js b/client/extensions/woocommerce/app/settings/email/email-settings/components/notifications-origin.js
+index bd2c8cd5a3d5e1..59a1c3f52f58e7 100644
+--- a/client/extensions/woocommerce/app/settings/email/email-settings/components/notifications-origin.js
++++ b/client/extensions/woocommerce/app/settings/email/email-settings/components/notifications-origin.js
+@@ -20,7 +20,7 @@ const NotificationsOrigin = ( {
+ 	item,
+ 	recipient,
+ 	onChange,
+-	isPlaceholder,
++	loaded,
+ 	checkEmail,
+ 	translate,
+ 	placeholder,
+@@ -40,9 +40,9 @@ const NotificationsOrigin = ( {
+ 
+ 	return (
+ 		<div className="components__notification-origin">
+-			{ ! isPlaceholder ? <FormLabel>{ item.title }</FormLabel> : placeholderComponent }
++			{ loaded ? <FormLabel>{ item.title }</FormLabel> : placeholderComponent }
+ 			<FormTextInput
+-				className={ isPlaceholder ? 'components__is-placeholder' : null }
++				className={ ! loaded ? 'components__is-placeholder' : null }
+ 				isError={ emailValidationError }
+ 				name={ item.field }
+ 				onChange={ change }
+@@ -57,7 +57,7 @@ const NotificationsOrigin = ( {
+ 					} ) }
+ 				/>
+ 			) }
+-			{ ! isPlaceholder ? (
++			{ loaded ? (
+ 				<FormSettingExplanation>{ item.subtitle }</FormSettingExplanation>
+ 			) : (
+ 				placeholderComponent
+@@ -71,7 +71,7 @@ NotificationsOrigin.propTypes = {
+ 	item: PropTypes.object,
+ 	onChange: PropTypes.func.isRequired,
+ 	placeholder: PropTypes.string,
+-	isPlaceholder: PropTypes.bool,
++	loaded: PropTypes.bool,
+ 	checkEmail: PropTypes.bool,
+ };
+ 
+diff --git a/client/extensions/woocommerce/app/settings/email/email-settings/index.js b/client/extensions/woocommerce/app/settings/email/email-settings/index.js
+index b99d8245c626d3..d0f0241c151948 100644
+--- a/client/extensions/woocommerce/app/settings/email/email-settings/index.js
++++ b/client/extensions/woocommerce/app/settings/email/email-settings/index.js
+@@ -163,12 +163,12 @@ class Settings extends React.Component {
+ 	};
+ 
+ 	renderOriginNotification = ( item, index ) => {
+-		const { settings, loading } = this.props;
++		const { settings, loaded } = this.props;
+ 		return (
+ 			<NotificationsOrigin
+ 				key={ index }
+ 				item={ item }
+-				isPlaceholder={ loading }
++				loaded={ loaded }
+ 				recipient={ get( settings, [ item.field, item.option, 'value' ], '' ) }
+ 				placeholder={ get( settings, [ item.field, item.option, 'default' ], '' ) }
+ 				onChange={ this.onChange }
+@@ -178,27 +178,26 @@ class Settings extends React.Component {
+ 	};
+ 
+ 	renderInternalNotification = ( item, index ) => {
+-		const { settings, loading } = this.props;
++		const { settings, loaded } = this.props;
+ 		return (
+ 			<InternalNotification
+ 				key={ index }
+ 				item={ item }
+ 				checked={ 'yes' === get( settings, [ item.field, 'enabled', 'value' ], '' ) }
+ 				recipient={ get( settings, [ item.field, 'recipient', 'value' ], '' ) }
+-				placeholder={ get( settings, [ item.field, 'recipient', 'default' ], '' ) }
+-				isPlaceholder={ loading }
++				loaded={ loaded }
+ 				onChange={ this.onChange }
+ 			/>
+ 		);
+ 	};
+ 
+ 	renderCustomerNotification = ( item, index ) => {
+-		const { settings, loading } = this.props;
++		const { settings, loaded } = this.props;
+ 		return (
+ 			<CustomerNotification
+ 				key={ index }
+ 				item={ item }
+-				isPlaceholder={ loading }
++				loaded={ loaded }
+ 				checked={ 'yes' === get( settings, [ item.field, 'enabled', 'value' ], '' ) }
+ 				onChange={ this.onChange }
+ 			/>
+diff --git a/client/extensions/woocommerce/app/settings/email/email-settings/style.scss b/client/extensions/woocommerce/app/settings/email/email-settings/style.scss
+index 11a866ddcea140..188894c8adcdcc 100644
+--- a/client/extensions/woocommerce/app/settings/email/email-settings/style.scss
++++ b/client/extensions/woocommerce/app/settings/email/email-settings/style.scss
+@@ -73,5 +73,8 @@
+ 		background-color: lighten($gray, 25%);
+ 		color: transparent;
+ 		cursor: default;
++		&::placeholder {
++			color: transparent;
++		}
+ 	}
+ }
+diff --git a/client/extensions/woocommerce/state/sites/settings/email/actions.js b/client/extensions/woocommerce/state/sites/settings/email/actions.js
+index 20c39c1d2f606d..d36eafa086cf3c 100644
+--- a/client/extensions/woocommerce/state/sites/settings/email/actions.js
++++ b/client/extensions/woocommerce/state/sites/settings/email/actions.js
+@@ -4,7 +4,7 @@
+  * @format
+  */
+ 
+-import { forEach, reduce, omit } from 'lodash';
++import { forEach, reduce, omit, get, has } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+@@ -84,10 +84,10 @@ const settingsSubmit = siteId => ( {
+ 	siteId,
+ } );
+ 
+-const settingsSubmitSuccess = ( siteId, settings ) => ( {
++const settingsSubmitSuccess = ( siteId, update ) => ( {
+ 	type: WOOCOMMERCE_EMAIL_SETTINGS_SUBMIT_SUCCESS,
+ 	siteId,
+-	settings,
++	update,
+ } );
+ 
+ const settingsSubmitFailure = ( siteId, { error } ) => ( {
+@@ -103,6 +103,15 @@ export const emailSettingsSubmitSettings = ( siteId, settings ) => dispatch => {
+ 
+ 	dispatch( settingsSubmit( siteId ) );
+ 
++	// disable if user has emptied the input field
++	forEach( [ 'email_new_order', 'email_cancelled_order', 'email_failed_order' ], option => {
++		if ( get( settings, [ option, 'recipient', 'value' ], '' ).trim() === '' ) {
++			if ( has( settings[ option ], 'enabled ' ) ) {
++				settings[ option ].enabled.value = 'no';
++			}
++		}
++	} );
++
+ 	const update = reduce(
+ 		omit( settings, [ 'save', 'isSaving', 'error' ] ),
+ 		( result, options, group_id ) => {
+@@ -110,7 +119,7 @@ export const emailSettingsSubmitSettings = ( siteId, settings ) => dispatch => {
+ 				result.push( {
+ 					group_id,
+ 					id,
+-					value: option.value || option.default,
++					value: option.value.trim(),
+ 				} );
+ 			} );
+ 			return result;
+diff --git a/client/extensions/woocommerce/state/sites/settings/email/reducer.js b/client/extensions/woocommerce/state/sites/settings/email/reducer.js
+index 5e910d19c33718..9f31003ede8670 100644
+--- a/client/extensions/woocommerce/state/sites/settings/email/reducer.js
++++ b/client/extensions/woocommerce/state/sites/settings/email/reducer.js
+@@ -4,7 +4,7 @@
+  * @format
+  */
+ 
+-import { filter, omit, isEmpty, setWith, get } from 'lodash';
++import { filter, omit, isEmpty, setWith, get, forEach } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+@@ -22,40 +22,53 @@ import {
+ 	WOOCOMMERCE_EMAIL_SETTINGS_SUBMIT_FAILURE,
+ 	WOOCOMMERCE_EMAIL_SETTINGS_INVALID_VALUE,
+ } from 'woocommerce/state/action-types';
+-export default createReducer( null, {
+-	[ WOOCOMMERCE_EMAIL_SETTINGS_REQUEST ]: () => {
+-		return LOADING;
+-	},
+ 
+-	[ WOOCOMMERCE_EMAIL_SETTINGS_REQUEST_SUCCESS ]: ( state, { data } ) => {
+-		const options = {};
+-		const fromAddress = filter( data, {
+-			group_id: 'email',
+-			id: 'woocommerce_email_from_address',
+-		} );
+-		const defaultEmail = isEmpty( fromAddress ) ? '' : fromAddress[ 0 ].default;
+-		data.forEach( function( option ) {
+-			const def = option.id === 'recipient' ? option.default || defaultEmail : option.default;
+-			setWith(
+-				options,
+-				[ option.group_id, option.id ],
+-				{
+-					value: option.value,
+-					default: def,
+-				},
+-				Object
+-			);
+-		} );
++const process_data = data => {
++	const options = {};
++	const fromAddress = filter( data, {
++		group_id: 'email',
++		id: 'woocommerce_email_from_address',
++	} );
++	const defaultEmail = isEmpty( fromAddress ) ? '' : fromAddress[ 0 ].default;
++	data.forEach( function( option ) {
++		setWith(
++			options,
++			[ option.group_id, option.id ],
++			{
++				value: option.value,
++				default: option.default,
++			},
++			Object
++		);
++	} );
+ 
+-		// Decode: &, <, > entities.
+-		const from_name = get( options, [ 'email', 'woocommerce_email_from_name', 'value' ], false );
+-		if ( from_name ) {
+-			options.email.woocommerce_email_from_name.value = decodeEntities( from_name );
++	forEach( [ 'email_new_order', 'email_cancelled_order', 'email_failed_order' ], key => {
++		if ( get( options, [ key, 'enabled', 'value' ] ) !== 'yes' ) {
++			return;
+ 		}
++		const _default = get( options, [ key, 'recipient', 'default' ] ) || defaultEmail;
++		options[ key ].recipient = {
++			default: _default,
++			value: get( options, [ key, 'recipient', 'value' ] ) || _default,
++		};
++	} );
++
++	// Decode: &, <, > entities.
++	const from_name = get( options, [ 'email', 'woocommerce_email_from_name', 'value' ], false );
++	if ( from_name ) {
++		options.email.woocommerce_email_from_name.value = decodeEntities( from_name );
++	}
++
++	return options;
++};
+ 
+-		return options;
++export default createReducer( null, {
++	[ WOOCOMMERCE_EMAIL_SETTINGS_REQUEST ]: () => {
++		return LOADING;
+ 	},
+ 
++	[ WOOCOMMERCE_EMAIL_SETTINGS_REQUEST_SUCCESS ]: ( state, { data } ) => process_data( data ),
++
+ 	[ WOOCOMMERCE_EMAIL_SETTINGS_CHANGE ]: ( state, { setting } ) => {
+ 		if ( ! setting && ! setting.setting && ! setting.option ) {
+ 			return state;
+@@ -78,9 +91,9 @@ export default createReducer( null, {
+ 		return settings;
+ 	},
+ 
+-	[ WOOCOMMERCE_EMAIL_SETTINGS_SUBMIT_SUCCESS ]: state => {
+-		const settings = Object.assign( {}, omit( state, [ 'isSaving', 'error', 'invalidValue' ] ) );
+-		return settings;
++	[ WOOCOMMERCE_EMAIL_SETTINGS_SUBMIT_SUCCESS ]: ( state, { update } ) => {
++		const data = update.update;
++		return process_data( data );
+ 	},
+ 
+ 	[ WOOCOMMERCE_EMAIL_SETTINGS_SUBMIT_FAILURE ]: ( state, error ) => {

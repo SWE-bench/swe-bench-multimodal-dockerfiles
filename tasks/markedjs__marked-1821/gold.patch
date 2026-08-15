@@ -1,0 +1,28 @@
+diff --git a/src/Tokenizer.js b/src/Tokenizer.js
+index 71b1916eda..e7d71fe027 100644
+--- a/src/Tokenizer.js
++++ b/src/Tokenizer.js
+@@ -585,7 +585,7 @@ module.exports = class Tokenizer {
+       return {
+         type: 'del',
+         raw: cap[0],
+-        text: cap[1]
++        text: cap[2]
+       };
+     }
+   }
+diff --git a/src/rules.js b/src/rules.js
+index 8b0aa722fc..13356df367 100644
+--- a/src/rules.js
++++ b/src/rules.js
+@@ -318,8 +318,8 @@ inline.gfm = merge({}, inline.normal, {
+   _extended_email: /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/,
+   url: /^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/,
+   _backpedal: /(?:[^?!.,:;*_~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_~)]+(?!$))+/,
+-  del: /^~+(?=\S)([\s\S]*?\S)~+/,
+-  text: /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*~]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@))|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@))/
++  del: /^(~~?)(?=[^\s~])([\s\S]*?[^\s~])\1(?=[^~]|$)/,
++  text: /^([`~]+|[^`~])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*~]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@))|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@))/
+ });
+ 
+ inline.gfm.url = edit(inline.gfm.url, 'i')

@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'sql' – should pass test case 'issue3140'",
+    "Testing language 'sql' – should pass test case 'identifier_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'sql' – should pass test case 'comment_feature'",
+    "Testing language 'javascript!+sql+js-templates' – should pass test case 'sql_inclusion'",
+    "Testing language 'sql' – should pass test case 'number_feature'",
+    "Testing language 'sql' – should pass test case 'variable_feature'",
+    "Testing language 'sql' – should pass test case 'function_feature'",
+    "Testing language 'sql' – should pass test case 'string_feature'",
+    "Testing language 'sql' – should pass test case 'operator_feature'",
+    "Testing language 'sql+sas' – should pass test case 'sql_inclusion'",
+    "Testing language 'sql' – should pass test case 'boolean_feature'",
+    "Testing language 'sql' – should pass test case 'keyword_feature'"
+  ]
+}

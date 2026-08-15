@@ -1,0 +1,19 @@
+base_commit: 30d27a1d59113617cc0247dd862cdc763ca76216
+created_at: '2022-01-20T18:01:32Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13269:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-data-tile-tilepixelratio2/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/6a26e6a27406a7270e682a5fa481d7d80a754f55/test/rendering/cases/webgl-data-tile-tilepixelratio2/expected.png
+  - path: test/rendering/cases/webgl-tilewms-gutter20/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/6a26e6a27406a7270e682a5fa481d7d80a754f55/test/rendering/cases/webgl-tilewms-gutter20/expected.png
+instance_id: openlayers__openlayers-13269
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.12'

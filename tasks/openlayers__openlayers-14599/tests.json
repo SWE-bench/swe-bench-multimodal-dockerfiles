@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "ol/layer/Layer #isVisible works without arguments on layers that are in a map",
+    "ol/layer/Layer #getAttributions returns an empty array when the layer is in a hidden group"
+  ],
+  "PASS_TO_PASS": []
+}

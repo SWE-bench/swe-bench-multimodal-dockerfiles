@@ -1,0 +1,19 @@
+base_commit: 78a22e75102a452ed15aadaf194ad931e93a0205
+created_at: '2024-05-14T14:40:02Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15825:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/reproj-tile-no-wrap/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/4601a818c1538b801537755c4d80aa41b382af63/test/rendering/cases/reproj-tile-no-wrap/expected.png
+  - path: test/rendering/cases/webgl-reproj-no-wrap/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/4601a818c1538b801537755c4d80aa41b382af63/test/rendering/cases/webgl-reproj-no-wrap/expected.png
+instance_id: openlayers__openlayers-15825
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '9.1'

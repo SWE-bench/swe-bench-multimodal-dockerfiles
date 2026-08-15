@@ -1,0 +1,16 @@
+base_commit: 14b4dc1010d7ea5bdf54edc92fb4b939065bc02c
+created_at: '2021-04-21T15:34:52Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.carbon-design-system_1776_carbon-8469:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/28265588/114999773-7339f200-9ea2-11eb-9802-89c68faa081a.gif
+  test_patch: []
+instance_id: carbon-design-system__carbon-8469
+log_parser: parse_log_carbon
+repo: carbon-design-system/carbon
+split: test
+version: '14'

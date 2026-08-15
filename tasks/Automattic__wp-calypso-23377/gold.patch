@@ -1,0 +1,230 @@
+diff --git a/client/post-editor/editor-delete-post/index.jsx b/client/post-editor/editor-delete-post/index.jsx
+index 1e15dd8f7d33f..2c1cefc78def8 100644
+--- a/client/post-editor/editor-delete-post/index.jsx
++++ b/client/post-editor/editor-delete-post/index.jsx
+@@ -14,11 +14,14 @@ import Gridicon from 'gridicons';
+ /**
+  * Internal dependencies
+  */
+-import actions from 'lib/posts/actions';
+ import accept from 'lib/accept';
+-import * as utils from 'lib/posts/utils';
+ import Button from 'components/button';
+-import { getSelectedSite } from 'state/ui/selectors';
++import { getSelectedSiteId } from 'state/ui/selectors';
++import { getEditorPostId } from 'state/ui/editor/selectors';
++import { getEditedPost } from 'state/posts/selectors';
++import { trashPost } from 'state/posts/actions';
++import { getCurrentUserId } from 'state/current-user/selectors';
++import { canCurrentUser } from 'state/selectors';
+ 
+ class EditorDeletePost extends React.Component {
+ 	static displayName = 'EditorDeletePost';
+@@ -34,32 +37,33 @@ class EditorDeletePost extends React.Component {
+ 	};
+ 
+ 	sendToTrash = () => {
+-		if ( ! utils.userCan( 'delete_post', this.props.post ) ) {
++		const { siteId, postId, canDelete } = this.props;
++
++		if ( ! canDelete ) {
+ 			return;
+ 		}
+ 
+-		this.setState( { isTrashing: true } );
++		if ( this.props.onTrashingPost ) {
++			this.props.onTrashingPost();
++		}
+ 
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		actions.trash( this.props.site, this.props.post, error => {
+-			this.setState( { isTrashing: false } );
++		this.setState( { isTrashing: true } );
+ 
+-			if ( this.props.onTrashingPost ) {
+-				this.props.onTrashingPost( error );
+-			}
+-		} );
++		this.props.trashPost( siteId, postId );
+ 	};
+ 
+ 	onSendToTrash = () => {
+-		let message;
++		const { translate, post } = this.props;
++
+ 		if ( this.state.isTrashing ) {
+ 			return;
+ 		}
+ 
+-		if ( this.props.post.type === 'page' ) {
+-			message = this.props.translate( 'Are you sure you want to trash this page?' );
++		let message;
++		if ( post.type === 'page' ) {
++			message = translate( 'Are you sure you want to trash this page?' );
+ 		} else {
+-			message = this.props.translate( 'Are you sure you want to trash this post?' );
++			message = translate( 'Are you sure you want to trash this post?' );
+ 		}
+ 
+ 		accept(
+@@ -69,23 +73,21 @@ class EditorDeletePost extends React.Component {
+ 					this.sendToTrash();
+ 				}
+ 			},
+-			this.props.translate( 'Move to trash' ),
+-			this.props.translate( 'Back' )
++			translate( 'Move to trash' ),
++			translate( 'Back' )
+ 		);
+ 	};
+ 
+ 	render() {
+-		const { post } = this.props;
+-		if ( ! post || ! post.ID || post.status === 'trash' ) {
++		const { postId, postStatus, translate } = this.props;
++		if ( ! postId || postStatus === 'trash' ) {
+ 			return null;
+ 		}
+ 
+ 		const classes = classnames( 'editor-delete-post__button', {
+ 			'is-trashing': this.state.isTrashing,
+ 		} );
+-		const label = this.state.isTrashing
+-			? this.props.translate( 'Trashing...' )
+-			: this.props.translate( 'Move to trash' );
++		const label = this.state.isTrashing ? translate( 'Trashing…' ) : translate( 'Move to trash' );
+ 
+ 		return (
+ 			<div className="editor-delete-post">
+@@ -103,6 +105,22 @@ class EditorDeletePost extends React.Component {
+ 	}
+ }
+ 
+-export default connect( state => ( {
+-	site: getSelectedSite( state ),
+-} ) )( localize( EditorDeletePost ) );
++export default connect(
++	state => {
++		const siteId = getSelectedSiteId( state );
++		const postId = getEditorPostId( state );
++		const post = getEditedPost( state, siteId, postId );
++
++		const userId = getCurrentUserId( state );
++		const isAuthor = post.author && post.author.ID === userId;
++
++		return {
++			siteId,
++			post,
++			postId,
++			postStatus: post.status,
++			canDelete: canCurrentUser( state, siteId, isAuthor ? 'delete_posts' : 'delete_others_posts' ),
++		};
++	},
++	{ trashPost }
++)( localize( EditorDeletePost ) );
+diff --git a/client/post-editor/post-editor.jsx b/client/post-editor/post-editor.jsx
+index 617f8645cde58..24327b349d04a 100644
+--- a/client/post-editor/post-editor.jsx
++++ b/client/post-editor/post-editor.jsx
+@@ -635,7 +635,7 @@ export const PostEditor = createReactClass( {
+ 		page.back( this.getAllPostsUrl() );
+ 	},
+ 
+-	getAllPostsUrl: function() {
++	getAllPostsUrl: function( context ) {
+ 		const { type, selectedSite } = this.props;
+ 		const site = selectedSite;
+ 
+@@ -655,6 +655,10 @@ export const PostEditor = createReactClass( {
+ 			path += '/my';
+ 		}
+ 
++		if ( context === 'trashed' ) {
++			path += '/trashed';
++		}
++
+ 		if ( site ) {
+ 			path = addSiteFragment( path, site.slug );
+ 		}
+@@ -668,21 +672,14 @@ export const PostEditor = createReactClass( {
+ 		} );
+ 	},
+ 
+-	onTrashingPost: function( error ) {
+-		var isPage = utils.isPage( this.state.post );
++	onTrashingPost: function() {
++		const { type } = this.props;
+ 
+-		if ( error ) {
+-			this.setState( {
+-				notice: {
+-					status: 'is-error',
+-					message: 'trashFailure',
+-				},
+-			} );
+-		} else {
+-			recordStat( isPage ? 'page_trashed' : 'post_trashed' );
+-			recordEvent( isPage ? 'Clicked Trash Page Button' : 'Clicked Trash Post Button' );
+-			this.props.markSaved();
+-		}
++		recordStat( type + '_trashed' );
++		recordEvent( 'page' === type ? 'Clicked Trash Page Button' : 'Clicked Trash Post Button' );
++		this.props.markSaved();
++
++		page( this.getAllPostsUrl( 'trashed' ) );
+ 	},
+ 
+ 	onSaveTrashed: function( status, callback ) {
+diff --git a/client/state/notices/middleware.js b/client/state/notices/middleware.js
+index e8828178f3aa9..f0c5d8423d32a 100644
+--- a/client/state/notices/middleware.js
++++ b/client/state/notices/middleware.js
+@@ -8,10 +8,11 @@ import { get, truncate, includes } from 'lodash';
+ /**
+  * Internal dependencies
+  */
+-import { successNotice, errorNotice } from 'state/notices/actions';
++import { successNotice, errorNotice, removeNotice } from 'state/notices/actions';
+ import { getSitePost } from 'state/posts/selectors';
+ import { getSiteDomain } from 'state/sites/selectors';
+ import { getInviteForSite } from 'state/invites/selectors';
++import { restorePost } from 'state/posts/actions';
+ import {
+ 	ACCOUNT_RECOVERY_SETTINGS_FETCH_FAILED,
+ 	ACCOUNT_RECOVERY_SETTINGS_UPDATE_SUCCESS,
+@@ -149,20 +150,27 @@ export const onPostRestoreFailure = action => ( dispatch, getState ) => {
+ 
+ const onPostRestoreSuccess = () => successNotice( translate( 'Post successfully restored' ) );
+ 
+-export function onPostSaveSuccess( action ) {
+-	let text;
+-	switch ( action.post.status ) {
++export const onPostSaveSuccess = ( { post, savedPost } ) => dispatch => {
++	switch ( post.status ) {
+ 		case 'trash':
+-			text = translate( 'Post successfully moved to trash' );
++			const noticeId = 'trash_' + savedPost.global_ID;
++			dispatch(
++				successNotice( translate( 'Post successfully moved to trash.' ), {
++					id: noticeId,
++					button: translate( 'Undo' ),
++					onClick: () => {
++						dispatch( removeNotice( noticeId ) );
++						dispatch( restorePost( savedPost.site_ID, savedPost.ID ) );
++					},
++				} )
++			);
+ 			break;
+ 
+ 		case 'publish':
+-			text = translate( 'Post successfully published' );
++			dispatch( successNotice( translate( 'Post successfully published' ) ) );
+ 			break;
+ 	}
+-
+-	return text ? successNotice( text ) : null;
+-}
++};
+ 
+ export const onPublicizeConnectionCreate = ( { connection } ) =>
+ 	successNotice(

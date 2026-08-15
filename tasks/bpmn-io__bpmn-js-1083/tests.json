@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/snapping - BpmnCreateMoveSnapping docking points should snap to docking point (incoming connections) ",
+    "features/snapping - BpmnCreateMoveSnapping docking points should snap to docking point (outgoing connections) "
+  ],
+  "PASS_TO_PASS": []
+}

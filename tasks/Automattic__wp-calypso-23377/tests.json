@@ -1,0 +1,15 @@
+{
+  "FAIL_TO_PASS": [
+    "middleware - handlers - onPostSaveSuccess() - should dispatch success notice for trash",
+    "middleware - handlers - onPostSaveSuccess() - should dispatch success notice for publish"
+  ],
+  "PASS_TO_PASS": [
+    "middleware - handlers - onPostRestoreFailure() - should dispatch error notice with unknown title",
+    "middleware - handlers - onPostDeleteFailure() - should dispatch error notice with truncated title if known",
+    "middleware - handlers - onPostRestoreFailure() - should dispatch error notice with truncated title if known",
+    "middleware - noticesMiddleware() - should not trigger the observer when meta.notices.skip is set to true",
+    "middleware - handlers - onPostDeleteFailure() - should dispatch error notice with unknown title",
+    "middleware - handlers - onPostSaveSuccess() - should not dispatch if status has no corresponding text",
+    "middleware - noticesMiddleware() - should trigger the observer corresponding to the dispatched action type"
+  ]
+}

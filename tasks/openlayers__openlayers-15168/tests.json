@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/full-build/main.js'",
+    "./cases/reproj-image-stretched-interpolate-false/main.js'"
+  ],
+  "PASS_TO_PASS": []
+}

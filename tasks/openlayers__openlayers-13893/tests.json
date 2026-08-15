@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.layer.Graticule #createGraticule creates a graticule with normal world labels",
+    "ol/coordinate.js #toStringHDMS formats with given fractional digits, if passed:",
+    "ol.layer.Graticule #createGraticule creates a graticule with wrapped world labels",
+    "ol/coordinate.js degreesToStringHDMS omits seconds if zero:",
+    "ol/coordinate.js #toStringHDMS formats with zero fractional digits as default:",
+    "ol/coordinate.js degreesToStringHDMS omits minutes if zero:"
+  ],
+  "PASS_TO_PASS": []
+}

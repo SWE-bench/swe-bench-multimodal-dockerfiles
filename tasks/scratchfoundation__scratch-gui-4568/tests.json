@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "test/unit/containers/slider-prompt.test.jsx"
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,4 @@
+Hi @raghuramsomayaji I created a codesandbox example of Tabs with scrollable content but I wasn't seeing an issue where the tab underline is appearing in the middle of the Tab buttons unless I added a negative bottom margin to the Tab. Can you share a codesandbox that reproduces the issue you are seeing above?
+
+Here is my codesandbox: https://codesandbox.io/s/grommet-v2-template-forked-mnnmzz?file=/index.js
+Hi @jcfilben This is happening when we use tabs inside a component which has fixed height like grommet **Box** . I just added height to the Box component and here is the codesandbox: https://codesandbox.io/s/grommet-v2-template-forked-xtqw3m?file=/index.js

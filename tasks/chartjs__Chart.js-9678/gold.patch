@@ -1,0 +1,140 @@
+diff --git a/docs/charts/bar.md b/docs/charts/bar.md
+index c7ef6670ea2..325ca9c3678 100644
+--- a/docs/charts/bar.md
++++ b/docs/charts/bar.md
+@@ -86,6 +86,7 @@ Only the `data` option needs to be specified in the dataset namespace.
+ | [`hoverBorderWidth`](#interactions) | `number` | Yes | Yes | `1`
+ | [`hoverBorderRadius`](#interactions) | `number` | Yes | Yes | `0`
+ | [`indexAxis`](#general) | `string` | - | - | `'x'`
++| [`inflateAmount`](#inflateamount) | `number`\|`'auto'` | Yes | Yes | `'auto'`
+ | [`maxBarThickness`](#maxbarthickness) | `number` | - | - | |
+ | [`minBarLength`](#styling) | `number` | - | - | |
+ | [`label`](#general) | `string` | - | - | `''`
+@@ -176,6 +177,10 @@ If this value is a number, it is applied to all corners of the rectangle (topLef
+ When the border radius is supplied as a number and the chart is stacked, the radius will only be applied to the bars that are at the edges of the stack or where the bar is floating. The object syntax can be used to override this behavior.
+ :::
+ 
++#### inflateAmount
++
++This option can be used to inflate the rects that are used to draw the bars. This can be used to hide artifacts between bars when `barPercentage`(#barpercentage) * `categoryPercentage`(#categorypercentage) is 1. The default value `'auto'` should work in most cases.
++
+ ### Interactions
+ 
+ The interaction with each bar can be controlled with the following properties:
+diff --git a/docs/configuration/elements.md b/docs/configuration/elements.md
+index 9623714f26d..aff43601185 100644
+--- a/docs/configuration/elements.md
++++ b/docs/configuration/elements.md
+@@ -84,6 +84,7 @@ Namespace: `options.elements.bar`, global bar options: `Chart.defaults.elements.
+ | `borderColor` | [`Color`](/general/colors.md) | `Chart.defaults.borderColor` | Bar stroke color.
+ | `borderSkipped` | `string` | `'start'` | Skipped (excluded) border: `'start'`, `'end'`, `'middle'`, `'bottom'`, `'left'`, `'top'`, `'right'` or `false`.
+ | `borderRadius` | `number`\|`object` | `0` | The bar border radius (in pixels).
++| `inflateAmount` | `number`\|`'auto'` | `'auto'` | The amount of pixels to inflate the bar rectangle(s) when drawing.
+ | [`pointStyle`](#point-styles) | `string`\|`Image`\|`HTMLCanvasElement` | `'circle'` | Style of the point for legend.
+ 
+ ## Arc Configuration
+diff --git a/src/controllers/controller.bar.js b/src/controllers/controller.bar.js
+index c9a8e7ef813..dd10cf09f8f 100644
+--- a/src/controllers/controller.bar.js
++++ b/src/controllers/controller.bar.js
+@@ -244,6 +244,12 @@ function startEnd(v, start, end) {
+   return v === 'start' ? start : v === 'end' ? end : v;
+ }
+ 
++function setInflateAmount(properties, {inflateAmount}, ratio) {
++  properties.inflateAmount = inflateAmount === 'auto'
++    ? ratio === 1 ? 0.33 : 0
++    : inflateAmount;
++}
++
+ export default class BarController extends DatasetController {
+ 
+   /**
+@@ -369,7 +375,9 @@ export default class BarController extends DatasetController {
+       if (includeOptions) {
+         properties.options = sharedOptions || this.resolveDataElementOptions(i, bars[i].active ? 'active' : mode);
+       }
+-      setBorderSkipped(properties, properties.options || bars[i].options, stack, index);
++      const options = properties.options || bars[i].options;
++      setBorderSkipped(properties, options, stack, index);
++      setInflateAmount(properties, options, ruler.ratio);
+       this.updateElement(bars[i], i, properties, mode);
+     }
+   }
+diff --git a/src/elements/element.bar.js b/src/elements/element.bar.js
+index 049a8984f0f..41a609b75e4 100644
+--- a/src/elements/element.bar.js
++++ b/src/elements/element.bar.js
+@@ -146,6 +146,7 @@ export default class BarElement extends Element {
+     this.base = undefined;
+     this.width = undefined;
+     this.height = undefined;
++    this.inflateAmount = undefined;
+ 
+     if (cfg) {
+       Object.assign(this, cfg);
+@@ -153,10 +154,9 @@ export default class BarElement extends Element {
+   }
+ 
+   draw(ctx) {
+-    const options = this.options;
++    const {inflateAmount, options: {borderColor, backgroundColor}} = this;
+     const {inner, outer} = boundingRects(this);
+     const addRectPath = hasRadius(outer.radius) ? addRoundedRectPath : addNormalRectPath;
+-    const inflateAmount = 0.33;
+ 
+     ctx.save();
+ 
+@@ -165,13 +165,13 @@ export default class BarElement extends Element {
+       addRectPath(ctx, inflateRect(outer, inflateAmount, inner));
+       ctx.clip();
+       addRectPath(ctx, inflateRect(inner, -inflateAmount, outer));
+-      ctx.fillStyle = options.borderColor;
++      ctx.fillStyle = borderColor;
+       ctx.fill('evenodd');
+     }
+ 
+     ctx.beginPath();
+-    addRectPath(ctx, inflateRect(inner, inflateAmount, outer));
+-    ctx.fillStyle = options.backgroundColor;
++    addRectPath(ctx, inflateRect(inner, inflateAmount));
++    ctx.fillStyle = backgroundColor;
+     ctx.fill();
+ 
+     ctx.restore();
+@@ -211,7 +211,7 @@ BarElement.defaults = {
+   borderSkipped: 'start',
+   borderWidth: 0,
+   borderRadius: 0,
+-  enableBorderRadius: true,
++  inflateAmount: 'auto',
+   pointStyle: undefined
+ };
+ 
+diff --git a/types/index.esm.d.ts b/types/index.esm.d.ts
+index 19a7009fb97..cd8fce39908 100644
+--- a/types/index.esm.d.ts
++++ b/types/index.esm.d.ts
+@@ -1915,7 +1915,7 @@ export interface BarOptions extends CommonElementOptions {
+   base: number;
+ 
+   /**
+-   *   Skipped (excluded) border: 'start', 'end', 'left',  'right', 'bottom', 'top' or false (none).
++   * Skipped (excluded) border: 'start', 'end', 'left',  'right', 'bottom', 'top' or false (none).
+    * @default 'start'
+    */
+   borderSkipped: 'start' | 'end' | 'left' | 'right' | 'bottom' | 'top' | false;
+@@ -1925,6 +1925,13 @@ export interface BarOptions extends CommonElementOptions {
+    * @default 0
+    */
+   borderRadius: number | BorderRadius;
++
++  /**
++   * Amount to inflate the rectangle(s). This can be used to hide artifacts between bars.
++   * Unit is pixels. 'auto' translates to 0.33 pixels when barPercentage * categoryPercentage is 1, else 0.
++   * @default 'auto'
++   */
++  inflateAmount: number | 'auto';
+ }
+ 
+ export interface BorderRadius {

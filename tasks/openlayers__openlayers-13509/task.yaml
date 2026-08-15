@@ -1,0 +1,17 @@
+base_commit: f7605f538acfcea63a8dfcb6403106135d19234b
+created_at: '2022-03-26T16:28:51Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13509:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-invisible-group/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/b8c04ee7c57d4db2a31fe1aaac7a987079c0dfc9/test/rendering/cases/webgl-invisible-group/expected.png
+instance_id: openlayers__openlayers-13509
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.13'

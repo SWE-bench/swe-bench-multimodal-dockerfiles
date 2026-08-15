@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "cli when given the max-warnings flag should exit with exit code 1 without printing warnings if the quiet option is enabled and warning count exceeds threshold:"
+  ],
+  "PASS_TO_PASS": []
+}

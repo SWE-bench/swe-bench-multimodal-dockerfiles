@@ -1,0 +1,17 @@
+base_commit: bef5d6e39ee877fb0ca6957652984dda09e1cb71
+created_at: '2021-10-13T11:49:40Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.diegomura_1776_react-pdf-1541:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/6726016/133747387-36b0979e-13ca-46a8-88f9-d5f814b744fc.png
+  - https://user-images.githubusercontent.com/6726016/133747413-879dda20-3a50-4163-ad6f-1f4d0a8a879b.png
+  test_patch: []
+instance_id: diegomura__react-pdf-1541
+log_parser: parse_log_react_pdf
+repo: diegomura/react-pdf
+split: dev
+version: '2.0'

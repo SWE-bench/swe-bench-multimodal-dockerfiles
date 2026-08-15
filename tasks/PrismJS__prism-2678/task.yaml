@@ -1,0 +1,17 @@
+base_commit: df0738e94ed55612dde4f475a58e87ec4713ee73
+created_at: '2020-12-22T19:10:26Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.prismjs_1776_prism-2678:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://content.markdowner.net/emoji/g/64/1f44d.png
+  - https://content.markdowner.net/emoji/g/64/1f44d.png
+  test_patch: []
+instance_id: PrismJS__prism-2678
+log_parser: parse_log_prismjs
+repo: PrismJS/prism
+split: test
+version: '1.22'

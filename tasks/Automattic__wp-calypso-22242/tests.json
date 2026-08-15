@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "JetpackConnectMain - cleanUrl - should prepare entered urls for network access"
+  ],
+  "PASS_TO_PASS": [
+    "JetpackConnectMain - goToPluginInstall - should fire redirect",
+    "JetpackConnectMain - makeSafeRedirectionFunction - should protect against multiple calls",
+    "JetpackConnectMain - goToPlans - should fire redirect",
+    "JetpackConnectMain - goToPlans - should redirect to a site slug",
+    "JetpackConnectMain - goToRemoteAuth - should fire redirect",
+    "JetpackConnectMain - goToRemoteAuth - should dispatch analytics",
+    "JetpackConnectMain - goToPluginActivation - should fire redirect",
+    "JetpackConnectMain - makeSafeRedirectionFunction - should make a function that can calls the wrappe function",
+    "JetpackConnectMain - goToPluginActivation - should dispatch analytics",
+    "JetpackConnectMain - goToPlans - should dispatch analytics",
+    "JetpackConnectMain - goToPluginInstall - should dispatch analytics"
+  ]
+}

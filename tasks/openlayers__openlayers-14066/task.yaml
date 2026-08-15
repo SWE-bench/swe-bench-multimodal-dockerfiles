@@ -1,0 +1,19 @@
+base_commit: c742fe965f99639ea79cca2c66a88851611b132f
+created_at: '2022-08-28T16:39:40Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14066:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/cog-rgb-auto/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/bd3b1bb4345012b1852dfb747abbd4e23a95dad1/test/rendering/cases/cog-rgb-auto/expected.png
+  - path: test/rendering/cases/cog-rgb-no-auto/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/bd3b1bb4345012b1852dfb747abbd4e23a95dad1/test/rendering/cases/cog-rgb-no-auto/expected.png
+instance_id: openlayers__openlayers-14066
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.0'

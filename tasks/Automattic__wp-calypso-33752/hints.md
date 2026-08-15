@@ -1,0 +1,2 @@
+This is an issue with the `preventWidows` function, as described in #32652.
+Looks like until this is resolved, there's no good way around it. I played around with using `<br />`, like in #32500, but because the card has quite the range when it comes to width, and also in some contexts gets bigger, because it takes up the whole width (post-purchase thank you pages), I was not able to find a spot to insert the `<br />` that would work universally.

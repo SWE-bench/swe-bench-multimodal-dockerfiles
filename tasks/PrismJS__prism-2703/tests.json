@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'fsharp' – should pass test case 'comment_feature'",
+    "Testing language 'fsharp' – should pass test case 'issue2696'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'fsharp' – should pass test case 'operator_feature'",
+    "Testing language 'fsharp' – should pass test case 'class-name_feature'",
+    "Testing language 'fsharp' – should pass test case 'issue1480'",
+    "Testing language 'fsharp' – should pass test case 'number_feature'",
+    "Testing language 'fsharp' – should pass test case 'computation-expression_feature'",
+    "Testing language 'fsharp!+xml-doc' – should pass test case 'inclusion'",
+    "Testing language 'fsharp' – should pass test case 'keyword_feature'",
+    "Testing language 'fsharp' – should pass test case 'preprocessor_feature'",
+    "Testing language 'fsharp' – should pass test case 'string_feature'",
+    "Testing language 'fsharp' – should pass test case 'annotation_feature'"
+  ]
+}

@@ -1,0 +1,19 @@
+base_commit: a1b8f08bca483c856bd6fe3de08e0e333145a757
+created_at: '2021-11-06T18:27:28Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-12965:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-mixed-layers/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/a2f3c02ac5cde8b0afa6598f951886254b8a1833/test/rendering/cases/webgl-mixed-layers/expected.png
+  - path: test/rendering/cases/webgl-multiple-layers/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/a2f3c02ac5cde8b0afa6598f951886254b8a1833/test/rendering/cases/webgl-multiple-layers/expected.png
+instance_id: openlayers__openlayers-12965
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.9'

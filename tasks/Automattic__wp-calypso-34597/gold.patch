@@ -1,0 +1,701 @@
+diff --git a/client/blocks/post-share/nudges.jsx b/client/blocks/post-share/nudges.jsx
+index 315c13b39d676..bdba4f6ef6fd7 100644
+--- a/client/blocks/post-share/nudges.jsx
++++ b/client/blocks/post-share/nudges.jsx
+@@ -1,5 +1,3 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+@@ -13,12 +11,13 @@ import formatCurrency from '@automattic/format-currency';
+ import Banner from 'components/banner';
+ import { TYPE_PREMIUM, TERM_ANNUALLY } from 'lib/plans/constants';
+ import { findFirstSimilarPlanKey } from 'lib/plans';
++import canCurrentUser from 'state/selectors/can-current-user';
+ import { getSitePlan } from 'state/sites/selectors';
+ import { getSelectedSiteId } from 'state/ui/selectors';
+ import { getSitePlanRawPrice, getPlanDiscountedRawPrice } from 'state/sites/plans/selectors';
+ 
+ export const UpgradeToPremiumNudgePure = props => {
+-	const { price, planSlug, translate, userCurrency, isJetpack } = props;
++	const { price, planSlug, translate, userCurrency, canUserUpgrade, isJetpack } = props;
+ 
+ 	let featureList;
+ 	if ( isJetpack ) {
+@@ -37,6 +36,10 @@ export const UpgradeToPremiumNudgePure = props => {
+ 			translate( 'Unlimited premium themes.' ),
+ 		];
+ 	}
++	
++	if ( ! canUserUpgrade ) {
++		return null;
++	}
+ 
+ 	return (
+ 		<Banner
+@@ -67,5 +70,6 @@ export const UpgradeToPremiumNudge = connect( ( state, ownProps ) => {
+ 	return {
+ 		planSlug: proposedPlan,
+ 		price: getDiscountedOrRegularPrice( state, siteId, proposedPlan ),
++		canUserUpgrade: canCurrentUser( state, siteId, 'manage_options' ),
+ 	};
+ } )( UpgradeToPremiumNudgePure );
+diff --git a/client/blocks/upgrade-nudge/index.jsx b/client/blocks/upgrade-nudge/index.jsx
+index 88e5b77eb754d..ce0e9bf65acba 100644
+--- a/client/blocks/upgrade-nudge/index.jsx
++++ b/client/blocks/upgrade-nudge/index.jsx
+@@ -1,5 +1,3 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+@@ -77,59 +75,32 @@ export class UpgradeNudge extends React.Component {
+ 		onClick();
+ 	};
+ 
+-	shouldDisplay() {
+-		const { feature, jetpack, planHasFeature, shouldDisplay, site, canManageSite } = this.props;
+-
+-		if ( shouldDisplay === true ) {
+-			return true;
+-		}
+-
+-		if ( shouldDisplay ) {
+-			return shouldDisplay();
+-		}
+-
+-		if ( ! canManageSite ) {
+-			return false;
+-		}
+-
+-		if ( ! site || typeof site !== 'object' || typeof site.jetpack !== 'boolean' ) {
+-			return false;
+-		}
+-
+-		if ( feature && planHasFeature ) {
+-			return false;
+-		}
+-
+-		if ( ! feature && ! isFreePlan( site.plan ) ) {
+-			return false;
+-		}
+-
+-		if ( feature === FEATURE_NO_ADS && site.options.wordads ) {
+-			return false;
+-		}
+-
+-		if ( ( ! jetpack && site.jetpack ) || ( jetpack && ! site.jetpack ) ) {
+-			return false;
+-		}
+-
+-		return true;
+-	}
+-
+ 	render() {
+ 		const {
++			canManageSite,
+ 			className,
+ 			compact,
+ 			event,
+ 			plan,
++			planHasFeature,
+ 			feature,
+ 			icon,
++			jetpack,
+ 			message,
+ 			site,
+ 			title,
+ 			translate,
+ 		} = this.props;
+-
+-		if ( ! this.shouldDisplay() ) {
++		
++		const shouldNotDisplay = 
++			  ! canManageSite || 
++			  ( ! site || typeof site !== 'object' || typeof site.jetpack !== 'boolean' ) ||
++			  ( feature && planHasFeature ) ||
++			  ( ! feature && ! isFreePlan( site.plan ) ) ||
++			  ( feature === FEATURE_NO_ADS && site.options.wordads ) ||
++			  ( ( ! jetpack && site.jetpack ) || ( jetpack && ! site.jetpack ) );
++
++		if ( shouldNotDisplay ) {
+ 			return null;
+ 		}
+ 
+diff --git a/client/components/banner/index.jsx b/client/components/banner/index.jsx
+index 9fa9726c12206..d8ceebef6a348 100644
+--- a/client/components/banner/index.jsx
++++ b/client/components/banner/index.jsx
+@@ -1,5 +1,3 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+@@ -25,7 +23,8 @@ import {
+ import { GROUP_JETPACK, GROUP_WPCOM } from 'lib/plans/constants';
+ import { addQueryArgs } from 'lib/url';
+ import { recordTracksEvent } from 'state/analytics/actions';
+-import { getSelectedSiteSlug } from 'state/ui/selectors';
++import { getSelectedSiteId, getSelectedSiteSlug } from 'state/ui/selectors';
++import canCurrentUser from 'state/selectors/can-current-user';
+ import Button from 'components/button';
+ import Card from 'components/card';
+ import DismissibleCard from 'blocks/dismissible-card';
+@@ -70,9 +69,9 @@ export class Banner extends Component {
+ 	};
+ 
+ 	getHref() {
+-		const { feature, href, plan, siteSlug } = this.props;
++		const { canUserUpgrade, feature, href, plan, siteSlug } = this.props;
+ 
+-		if ( ! href && siteSlug ) {
++		if ( ! href && siteSlug && canUserUpgrade ) {
+ 			const baseUrl = `/plans/${ siteSlug }`;
+ 			if ( feature || plan ) {
+ 				return addQueryArgs(
+@@ -264,6 +263,7 @@ export class Banner extends Component {
+ 
+ const mapStateToProps = ( state, ownProps ) => ( {
+ 	siteSlug: ownProps.disableHref ? null : getSelectedSiteSlug( state ),
++	canUserUpgrade: canCurrentUser( state, getSelectedSiteId( state ), 'manage_options' ),
+ } );
+ 
+ export default connect(
+diff --git a/client/components/banner/style.scss b/client/components/banner/style.scss
+index bd35a5b93343f..a2ed43f62e02a 100644
+--- a/client/components/banner/style.scss
++++ b/client/components/banner/style.scss
+@@ -1,5 +1,6 @@
+ .banner.card {
+ 	border-left: 3px solid;
++	cursor: default;
+ 	display: flex;
+ 	padding: 12px 6px 12px 12px;
+ 	line-height: 29px;
+@@ -7,6 +8,10 @@
+ 	&.is-dismissible {
+ 		padding-right: 48px;
+ 	}
++	
++	&[href] {
++		cursor: pointer;
++	}
+ 
+ 	@include banner-color( var( --color-primary ) );
+ 
+diff --git a/client/components/seo/preview-upgrade-nudge/index.jsx b/client/components/seo/preview-upgrade-nudge/index.jsx
+index 3ce2a205a315e..d7c8a408aee90 100644
+--- a/client/components/seo/preview-upgrade-nudge/index.jsx
++++ b/client/components/seo/preview-upgrade-nudge/index.jsx
+@@ -17,6 +17,8 @@ import QueryPlans from 'components/data/query-plans';
+ import TrackComponentView from 'lib/analytics/track-component-view';
+ import { preventWidows } from 'lib/formatting';
+ import { isJetpackSite } from 'state/sites/selectors';
++import canCurrentUser from 'state/selectors/can-current-user';
++import { getSelectedSiteId } from 'state/ui/selectors';
+ import FeatureExample from 'components/feature-example';
+ import Banner from 'components/banner';
+ import { findFirstSimilarPlanKey } from 'lib/plans';
+@@ -28,7 +30,7 @@ import { TERM_ANNUALLY, TYPE_BUSINESS } from 'lib/plans/constants';
+ import './style.scss';
+ import upgradeNudgeImage from './preview-upgrade-nudge.png';
+ 
+-export const SeoPreviewNudge = ( { translate, site, isJetpack = false } ) => {
++export const SeoPreviewNudge = ( { canCurrentUserUpgrade, translate, site, isJetpack = false } ) => {
+ 	return (
+ 		<div className="preview-upgrade-nudge">
+ 			<QueryPlans />
+@@ -42,7 +44,9 @@ export const SeoPreviewNudge = ( { translate, site, isJetpack = false } ) => {
+ 						...( isJetpack ? { term: TERM_ANNUALLY } : {} ),
+ 					} )
+ 				}
+-				title={ translate( 'Upgrade to a Business Plan to unlock the power of our SEO tools!' ) }
++				title={ canCurrentUserUpgrade ? translate( 'Upgrade to a Business plan to unlock the power of our SEO tools!' ) 
++						: translate ( "Unlock powerful SEO tools! Contact your site's administrator to upgrade to a Business plan." ) 
++					  }
+ 				event="site_preview_seo_plan_upgrade"
+ 				className="preview-upgrade-nudge__banner"
+ 			/>
+@@ -103,6 +107,7 @@ const mapStateToProps = ( state, ownProps ) => {
+ 
+ 	return {
+ 		isJetpack,
++		canCurrentUserUpgrade: canCurrentUser( state, getSelectedSiteId( state ), 'manage_options' ),
+ 	};
+ };
+ 
+diff --git a/client/components/tinymce/plugins/simple-payments/dialog/index.jsx b/client/components/tinymce/plugins/simple-payments/dialog/index.jsx
+index 6c2227d2363cb..665df7cdca0f3 100644
+--- a/client/components/tinymce/plugins/simple-payments/dialog/index.jsx
++++ b/client/components/tinymce/plugins/simple-payments/dialog/index.jsx
+@@ -444,10 +444,6 @@ class SimplePaymentsDialog extends Component {
+ 		);
+ 	}
+ 
+-	returnTrue() {
+-		return true;
+-	}
+-
+ 	render() {
+ 		const {
+ 			showDialog,
+@@ -460,6 +456,7 @@ class SimplePaymentsDialog extends Component {
+ 			planHasSimplePaymentsFeature,
+ 			shouldQuerySitePlans,
+ 			canCurrentUserAddButtons,
++			canCurrentUserUpgrade,
+ 		} = this.props;
+ 		const { activeTab, initialFormValues, errorMessage } = this.state;
+ 
+@@ -497,6 +494,7 @@ class SimplePaymentsDialog extends Component {
+ 					illustration="/calypso/images/illustrations/type-e-commerce.svg"
+ 					illustrationWidth={ 300 }
+ 					title={ translate( 'Want to add a payment button to your site?' ) }
++					line={ ! canCurrentUserUpgrade ? translate ( "Contact your site's administrator to upgrade to the Premium, Business, or eCommerce Plan." ) : false }
+ 					action={
+ 						<UpgradeNudge
+ 							className="editor-simple-payments-modal__nudge-nudge"
+@@ -506,7 +504,6 @@ class SimplePaymentsDialog extends Component {
+ 							) }
+ 							feature={ FEATURE_SIMPLE_PAYMENTS }
+ 							event="editor_simple_payments_modal_nudge"
+-							shouldDisplay={ this.returnTrue }
+ 						/>
+ 					}
+ 					secondaryAction={
+@@ -617,5 +614,6 @@ export default connect( ( state, { siteId } ) => {
+ 		currentUserEmail: getCurrentUserEmail( state ),
+ 		featuredImageId: get( getFormValues( REDUX_FORM_NAME )( state ), 'featuredImageId' ),
+ 		canCurrentUserAddButtons: canCurrentUser( state, siteId, 'publish_posts' ),
++		canCurrentUserUpgrade: canCurrentUser( state, siteId, 'manage_options' ),
+ 	};
+ } )( localize( SimplePaymentsDialog ) );
+diff --git a/client/components/tinymce/plugins/simple-payments/style.scss b/client/components/tinymce/plugins/simple-payments/style.scss
+index 9bb5804a2dc81..49f5e82919b5b 100644
+--- a/client/components/tinymce/plugins/simple-payments/style.scss
++++ b/client/components/tinymce/plugins/simple-payments/style.scss
+@@ -78,6 +78,10 @@
+ 		flex-shrink: 0;
+ 		text-align: left;
+ 	}
++	
++	.empty-content__line {
++		margin: 8px;
++	}
+ 
+ 	.empty-content__action {
+ 		margin-top: 16px;
+diff --git a/client/lib/ads/utils.js b/client/lib/ads/utils.js
+index 1d39e46f7ada6..cbd4b49c0c85b 100644
+--- a/client/lib/ads/utils.js
++++ b/client/lib/ads/utils.js
+@@ -32,7 +32,8 @@ export function canAccessWordads( site ) {
+ }
+ 
+ export function canAccessAds( site ) {
+-	return canAccessWordads( site ) || canUpgradeToUseWordAds( site );
++	return ( canAccessWordads( site ) || canUpgradeToUseWordAds( site ) ) 
++	&& userCan( 'manage_options', site )
+ }
+ 
+ export function isWordadsInstantActivationEligible( site ) {
+diff --git a/client/my-sites/earn/ads/wrapper.jsx b/client/my-sites/earn/ads/wrapper.jsx
+index d651713279717..de53337cf591c 100644
+--- a/client/my-sites/earn/ads/wrapper.jsx
++++ b/client/my-sites/earn/ads/wrapper.jsx
+@@ -20,6 +20,7 @@ import { isPremium, isBusiness, isEcommerce } from 'lib/products-values';
+ import FeatureExample from 'components/feature-example';
+ import FormButton from 'components/forms/form-button';
+ import Card from 'components/card';
++import EmptyContent from 'components/empty-content';
+ import { requestWordAdsApproval, dismissWordAdsError } from 'state/wordads/approve/actions';
+ import {
+ 	isRequestingWordAdsApprovalForSite,
+@@ -32,7 +33,6 @@ import QueryWordadsStatus from 'components/data/query-wordads-status';
+ import UpgradeNudgeExpanded from 'blocks/upgrade-nudge-expanded';
+ import { PLAN_PREMIUM, PLAN_JETPACK_PREMIUM, FEATURE_WORDADS_INSTANT } from 'lib/plans/constants';
+ import canCurrentUser from 'state/selectors/can-current-user';
+-import { getSiteFragment } from 'lib/route';
+ import { isSiteWordadsUnsafe } from 'state/wordads/status/selectors';
+ import { wordadsUnsafeValues } from 'state/wordads/status/schema';
+ import { getSelectedSite, getSelectedSiteId, getSelectedSiteSlug } from 'state/ui/selectors';
+@@ -56,25 +56,6 @@ class AdsWrapper extends Component {
+ 		wordAdsSuccess: PropTypes.bool,
+ 	};
+ 
+-	componentDidMount() {
+-		this.redirectToStats();
+-	}
+-
+-	componentDidUpdate() {
+-		this.redirectToStats();
+-	}
+-
+-	redirectToStats() {
+-		const { siteSlug, site } = this.props;
+-		const siteFragment = getSiteFragment( page.current );
+-
+-		if ( siteSlug && site && ! canAccessAds( site ) ) {
+-			page( '/stats/' + siteSlug );
+-		} else if ( ! siteFragment ) {
+-			page( '/earn/' );
+-		}
+-	}
+-
+ 	handleDismissWordAdsError = () => {
+ 		const { siteId } = this.props;
+ 		this.props.dismissWordAdsError( siteId );
+@@ -181,6 +162,15 @@ class AdsWrapper extends Component {
+ 		);
+ 	}
+ 
++	renderEmptyContent() {
++		return (
++			<EmptyContent
++				illustration="/calypso/images/illustrations/illustration-404.svg"
++				title={ this.props.translate( 'You are not authorized to view this page' ) }
++			/>
++		);
++	}
++
+ 	renderUpsell() {
+ 		const { translate } = this.props;
+ 		return (
+@@ -223,14 +213,12 @@ class AdsWrapper extends Component {
+ 			site.jetpack &&
+ 			( isPremium( site.plan ) || isBusiness( site.plan ) || isEcommerce( site.plan ) );
+ 
+-		if ( ! canAccessAds( site ) ) {
+-			return null;
+-		}
+-
+ 		let component = this.props.children;
+ 		let notice = null;
+ 
+-		if ( this.props.requestingWordAdsApproval || this.props.wordAdsSuccess ) {
++		if ( ! canAccessAds( site ) ) {
++			component = this.renderEmptyContent();
++		} else if ( this.props.requestingWordAdsApproval || this.props.wordAdsSuccess ) {
+ 			notice = (
+ 				<Notice status="is-success" showDismiss={ false }>
+ 					{ translate( 'You have joined the WordAds program. Please review these settings:' ) }
+@@ -238,6 +226,8 @@ class AdsWrapper extends Component {
+ 			);
+ 		} else if ( ! site.options.wordads && isWordadsInstantActivationEligible( site ) ) {
+ 			component = this.renderInstantActivationToggle( component );
++		} else if ( ! canAccessAds( site ) ) {
++			component = this.renderEmptyContent();
+ 		} else if ( canUpgradeToUseWordAds( site ) && site.jetpack && ! jetpackPremium ) {
+ 			component = this.renderjetpackUpsell();
+ 		} else if ( canUpgradeToUseWordAds( site ) ) {
+diff --git a/client/my-sites/marketing/main.jsx b/client/my-sites/marketing/main.jsx
+index c9e6aea9f73b3..419f7cc71c924 100644
+--- a/client/my-sites/marketing/main.jsx
++++ b/client/my-sites/marketing/main.jsx
+@@ -132,7 +132,7 @@ export default connect( state => {
+ 	return {
+ 		showButtons: siteId && canManageOptions && ( ! isJetpack || hasSharedaddy ),
+ 		showConnections: ! siteId || ! isJetpack || isJetpackModuleActive( state, siteId, 'publicize' ),
+-		showTraffic: !! siteId,
++		showTraffic: canManageOptions && !! siteId,
+ 		siteId,
+ 		siteSlug: getSiteSlug( state, siteId ),
+ 	};
+diff --git a/client/my-sites/marketing/traffic/index.js b/client/my-sites/marketing/traffic/index.js
+index ba6caa3ef4127..1ff0061bdec8f 100644
+--- a/client/my-sites/marketing/traffic/index.js
++++ b/client/my-sites/marketing/traffic/index.js
+@@ -1,5 +1,3 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+@@ -13,6 +11,7 @@ import { flowRight, partialRight, pick } from 'lodash';
+  * Internal dependencies
+  */
+ import Main from 'components/main';
++import EmptyContent from 'components/empty-content';
+ import PageViewTracker from 'lib/analytics/page-view-tracker';
+ import DocumentHead from 'components/data/document-head';
+ import SeoSettingsMain from 'my-sites/site-settings/seo-settings/main';
+@@ -26,6 +25,7 @@ import RelatedPosts from 'my-sites/site-settings/related-posts';
+ import Sitemaps from 'my-sites/site-settings/sitemaps';
+ import Shortlinks from 'my-sites/site-settings/shortlinks';
+ import wrapSettingsForm from 'my-sites/site-settings/wrap-settings-form';
++import canCurrentUser from 'state/selectors/can-current-user';
+ import { getSelectedSiteId } from 'state/ui/selectors';
+ import { isJetpackSite } from 'state/sites/selectors';
+ 
+@@ -39,6 +39,7 @@ const SiteSettingsTraffic = ( {
+ 	handleAutosavingToggle,
+ 	handleAutosavingRadio,
+ 	handleSubmitForm,
++	isAdmin,
+ 	isJetpack,
+ 	isRequestingSettings,
+ 	isSavingSettings,
+@@ -49,6 +50,12 @@ const SiteSettingsTraffic = ( {
+ 	<Main className="settings-traffic site-settings" wideLayout>
+     <PageViewTracker path="/marketing/traffic/:site" title="Marketing > Traffic" />
+ 		<DocumentHead title={ translate( 'Site Settings' ) } />
++		{ ! isAdmin && (
++			<EmptyContent
++				illustration="/calypso/images/illustrations/illustration-404.svg"
++				title={ translate( 'You are not authorized to view this page' ) }
++			/>
++		) }
+ 		<JetpackDevModeNotice />
+ 
+ 		{ isJetpack && (
+@@ -59,15 +66,18 @@ const SiteSettingsTraffic = ( {
+ 				fields={ fields }
+ 			/>
+ 		) }
+-		<SeoSettingsHelpCard disabled={ isRequestingSettings || isSavingSettings } />
+-		<SeoSettingsMain />
+-		<RelatedPosts
+-			onSubmitForm={ handleSubmitForm }
+-			handleAutosavingToggle={ handleAutosavingToggle }
+-			isSavingSettings={ isSavingSettings }
+-			isRequestingSettings={ isRequestingSettings }
+-			fields={ fields }
+-		/>
++		{ isAdmin && ( <SeoSettingsHelpCard disabled={ isRequestingSettings || isSavingSettings } /> ) }
++		{ isAdmin && ( <SeoSettingsMain /> ) }
++		{ isAdmin && ( 
++			<RelatedPosts
++				onSubmitForm={ handleSubmitForm }
++				handleAutosavingToggle={ handleAutosavingToggle }
++				isSavingSettings={ isSavingSettings }
++				isRequestingSettings={ isRequestingSettings }
++				fields={ fields }
++			/>
++		 ) }
++				
+ 		{ isJetpack && (
+ 			<JetpackSiteStats
+ 				handleAutosavingToggle={ handleAutosavingToggle }
+@@ -77,7 +87,7 @@ const SiteSettingsTraffic = ( {
+ 				fields={ fields }
+ 			/>
+ 		) }
+-		<AnalyticsSettings />
++		{ isAdmin && ( <AnalyticsSettings /> ) }
+ 		{ isJetpack && (
+ 			<Shortlinks
+ 				handleAutosavingRadio={ handleAutosavingRadio }
+@@ -88,17 +98,20 @@ const SiteSettingsTraffic = ( {
+ 				onSubmitForm={ handleSubmitForm }
+ 			/>
+ 		) }
+-		<Sitemaps
+-			isSavingSettings={ isSavingSettings }
+-			isRequestingSettings={ isRequestingSettings }
+-			fields={ fields }
+-		/>
+-		<SiteVerification />
++		{ isAdmin && ( 
++			<Sitemaps
++				isSavingSettings={ isSavingSettings }
++				isRequestingSettings={ isRequestingSettings }
++				fields={ fields }
++			/> 
++		) }
++		{ isAdmin && ( <SiteVerification /> ) }
+ 	</Main>
+ );
+ 
+ const connectComponent = connect( state => ( {
+ 	isJetpack: isJetpackSite( state, getSelectedSiteId( state ) ),
++	isAdmin: canCurrentUser( state, getSelectedSiteId( state ), 'manage_options' ),
+ } ) );
+ 
+ const getFormSettings = partialRight( pick, [
+diff --git a/client/my-sites/media-library/list-plan-promo.js b/client/my-sites/media-library/list-plan-promo.js
+index 2edbbaebdb04e..a2129b6d5ec5f 100644
+--- a/client/my-sites/media-library/list-plan-promo.js
++++ b/client/my-sites/media-library/list-plan-promo.js
+@@ -1,10 +1,9 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+ 
+ import React from 'react';
++import { connect } from 'react-redux';
+ import { localize } from 'i18n-calypso';
+ import PropTypes from 'prop-types';
+ import page from 'page';
+@@ -16,6 +15,8 @@ import { preventWidows } from 'lib/formatting';
+  */
+ import EmptyContent from 'components/empty-content';
+ import Button from 'components/button';
++import canCurrentUser from 'state/selectors/can-current-user';
++import { getSelectedSiteId } from 'state/ui/selectors';
+ 
+ class MediaLibraryListPlanPromo extends React.Component {
+ 	static displayName = 'MediaLibraryListPlanPromo';
+@@ -51,19 +52,25 @@ class MediaLibraryListPlanPromo extends React.Component {
+ 		switch ( this.props.filter ) {
+ 			case 'videos':
+ 				return preventWidows(
++					this.props.canUpgrade ?
+ 					this.props.translate( 'To upload video files to your site, upgrade your plan.', {
+ 						textOnly: true,
+ 						context: 'Media upgrade promo',
+-					} ),
++					} )
++					: this.props.translate( "Uploading video requires a paid plan." )
++					+ " " + this.props.translate( 'Contact your site administrator and ask them to upgrade this site to WordPress.com Premium, Business, or eCommerce.' ),
+ 					2
+ 				);
+ 
+ 			case 'audio':
+ 				return preventWidows(
++					this.props.canUpgrade ?
+ 					this.props.translate( 'To upload audio files to your site, upgrade your plan.', {
+ 						textOnly: true,
+ 						context: 'Media upgrade promo',
+-					} ),
++					} )
++					: this.props.translate( "Uploading audio requires a paid plan." )
++					+ " " + this.props.translate( 'Contact your site administrator and ask them to upgrade this site to WordPress.com Premium, Business, or eCommerce.' ),
+ 					2
+ 				);
+ 
+@@ -107,4 +114,8 @@ class MediaLibraryListPlanPromo extends React.Component {
+ 	}
+ }
+ 
+-export default localize( MediaLibraryListPlanPromo );
++export default connect( ( state ) => {
++	return {
++		canUpgrade: canCurrentUser( state, getSelectedSiteId( state ), 'manage_options' ),
++	};
++} )( localize( MediaLibraryListPlanPromo ) );
+diff --git a/client/my-sites/media-library/list-plan-upgrade-nudge.jsx b/client/my-sites/media-library/list-plan-upgrade-nudge.jsx
+index db615bb550b6e..edf372eb0f499 100644
+--- a/client/my-sites/media-library/list-plan-upgrade-nudge.jsx
++++ b/client/my-sites/media-library/list-plan-upgrade-nudge.jsx
+@@ -18,21 +18,21 @@ import ListPlanPromo from './list-plan-promo';
+ 
+ function getTitle( filter, translate ) {
+ 	if ( filter === 'audio' ) {
+-		return translate( 'Upgrade to the Premium Plan and Enable Audio Uploads' );
++		return translate( 'Upgrade to the Premium Plan to Enable Audio Uploads' );
+ 	}
+ 
+-	return translate( 'Upgrade to a Premium Plan and Enable VideoPress' );
++	return translate( 'Upgrade to the Premium Plan to Enable VideoPress' );
+ }
+ 
+ function getSubtitle( filter, translate ) {
+ 	if ( filter === 'audio' ) {
+ 		return translate(
+-			"By upgrading to the Premium plan you'll enable audio upload support on your site."
++			"By upgrading to the Premium plan, you'll enable audio upload support on your site."
+ 		);
+ 	}
+ 
+ 	return translate(
+-		"By upgrading to a Premium Plan you'll enable VideoPress support on your site."
++		"By upgrading to the Premium plan, you'll enable VideoPress support on your site."
+ 	);
+ }
+ 
+diff --git a/client/my-sites/media-library/style.scss b/client/my-sites/media-library/style.scss
+index f2de7f3df9753..b0394953dfb8e 100644
+--- a/client/my-sites/media-library/style.scss
++++ b/client/my-sites/media-library/style.scss
+@@ -252,6 +252,11 @@
+ 	position: absolute;
+ 	top: 50px;
+ 	bottom: 72px;
++	
++	.empty-content__line {
++		margin-right: 20px;
++		margin-left: 20px;
++	}
+ }
+ 
+ .empty-content .media-library__videopress-nudge-regular.card.upgrade-nudge {
+diff --git a/client/my-sites/plans/main.jsx b/client/my-sites/plans/main.jsx
+index ff1232de89be0..136d83c5a84a6 100644
+--- a/client/my-sites/plans/main.jsx
++++ b/client/my-sites/plans/main.jsx
+@@ -15,7 +15,9 @@ import page from 'page';
+  */
+ import DocumentHead from 'components/data/document-head';
+ import { getSelectedSite, getSelectedSiteId } from 'state/ui/selectors';
++import canCurrentUser from 'state/selectors/can-current-user';
+ import Main from 'components/main';
++import EmptyContent from 'components/empty-content';
+ import PageViewTracker from 'lib/analytics/page-view-tracker';
+ import PlansFeaturesMain from 'my-sites/plans-features-main';
+ import SidebarNavigation from 'my-sites/sidebar-navigation';
+@@ -84,7 +86,7 @@ class Plans extends React.Component {
+ 	};
+ 
+ 	render() {
+-		const { selectedSite, translate, displayJetpackPlans } = this.props;
++		const { selectedSite, translate, displayJetpackPlans, canAccessPlans } = this.props;
+ 
+ 		if ( ! selectedSite || this.isInvalidPlanInterval() ) {
+ 			return this.renderPlaceholder();
+@@ -98,22 +100,29 @@ class Plans extends React.Component {
+ 				<TrackComponentView eventName="calypso_plans_view" />
+ 				<Main wideLayout={ true }>
+ 					<SidebarNavigation />
+-
+-					<div id="plans" className="plans plans__has-sidebar">
+-						<PlansNavigation cart={ this.props.cart } path={ this.props.context.path } />
+-						<PlansFeaturesMain
+-							displayJetpackPlans={ displayJetpackPlans }
+-							hideFreePlan={ true }
+-							customerType={ this.props.customerType }
+-							intervalType={ this.props.intervalType }
+-							selectedFeature={ this.props.selectedFeature }
+-							selectedPlan={ this.props.selectedPlan }
+-							withDiscount={ this.props.withDiscount }
+-							discountEndDate={ this.props.discountEndDate }
+-							site={ selectedSite }
+-							plansWithScroll={ false }
++					{ ! canAccessPlans && (
++						<EmptyContent
++							illustration="/calypso/images/illustrations/illustration-404.svg"
++							title={ translate( 'You are not authorized to view this page' ) }
+ 						/>
+-					</div>
++					) }
++					{ canAccessPlans && (
++						<div id="plans" className="plans plans__has-sidebar">
++							<PlansNavigation cart={ this.props.cart } path={ this.props.context.path } />
++							<PlansFeaturesMain
++								displayJetpackPlans={ displayJetpackPlans }
++								hideFreePlan={ true }
++								customerType={ this.props.customerType }
++								intervalType={ this.props.intervalType }
++								selectedFeature={ this.props.selectedFeature }
++								selectedPlan={ this.props.selectedPlan }
++								withDiscount={ this.props.withDiscount }
++								discountEndDate={ this.props.discountEndDate }
++								site={ selectedSite }
++								plansWithScroll={ false }
++							/>
++						</div>
++					) }
+ 				</Main>
+ 			</div>
+ 		);
+@@ -129,5 +138,6 @@ export default connect( state => {
+ 	return {
+ 		selectedSite: getSelectedSite( state ),
+ 		displayJetpackPlans: ! isSiteAutomatedTransfer && jetpackSite,
++		canAccessPlans: canCurrentUser( state, getSelectedSiteId( state ), 'manage_options' ),
+ 	};
+ } )( localize( Plans ) );

@@ -1,0 +1,30 @@
+{
+  "FAIL_TO_PASS": [
+    "Transfer - should render search box when set showSearch（array）"
+  ],
+  "PASS_TO_PASS": [
+    "Transfer A11y - should not have any violations when showing search",
+    "Transfer - should support simple mode",
+    "Transfer A11y - should not have any violations when simple mode",
+    "Transfer - should render by dataSource",
+    "Transfer - should render by value",
+    "Transfer - should onSelect work well",
+    "Transfer A11y - should not have any violations when defaultValue set",
+    "Transfer - should support sorting items",
+    "Transfer - should customer panel work well",
+    "Transfer - should move items between the panels under control",
+    "Transfer - should move items between the panels",
+    "Transfer - should render by check checkbox of item and checkbox of footer",
+    "Transfer A11y - should not have any violations when default checked items",
+    "Transfer - should support rtl prop",
+    "Transfer - should highlight moved item",
+    "Transfer - should support id on panel elements",
+    "Transfer - should custom style and text",
+    "Transfer - should render by defaultLeftChecked and defaultRightChecked",
+    "Transfer - should support virtual list",
+    "Transfer - should disabled item not move",
+    "Transfer A11y - should not have any violations",
+    "Transfer - should render search box when set showSearch",
+    "Transfer - should render by defaultValue"
+  ]
+}

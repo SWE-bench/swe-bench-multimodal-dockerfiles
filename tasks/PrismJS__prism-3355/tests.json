@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'cshtml' – should pass test case 'issue3354'",
+    "Testing language 'cshtml' – should pass test case 'block_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'cshtml' – should pass test case 'code-block_feature'",
+    "Testing language 'cshtml' – should pass test case 'value_feature'",
+    "Testing language 'cshtml' – should pass test case 'comment_feature'"
+  ]
+}

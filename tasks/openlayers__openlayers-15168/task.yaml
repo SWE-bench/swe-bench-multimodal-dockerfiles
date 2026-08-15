@@ -1,0 +1,19 @@
+base_commit: 92b93740defba1d13dd173acf41257d884484f4e
+created_at: '2023-09-24T12:23:16Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15168:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/reproj-image-stretched-interpolate-false/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/231d37aed117146f5e534fa2bcca08ec6aa3855c/test/rendering/cases/reproj-image-stretched-interpolate-false/expected.png
+  - path: test/rendering/cases/reproj-image-svg/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/231d37aed117146f5e534fa2bcca08ec6aa3855c/test/rendering/cases/reproj-image-svg/expected.png
+instance_id: openlayers__openlayers-15168
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '8.1'

@@ -1,0 +1,12 @@
+diff --git a/client/state/data-layer/wpcom/comments/test/index.js b/client/state/data-layer/wpcom/comments/test/index.js
+index 139947cb8d4bf8..de235c9ec31c9b 100644
+--- a/client/state/data-layer/wpcom/comments/test/index.js
++++ b/client/state/data-layer/wpcom/comments/test/index.js
+@@ -177,6 +177,7 @@ describe( 'wpcom-api', () => {
+ 						notice: expect.objectContaining( {
+ 							status: 'is-error',
+ 							text: 'Could not retrieve comments for requested post',
++							duration: 5000,
+ 						} ),
+ 					} )
+ 				);

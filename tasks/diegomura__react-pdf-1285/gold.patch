@@ -1,0 +1,5287 @@
+diff --git a/packages/fontkit/README.md b/packages/fontkit/README.md
+index 7e7181507..a18e3711f 100644
+--- a/packages/fontkit/README.md
++++ b/packages/fontkit/README.md
+@@ -13,9 +13,10 @@ This project is a fork of [fontkit](https://github.com/foliojs/fontkit) by @devo
+ 
+ ## Fork changes
+ 
++> Updated to 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ - Ship parsed tries for browser compatibility
+ - Ship node and browser separate builds (ignoring node dependencies)
+-- Add stringIndices to GlyphRun
+ - `openSync` and `open` not available for browser (throws error)
+ - Remove WOFF2 from browser build (due to `broli` dependency)
+ 
+diff --git a/packages/fontkit/package.json b/packages/fontkit/package.json
+index ff35e6756..cd2ac3275 100644
+--- a/packages/fontkit/package.json
++++ b/packages/fontkit/package.json
+@@ -23,9 +23,9 @@
+   "dependencies": {
+     "@react-pdf/unicode-properties": "^2.4.1",
+     "brotli": "^1.2.0",
+-    "clone": "^1.0.1",
++    "clone": "^1.0.4",
+     "deep-equal": "^1.0.0",
+-    "dfa": "^1.0.0",
++    "dfa": "1.1.0",
+     "restructure": "^0.5.3",
+     "tiny-inflate": "^1.0.2",
+     "unicode-trie": "^0.3.0"
+diff --git a/packages/fontkit/src/TTFFont.js b/packages/fontkit/src/TTFFont.js
+index eb040de70..853db1581 100644
+--- a/packages/fontkit/src/TTFFont.js
++++ b/packages/fontkit/src/TTFFont.js
+@@ -1,18 +1,18 @@
+-import r from 'restructure'
+-import { cache } from './decorators'
+-import fontkit from './base'
+-import Directory from './tables/directory'
+-import tables from './tables'
+-import CmapProcessor from './CmapProcessor'
+-import LayoutEngine from './layout/LayoutEngine'
+-import TTFGlyph from './glyph/TTFGlyph'
+-import CFFGlyph from './glyph/CFFGlyph'
+-import SBIXGlyph from './glyph/SBIXGlyph'
+-import COLRGlyph from './glyph/COLRGlyph'
+-import GlyphVariationProcessor from './glyph/GlyphVariationProcessor'
+-import TTFSubset from './subset/TTFSubset'
+-import CFFSubset from './subset/CFFSubset'
+-import BBox from './glyph/BBox'
++import r from 'restructure';
++import { cache } from './decorators';
++import fontkit from './base';
++import Directory from './tables/directory';
++import tables from './tables';
++import CmapProcessor from './CmapProcessor';
++import LayoutEngine from './layout/LayoutEngine';
++import TTFGlyph from './glyph/TTFGlyph';
++import CFFGlyph from './glyph/CFFGlyph';
++import SBIXGlyph from './glyph/SBIXGlyph';
++import COLRGlyph from './glyph/COLRGlyph';
++import GlyphVariationProcessor from './glyph/GlyphVariationProcessor';
++import TTFSubset from './subset/TTFSubset';
++import CFFSubset from './subset/CFFSubset';
++import BBox from './glyph/BBox';
+ 
+ /**
+  * This is the base class for all SFNT-based font formats in fontkit.
+@@ -20,81 +20,72 @@ import BBox from './glyph/BBox'
+  */
+ export default class TTFFont {
+   static probe(buffer) {
+-    let format = buffer.toString('ascii', 0, 4)
+-    return format === 'true' || format === 'OTTO' || format === String.fromCharCode(0, 1, 0, 0)
++    let format = buffer.toString('ascii', 0, 4);
++    return format === 'true' || format === 'OTTO' || format === String.fromCharCode(0, 1, 0, 0);
+   }
+ 
+   constructor(stream, variationCoords = null) {
+-    this.stream = stream
+-    this.variationCoords = variationCoords
++    this.defaultLanguage = null;
++    this.stream = stream;
++    this.variationCoords = variationCoords;
+ 
+-    this._directoryPos = this.stream.pos
+-    this._tables = {}
+-    this._glyphs = {}
+-    this._decodeDirectory()
++    this._directoryPos = this.stream.pos;
++    this._tables = {};
++    this._glyphs = {};
++    this._decodeDirectory();
+ 
+     // define properties for each table to lazily parse
+     for (let tag in this.directory.tables) {
+-      let table = this.directory.tables[tag]
++      let table = this.directory.tables[tag];
+       if (tables[tag] && table.length > 0) {
+         Object.defineProperty(this, tag, {
+           get: this._getTable.bind(this, table)
+-        })
++        });
+       }
+     }
+   }
+ 
++  setDefaultLanguage(lang = null) {
++    this.defaultLanguage = lang;
++  }
++
+   _getTable(table) {
+     if (!(table.tag in this._tables)) {
+       try {
+-        this._tables[table.tag] = this._decodeTable(table)
++        this._tables[table.tag] = this._decodeTable(table);
+       } catch (e) {
+         if (fontkit.logErrors) {
+-          console.error(`Error decoding table ${table.tag}`)
+-          console.error(e.stack)
++          console.error(`Error decoding table ${table.tag}`);
++          console.error(e.stack);
+         }
+       }
+     }
+ 
+-    return this._tables[table.tag]
++    return this._tables[table.tag];
+   }
+ 
+   _getTableStream(tag) {
+-    let table = this.directory.tables[tag]
++    let table = this.directory.tables[tag];
+     if (table) {
+-      this.stream.pos = table.offset
+-      return this.stream
++      this.stream.pos = table.offset;
++      return this.stream;
+     }
+ 
+-    return null
++    return null;
+   }
+ 
+   _decodeDirectory() {
+-    return (this.directory = Directory.decode(this.stream, { _startOffset: 0 }))
++    return this.directory = Directory.decode(this.stream, {_startOffset: 0});
+   }
+ 
+   _decodeTable(table) {
+-    let pos = this.stream.pos
++    let pos = this.stream.pos;
+ 
+-    let stream = this._getTableStream(table.tag)
+-    let result = tables[table.tag].decode(stream, this, table.length)
++    let stream = this._getTableStream(table.tag);
++    let result = tables[table.tag].decode(stream, this, table.length);
+ 
+-    this.stream.pos = pos
+-    return result
+-  }
+-
+-  /**
+-   * The unique PostScript name for this font
+-   * @type {string}
+-   */
+-  get postscriptName() {
+-    let name = this.name.records.postscriptName
+-    if (name) {
+-      let lang = Object.keys(name)[0]
+-      return name[lang]
+-    }
+-
+-    return null
++    this.stream.pos = pos;
++    return result;
+   }
+ 
+   /**
+@@ -102,13 +93,29 @@ export default class TTFFont {
+    * `lang` is a BCP-47 language code.
+    * @return {string}
+    */
+-  getName(key, lang = 'en') {
+-    let record = this.name.records[key]
++  getName(key, lang = this.defaultLanguage || fontkit.defaultLanguage) {
++    let record = this.name && this.name.records[key];
+     if (record) {
+-      return record[lang]
++      // Attempt to retrieve the entry, depending on which translation is available:
++      return (
++          record[lang]
++          || record[this.defaultLanguage]
++          || record[fontkit.defaultLanguage]
++          || record['en']
++          || record[Object.keys(record)[0]] // Seriously, ANY language would be fine
++          || null
++      );
+     }
+ 
+-    return null
++    return null;
++  }
++
++  /**
++   * The unique PostScript name for this font, e.g. "Helvetica-Bold"
++   * @type {string}
++   */
++  get postscriptName() {
++    return this.getName('postscriptName');
+   }
+ 
+   /**
+@@ -116,7 +123,7 @@ export default class TTFFont {
+    * @type {string}
+    */
+   get fullName() {
+-    return this.getName('fullName')
++    return this.getName('fullName');
+   }
+ 
+   /**
+@@ -124,7 +131,7 @@ export default class TTFFont {
+    * @type {string}
+    */
+   get familyName() {
+-    return this.getName('fontFamily')
++    return this.getName('fontFamily');
+   }
+ 
+   /**
+@@ -132,7 +139,7 @@ export default class TTFFont {
+    * @type {string}
+    */
+   get subfamilyName() {
+-    return this.getName('fontSubfamily')
++    return this.getName('fontSubfamily');
+   }
+ 
+   /**
+@@ -140,7 +147,7 @@ export default class TTFFont {
+    * @type {string}
+    */
+   get copyright() {
+-    return this.getName('copyright')
++    return this.getName('copyright');
+   }
+ 
+   /**
+@@ -148,7 +155,7 @@ export default class TTFFont {
+    * @type {string}
+    */
+   get version() {
+-    return this.getName('version')
++    return this.getName('version');
+   }
+ 
+   /**
+@@ -156,7 +163,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get ascent() {
+-    return this.hhea.ascent
++    return this.hhea.ascent;
+   }
+ 
+   /**
+@@ -164,7 +171,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get descent() {
+-    return this.hhea.descent
++    return this.hhea.descent;
+   }
+ 
+   /**
+@@ -172,7 +179,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get lineGap() {
+-    return this.hhea.lineGap
++    return this.hhea.lineGap;
+   }
+ 
+   /**
+@@ -180,7 +187,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get underlinePosition() {
+-    return this.post.underlinePosition
++    return this.post.underlinePosition;
+   }
+ 
+   /**
+@@ -188,7 +195,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get underlineThickness() {
+-    return this.post.underlineThickness
++    return this.post.underlineThickness;
+   }
+ 
+   /**
+@@ -196,7 +203,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get italicAngle() {
+-    return this.post.italicAngle
++    return this.post.italicAngle;
+   }
+ 
+   /**
+@@ -205,8 +212,8 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get capHeight() {
+-    let os2 = this['OS/2']
+-    return os2 ? os2.capHeight : this.ascent
++    let os2 = this['OS/2'];
++    return os2 ? os2.capHeight : this.ascent;
+   }
+ 
+   /**
+@@ -215,8 +222,8 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get xHeight() {
+-    let os2 = this['OS/2']
+-    return os2 ? os2.xHeight : 0
++    let os2 = this['OS/2'];
++    return os2 ? os2.xHeight : 0;
+   }
+ 
+   /**
+@@ -224,7 +231,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get numGlyphs() {
+-    return this.maxp.numGlyphs
++    return this.maxp.numGlyphs;
+   }
+ 
+   /**
+@@ -232,7 +239,7 @@ export default class TTFFont {
+    * @type {number}
+    */
+   get unitsPerEm() {
+-    return this.head.unitsPerEm
++    return this.head.unitsPerEm;
+   }
+ 
+   /**
+@@ -241,12 +248,12 @@ export default class TTFFont {
+    */
+   @cache
+   get bbox() {
+-    return Object.freeze(new BBox(this.head.xMin, this.head.yMin, this.head.xMax, this.head.yMax))
++    return Object.freeze(new BBox(this.head.xMin, this.head.yMin, this.head.xMax, this.head.yMax));
+   }
+ 
+   @cache
+   get _cmapProcessor() {
+-    return new CmapProcessor(this.cmap)
++    return new CmapProcessor(this.cmap);
+   }
+ 
+   /**
+@@ -255,7 +262,7 @@ export default class TTFFont {
+    */
+   @cache
+   get characterSet() {
+-    return this._cmapProcessor.getCharacterSet()
++    return this._cmapProcessor.getCharacterSet();
+   }
+ 
+   /**
+@@ -265,7 +272,7 @@ export default class TTFFont {
+    * @return {boolean}
+    */
+   hasGlyphForCodePoint(codePoint) {
+-    return !!this._cmapProcessor.lookup(codePoint)
++    return !!this._cmapProcessor.lookup(codePoint);
+   }
+ 
+   /**
+@@ -276,7 +283,7 @@ export default class TTFFont {
+    * @return {Glyph}
+    */
+   glyphForCodePoint(codePoint) {
+-    return this.getGlyph(this._cmapProcessor.lookup(codePoint), [codePoint])
++    return this.getGlyph(this._cmapProcessor.lookup(codePoint), [codePoint]);
+   }
+ 
+   /**
+@@ -289,45 +296,51 @@ export default class TTFFont {
+    * @return {Glyph[]}
+    */
+   glyphsForString(string) {
+-    let glyphs = []
+-    let len = string.length
+-    let idx = 0
+-    let last = -1
+-    let state = -1
++    let glyphs = [];
++    let len = string.length;
++    let idx = 0;
++    let last = -1;
++    let state = -1;
++
+     while (idx <= len) {
+-      let code = 0
+-      let nextState = 0
++      let code = 0;
++      let nextState = 0;
++
+       if (idx < len) {
+         // Decode the next codepoint from UTF 16
+-        code = string.charCodeAt(idx++)
++        code = string.charCodeAt(idx++);
+         if (0xd800 <= code && code <= 0xdbff && idx < len) {
+-          let next = string.charCodeAt(idx)
++          let next = string.charCodeAt(idx);
+           if (0xdc00 <= next && next <= 0xdfff) {
+-            idx++
+-            code = ((code & 0x3ff) << 10) + (next & 0x3ff) + 0x10000
++            idx++;
++            code = ((code & 0x3ff) << 10) + (next & 0x3ff) + 0x10000;
+           }
+         }
++
+         // Compute the next state: 1 if the next codepoint is a variation selector, 0 otherwise.
+-        nextState = (0xfe00 <= code && code <= 0xfe0f) || (0xe0100 <= code && code <= 0xe01ef) ? 1 : 0
++        nextState = ((0xfe00 <= code && code <= 0xfe0f) || (0xe0100 <= code && code <= 0xe01ef)) ? 1 : 0;
+       } else {
+-        idx++
++        idx++;
+       }
++
+       if (state === 0 && nextState === 1) {
+         // Variation selector following normal codepoint.
+-        glyphs.push(this.getGlyph(this._cmapProcessor.lookup(last, code), [last, code]))
++        glyphs.push(this.getGlyph(this._cmapProcessor.lookup(last, code), [last, code]));
+       } else if (state === 0 && nextState === 0) {
+         // Normal codepoint following normal codepoint.
+-        glyphs.push(this.glyphForCodePoint(last))
++        glyphs.push(this.glyphForCodePoint(last));
+       }
+-      last = code
+-      state = nextState
++
++      last = code;
++      state = nextState;
+     }
+-    return glyphs
++
++    return glyphs;
+   }
+ 
+   @cache
+   get _layoutEngine() {
+-    return new LayoutEngine(this)
++    return new LayoutEngine(this);
+   }
+ 
+   /**
+@@ -341,7 +354,7 @@ export default class TTFFont {
+    * @return {GlyphRun}
+    */
+   layout(string, userFeatures, script, language, direction) {
+-    return this._layoutEngine.layout(string, userFeatures, script, language, direction)
++    return this._layoutEngine.layout(string, userFeatures, script, language, direction);
+   }
+ 
+   /**
+@@ -349,7 +362,7 @@ export default class TTFFont {
+    * @param {number} gid - glyph id
+    */
+   stringsForGlyph(gid) {
+-    return this._layoutEngine.stringsForGlyph(gid)
++    return this._layoutEngine.stringsForGlyph(gid);
+   }
+ 
+   /**
+@@ -361,23 +374,24 @@ export default class TTFFont {
+    * @type {string[]}
+    */
+   get availableFeatures() {
+-    return this._layoutEngine.getAvailableFeatures()
++    return this._layoutEngine.getAvailableFeatures();
+   }
+ 
+   getAvailableFeatures(script, language) {
+-    return this._layoutEngine.getAvailableFeatures(script, language)
++    return this._layoutEngine.getAvailableFeatures(script, language);
+   }
+ 
+   _getBaseGlyph(glyph, characters = []) {
+     if (!this._glyphs[glyph]) {
+       if (this.directory.tables.glyf) {
+-        this._glyphs[glyph] = new TTFGlyph(glyph, characters, this)
++        this._glyphs[glyph] = new TTFGlyph(glyph, characters, this);
++
+       } else if (this.directory.tables['CFF '] || this.directory.tables.CFF2) {
+-        this._glyphs[glyph] = new CFFGlyph(glyph, characters, this)
++        this._glyphs[glyph] = new CFFGlyph(glyph, characters, this);
+       }
+     }
+ 
+-    return this._glyphs[glyph] || null
++    return this._glyphs[glyph] || null;
+   }
+ 
+   /**
+@@ -392,15 +406,17 @@ export default class TTFFont {
+   getGlyph(glyph, characters = []) {
+     if (!this._glyphs[glyph]) {
+       if (this.directory.tables.sbix) {
+-        this._glyphs[glyph] = new SBIXGlyph(glyph, characters, this)
+-      } else if (this.directory.tables.COLR && this.directory.tables.CPAL) {
+-        this._glyphs[glyph] = new COLRGlyph(glyph, characters, this)
++        this._glyphs[glyph] = new SBIXGlyph(glyph, characters, this);
++
++      } else if ((this.directory.tables.COLR) && (this.directory.tables.CPAL)) {
++        this._glyphs[glyph] = new COLRGlyph(glyph, characters, this);
++
+       } else {
+-        this._getBaseGlyph(glyph, characters)
++        this._getBaseGlyph(glyph, characters);
+       }
+     }
+ 
+-    return this._glyphs[glyph] || null
++    return this._glyphs[glyph] || null;
+   }
+ 
+   /**
+@@ -409,10 +425,10 @@ export default class TTFFont {
+    */
+   createSubset() {
+     if (this.directory.tables['CFF ']) {
+-      return new CFFSubset(this)
++      return new CFFSubset(this);
+     }
+ 
+-    return new TTFSubset(this)
++    return new TTFSubset(this);
+   }
+ 
+   /**
+@@ -424,9 +440,9 @@ export default class TTFFont {
+    */
+   @cache
+   get variationAxes() {
+-    let res = {}
++    let res = {};
+     if (!this.fvar) {
+-      return res
++      return res;
+     }
+ 
+     for (let axis of this.fvar.axis) {
+@@ -435,10 +451,10 @@ export default class TTFFont {
+         min: axis.minValue,
+         default: axis.defaultValue,
+         max: axis.maxValue
+-      }
++      };
+     }
+ 
+-    return res
++    return res;
+   }
+ 
+   /**
+@@ -450,22 +466,22 @@ export default class TTFFont {
+    */
+   @cache
+   get namedVariations() {
+-    let res = {}
++    let res = {};
+     if (!this.fvar) {
+-      return res
++      return res;
+     }
+ 
+     for (let instance of this.fvar.instance) {
+-      let settings = {}
++      let settings = {};
+       for (let i = 0; i < this.fvar.axis.length; i++) {
+-        let axis = this.fvar.axis[i]
+-        settings[axis.axisTag.trim()] = instance.coord[i]
++        let axis = this.fvar.axis[i];
++        settings[axis.axisTag.trim()] = instance.coord[i];
+       }
+ 
+-      res[instance.name.en] = settings
++      res[instance.name.en] = settings;
+     }
+ 
+-    return res
++    return res;
+   }
+ 
+   /**
+@@ -477,64 +493,59 @@ export default class TTFFont {
+    * @return {TTFFont}
+    */
+   getVariation(settings) {
+-    if (
+-      !(
+-        this.directory.tables.fvar &&
+-        ((this.directory.tables.gvar && this.directory.tables.glyf) || this.directory.tables.CFF2)
+-      )
+-    ) {
+-      throw new Error('Variations require a font with the fvar, gvar and glyf, or CFF2 tables.')
++    if (!(this.directory.tables.fvar && ((this.directory.tables.gvar && this.directory.tables.glyf) || this.directory.tables.CFF2))) {
++      throw new Error('Variations require a font with the fvar, gvar and glyf, or CFF2 tables.');
+     }
+ 
+     if (typeof settings === 'string') {
+-      settings = this.namedVariations[settings]
++      settings = this.namedVariations[settings];
+     }
+ 
+     if (typeof settings !== 'object') {
+-      throw new Error('Variation settings must be either a variation name or settings object.')
++      throw new Error('Variation settings must be either a variation name or settings object.');
+     }
+ 
+     // normalize the coordinates
+     let coords = this.fvar.axis.map((axis, i) => {
+-      let axisTag = axis.axisTag.trim()
++      let axisTag = axis.axisTag.trim();
+       if (axisTag in settings) {
+-        return Math.max(axis.minValue, Math.min(axis.maxValue, settings[axisTag]))
++        return Math.max(axis.minValue, Math.min(axis.maxValue, settings[axisTag]));
+       } else {
+-        return axis.defaultValue
++        return axis.defaultValue;
+       }
+-    })
++    });
+ 
+-    let stream = new r.DecodeStream(this.stream.buffer)
+-    stream.pos = this._directoryPos
++    let stream = new r.DecodeStream(this.stream.buffer);
++    stream.pos = this._directoryPos;
+ 
+-    let font = new TTFFont(stream, coords)
+-    font._tables = this._tables
++    let font = new TTFFont(stream, coords);
++    font._tables = this._tables;
+ 
+-    return font
++    return font;
+   }
+ 
+   @cache
+   get _variationProcessor() {
+     if (!this.fvar) {
+-      return null
++      return null;
+     }
+ 
+-    let variationCoords = this.variationCoords
++    let variationCoords = this.variationCoords;
+ 
+     // Ignore if no variation coords and not CFF2
+     if (!variationCoords && !this.CFF2) {
+-      return null
++      return null;
+     }
+ 
+     if (!variationCoords) {
+-      variationCoords = this.fvar.axis.map(axis => axis.defaultValue)
++      variationCoords = this.fvar.axis.map(axis => axis.defaultValue);
+     }
+ 
+-    return new GlyphVariationProcessor(this, variationCoords)
++    return new GlyphVariationProcessor(this, variationCoords);
+   }
+ 
+   // Standardized format plugin API
+   getFont(name) {
+-    return this.getVariation(name)
++    return this.getVariation(name);
+   }
+ }
+diff --git a/packages/fontkit/src/WOFF2Font.js b/packages/fontkit/src/WOFF2Font.js
+index c22904420..42e8f349c 100644
+--- a/packages/fontkit/src/WOFF2Font.js
++++ b/packages/fontkit/src/WOFF2Font.js
+@@ -1,9 +1,9 @@
+-import r from 'restructure'
+-import brotli from 'brotli/decompress'
+-import TTFFont from './TTFFont'
+-import TTFGlyph, { Point } from './glyph/TTFGlyph'
+-import WOFF2Glyph from './glyph/WOFF2Glyph'
+-import WOFF2Directory from './tables/WOFF2Directory'
++import r from 'restructure';
++import brotli from 'brotli/decompress';
++import TTFFont from './TTFFont';
++import TTFGlyph, { Point } from './glyph/TTFGlyph';
++import WOFF2Glyph from './glyph/WOFF2Glyph';
++import WOFF2Directory from './tables/WOFF2Directory';
+ 
+ /**
+  * Subclass of TTFFont that represents a TTF/OTF font compressed by WOFF2
+@@ -11,40 +11,40 @@ import WOFF2Directory from './tables/WOFF2Directory'
+  */
+ export default class WOFF2Font extends TTFFont {
+   static probe(buffer) {
+-    return buffer.toString('ascii', 0, 4) === 'wOF2'
++    return buffer.toString('ascii', 0, 4) === 'wOF2';
+   }
+ 
+   _decodeDirectory() {
+-    this.directory = WOFF2Directory.decode(this.stream)
+-    this._dataPos = this.stream.pos
++    this.directory = WOFF2Directory.decode(this.stream);
++    this._dataPos = this.stream.pos;
+   }
+ 
+   _decompress() {
+     // decompress data and setup table offsets if we haven't already
+     if (!this._decompressed) {
+-      this.stream.pos = this._dataPos
+-      let buffer = this.stream.readBuffer(this.directory.totalCompressedSize)
++      this.stream.pos = this._dataPos;
++      let buffer = this.stream.readBuffer(this.directory.totalCompressedSize);
+ 
+-      let decompressedSize = 0
++      let decompressedSize = 0;
+       for (let tag in this.directory.tables) {
+-        let entry = this.directory.tables[tag]
+-        entry.offset = decompressedSize
+-        decompressedSize += entry.transformLength != null ? entry.transformLength : entry.length
++        let entry = this.directory.tables[tag];
++        entry.offset = decompressedSize;
++        decompressedSize += (entry.transformLength != null) ? entry.transformLength : entry.length;
+       }
+ 
+-      let decompressed = brotli(buffer, decompressedSize)
++      let decompressed = brotli(buffer, decompressedSize);
+       if (!decompressed) {
+-        throw new Error('Error decoding compressed data in WOFF2')
++        throw new Error('Error decoding compressed data in WOFF2');
+       }
+ 
+-      this.stream = new r.DecodeStream(Buffer.from(decompressed))
+-      this._decompressed = true
++      this.stream = new r.DecodeStream(Buffer.from(decompressed));
++      this._decompressed = true;
+     }
+   }
+ 
+   _decodeTable(table) {
+-    this._decompress()
+-    return super._decodeTable(table)
++    this._decompress();
++    return super._decodeTable(table);
+   }
+ 
+   // Override this method to get a glyph and return our
+@@ -52,68 +52,66 @@ export default class WOFF2Font extends TTFFont {
+   _getBaseGlyph(glyph, characters = []) {
+     if (!this._glyphs[glyph]) {
+       if (this.directory.tables.glyf && this.directory.tables.glyf.transformed) {
+-        if (!this._transformedGlyphs) {
+-          this._transformGlyfTable()
+-        }
+-        return (this._glyphs[glyph] = new WOFF2Glyph(glyph, characters, this))
++        if (!this._transformedGlyphs) { this._transformGlyfTable(); }
++        return this._glyphs[glyph] = new WOFF2Glyph(glyph, characters, this);
++
+       } else {
+-        return super._getBaseGlyph(glyph, characters)
++        return super._getBaseGlyph(glyph, characters);
+       }
+     }
+   }
+ 
+   _transformGlyfTable() {
+-    this._decompress()
+-    this.stream.pos = this.directory.tables.glyf.offset
+-    let table = GlyfTable.decode(this.stream)
+-    let glyphs = []
++    this._decompress();
++    this.stream.pos = this.directory.tables.glyf.offset;
++    let table = GlyfTable.decode(this.stream);
++    let glyphs = [];
+ 
+     for (let index = 0; index < table.numGlyphs; index++) {
+-      let glyph = {}
+-      let nContours = table.nContours.readInt16BE()
+-      glyph.numberOfContours = nContours
++      let glyph = {};
++      let nContours = table.nContours.readInt16BE();
++      glyph.numberOfContours = nContours;
+ 
+-      if (nContours > 0) {
+-        // simple glyph
+-        let nPoints = []
+-        let totalPoints = 0
++      if (nContours > 0) { // simple glyph
++        let nPoints = [];
++        let totalPoints = 0;
+ 
+         for (let i = 0; i < nContours; i++) {
+-          let r = read255UInt16(table.nPoints)
+-          totalPoints += r
+-          nPoints.push(totalPoints)
++          let r = read255UInt16(table.nPoints);
++          totalPoints += r;
++          nPoints.push(totalPoints);
+         }
+ 
+-        glyph.points = decodeTriplet(table.flags, table.glyphs, totalPoints)
++        glyph.points = decodeTriplet(table.flags, table.glyphs, totalPoints);
+         for (let i = 0; i < nContours; i++) {
+-          glyph.points[nPoints[i] - 1].endContour = true
++          glyph.points[nPoints[i] - 1].endContour = true;
+         }
+ 
+-        var instructionSize = read255UInt16(table.glyphs)
+-      } else if (nContours < 0) {
+-        // composite glyph
+-        let haveInstructions = TTFGlyph.prototype._decodeComposite.call({ _font: this }, glyph, table.composites)
++        var instructionSize = read255UInt16(table.glyphs);
++
++      } else if (nContours < 0) { // composite glyph
++        let haveInstructions = TTFGlyph.prototype._decodeComposite.call({ _font: this }, glyph, table.composites);
+         if (haveInstructions) {
+-          var instructionSize = read255UInt16(table.glyphs)
++          var instructionSize = read255UInt16(table.glyphs);
+         }
+       }
+ 
+-      glyphs.push(glyph)
++      glyphs.push(glyph);
+     }
+ 
+-    this._transformedGlyphs = glyphs
++    this._transformedGlyphs = glyphs;
+   }
+ }
+ 
+ // Special class that accepts a length and returns a sub-stream for that data
+ class Substream {
+   constructor(length) {
+-    this.length = length
+-    this._buf = new r.Buffer(length)
++    this.length = length;
++    this._buf = new r.Buffer(length);
+   }
+ 
+   decode(stream, parent) {
+-    return new r.DecodeStream(this._buf.decode(stream, parent))
++    return new r.DecodeStream(this._buf.decode(stream, parent));
+   }
+ }
+ 
+@@ -136,76 +134,80 @@ let GlyfTable = new r.Struct({
+   composites: new Substream('compositeStreamSize'),
+   bboxes: new Substream('bboxStreamSize'),
+   instructions: new Substream('instructionStreamSize')
+-})
++});
+ 
+-const WORD_CODE = 253
+-const ONE_MORE_BYTE_CODE2 = 254
+-const ONE_MORE_BYTE_CODE1 = 255
+-const LOWEST_U_CODE = 253
++const WORD_CODE = 253;
++const ONE_MORE_BYTE_CODE2 = 254;
++const ONE_MORE_BYTE_CODE1 = 255;
++const LOWEST_U_CODE = 253;
+ 
+ function read255UInt16(stream) {
+-  let code = stream.readUInt8()
++  let code = stream.readUInt8();
+ 
+   if (code === WORD_CODE) {
+-    return stream.readUInt16BE()
++    return stream.readUInt16BE();
+   }
+ 
+   if (code === ONE_MORE_BYTE_CODE1) {
+-    return stream.readUInt8() + LOWEST_U_CODE
++    return stream.readUInt8() + LOWEST_U_CODE;
+   }
+ 
+   if (code === ONE_MORE_BYTE_CODE2) {
+-    return stream.readUInt8() + LOWEST_U_CODE * 2
++    return stream.readUInt8() + LOWEST_U_CODE * 2;
+   }
+ 
+-  return code
++  return code;
+ }
+ 
+ function withSign(flag, baseval) {
+-  return flag & 1 ? baseval : -baseval
++  return flag & 1 ? baseval : -baseval;
+ }
+ 
+ function decodeTriplet(flags, glyphs, nPoints) {
+-  let y
+-  let x = (y = 0)
+-  let res = []
++  let y;
++  let x = y = 0;
++  let res = [];
+ 
+   for (let i = 0; i < nPoints; i++) {
+-    let dx = 0,
+-      dy = 0
+-    let flag = flags.readUInt8()
+-    let onCurve = !(flag >> 7)
+-    flag &= 0x7f
++    let dx = 0, dy = 0;
++    let flag = flags.readUInt8();
++    let onCurve = !(flag >> 7);
++    flag &= 0x7f;
+ 
+     if (flag < 10) {
+-      dx = 0
+-      dy = withSign(flag, ((flag & 14) << 7) + glyphs.readUInt8())
++      dx = 0;
++      dy = withSign(flag, ((flag & 14) << 7) + glyphs.readUInt8());
++
+     } else if (flag < 20) {
+-      dx = withSign(flag, (((flag - 10) & 14) << 7) + glyphs.readUInt8())
+-      dy = 0
++      dx = withSign(flag, (((flag - 10) & 14) << 7) + glyphs.readUInt8());
++      dy = 0;
++
+     } else if (flag < 84) {
+-      var b0 = flag - 20
+-      var b1 = glyphs.readUInt8()
+-      dx = withSign(flag, 1 + (b0 & 0x30) + (b1 >> 4))
+-      dy = withSign(flag >> 1, 1 + ((b0 & 0x0c) << 2) + (b1 & 0x0f))
++      var b0 = flag - 20;
++      var b1 = glyphs.readUInt8();
++      dx = withSign(flag, 1 + (b0 & 0x30) + (b1 >> 4));
++      dy = withSign(flag >> 1, 1 + ((b0 & 0x0c) << 2) + (b1 & 0x0f));
++
+     } else if (flag < 120) {
+-      var b0 = flag - 84
+-      dx = withSign(flag, 1 + ((b0 / 12) << 8) + glyphs.readUInt8())
+-      dy = withSign(flag >> 1, 1 + ((b0 % 12 >> 2) << 8) + glyphs.readUInt8())
++      var b0 = flag - 84;
++      dx = withSign(flag, 1 + ((b0 / 12) << 8) + glyphs.readUInt8());
++      dy = withSign(flag >> 1, 1 + (((b0 % 12) >> 2) << 8) + glyphs.readUInt8());
++
+     } else if (flag < 124) {
+-      var b1 = glyphs.readUInt8()
+-      let b2 = glyphs.readUInt8()
+-      dx = withSign(flag, (b1 << 4) + (b2 >> 4))
+-      dy = withSign(flag >> 1, ((b2 & 0x0f) << 8) + glyphs.readUInt8())
++      var b1 = glyphs.readUInt8();
++      let b2 = glyphs.readUInt8();
++      dx = withSign(flag, (b1 << 4) + (b2 >> 4));
++      dy = withSign(flag >> 1, ((b2 & 0x0f) << 8) + glyphs.readUInt8());
++
+     } else {
+-      dx = withSign(flag, glyphs.readUInt16BE())
+-      dy = withSign(flag >> 1, glyphs.readUInt16BE())
++      dx = withSign(flag, glyphs.readUInt16BE());
++      dy = withSign(flag >> 1, glyphs.readUInt16BE());
+     }
+ 
+-    x += dx
+-    y += dy
+-    res.push(new Point(onCurve, false, x, y))
++    x += dx;
++    y += dy;
++    res.push(new Point(onCurve, false, x, y));
+   }
+ 
+-  return res
++  return res;
+ }
+diff --git a/packages/fontkit/src/aat/AATMorxProcessor.js b/packages/fontkit/src/aat/AATMorxProcessor.js
+index 2727805a0..94744e1a9 100644
+--- a/packages/fontkit/src/aat/AATMorxProcessor.js
++++ b/packages/fontkit/src/aat/AATMorxProcessor.js
+@@ -1,286 +1,289 @@
+-import AATStateMachine from './AATStateMachine'
+-import AATLookupTable from './AATLookupTable'
+-import { cache } from '../decorators'
++import AATStateMachine from './AATStateMachine';
++import AATLookupTable from './AATLookupTable';
++import {cache} from '../decorators';
+ 
+ // indic replacement flags
+-const MARK_FIRST = 0x8000
+-const MARK_LAST = 0x2000
+-const VERB = 0x000f
++const MARK_FIRST = 0x8000;
++const MARK_LAST  = 0x2000;
++const VERB       = 0x000F;
+ 
+ // contextual substitution and glyph insertion flag
+-const SET_MARK = 0x8000
++const SET_MARK = 0x8000;
+ 
+ // ligature entry flags
+-const SET_COMPONENT = 0x8000
+-const PERFORM_ACTION = 0x2000
++const SET_COMPONENT  = 0x8000;
++const PERFORM_ACTION = 0x2000;
+ 
+ // ligature action masks
+-const LAST_MASK = 0x80000000
+-const STORE_MASK = 0x40000000
+-const OFFSET_MASK = 0x3fffffff
++const LAST_MASK   = 0x80000000;
++const STORE_MASK  = 0x40000000;
++const OFFSET_MASK = 0x3FFFFFFF;
+ 
+-const VERTICAL_ONLY = 0x800000
+-const REVERSE_DIRECTION = 0x400000
+-const HORIZONTAL_AND_VERTICAL = 0x200000
++const VERTICAL_ONLY           = 0x800000;
++const REVERSE_DIRECTION       = 0x400000;
++const HORIZONTAL_AND_VERTICAL = 0x200000;
+ 
+ // glyph insertion flags
+-const CURRENT_IS_KASHIDA_LIKE = 0x2000
+-const MARKED_IS_KASHIDA_LIKE = 0x1000
+-const CURRENT_INSERT_BEFORE = 0x0800
+-const MARKED_INSERT_BEFORE = 0x0400
+-const CURRENT_INSERT_COUNT = 0x03e0
+-const MARKED_INSERT_COUNT = 0x001f
++const CURRENT_IS_KASHIDA_LIKE = 0x2000;
++const MARKED_IS_KASHIDA_LIKE  = 0x1000;
++const CURRENT_INSERT_BEFORE   = 0x0800;
++const MARKED_INSERT_BEFORE    = 0x0400;
++const CURRENT_INSERT_COUNT    = 0x03E0;
++const MARKED_INSERT_COUNT     = 0x001F;
+ 
+ export default class AATMorxProcessor {
+   constructor(font) {
+-    this.processIndicRearragement = this.processIndicRearragement.bind(this)
+-    this.processContextualSubstitution = this.processContextualSubstitution.bind(this)
+-    this.processLigature = this.processLigature.bind(this)
+-    this.processNoncontextualSubstitutions = this.processNoncontextualSubstitutions.bind(this)
+-    this.processGlyphInsertion = this.processGlyphInsertion.bind(this)
+-    this.font = font
+-    this.morx = font.morx
+-    this.inputCache = null
++    this.processIndicRearragement = this.processIndicRearragement.bind(this);
++    this.processContextualSubstitution = this.processContextualSubstitution.bind(this);
++    this.processLigature = this.processLigature.bind(this);
++    this.processNoncontextualSubstitutions = this.processNoncontextualSubstitutions.bind(this);
++    this.processGlyphInsertion = this.processGlyphInsertion.bind(this);
++    this.font = font;
++    this.morx = font.morx;
++    this.inputCache = null;
+   }
+ 
+   // Processes an array of glyphs and applies the specified features
+-  // Features should be in the form of {featureType:{featureSetting:true}}
++  // Features should be in the form of {featureType:{featureSetting:boolean}}
+   process(glyphs, features = {}) {
+     for (let chain of this.morx.chains) {
+-      let flags = chain.defaultFlags
++      let flags = chain.defaultFlags;
+ 
+       // enable/disable the requested features
+       for (let feature of chain.features) {
+-        let f
+-        if ((f = features[feature.featureType]) && f[feature.featureSetting]) {
+-          flags &= feature.disableFlags
+-          flags |= feature.enableFlags
++        let f;
++        if (f = features[feature.featureType]) {
++          if (f[feature.featureSetting]) {
++            flags &= feature.disableFlags;
++            flags |= feature.enableFlags;
++          } else if (f[feature.featureSetting] === false) {
++            flags |= ~feature.disableFlags;
++            flags &= ~feature.enableFlags;
++          }
+         }
+       }
+ 
+       for (let subtable of chain.subtables) {
+         if (subtable.subFeatureFlags & flags) {
+-          this.processSubtable(subtable, glyphs)
++          this.processSubtable(subtable, glyphs);
+         }
+       }
+     }
+ 
+     // remove deleted glyphs
+-    let index = glyphs.length - 1
++    let index = glyphs.length - 1;
+     while (index >= 0) {
+       if (glyphs[index].id === 0xffff) {
+-        glyphs.splice(index, 1)
++        glyphs.splice(index, 1);
+       }
+ 
+-      index--
++      index--;
+     }
+ 
+-    return glyphs
++    return glyphs;
+   }
+ 
+   processSubtable(subtable, glyphs) {
+-    this.subtable = subtable
+-    this.glyphs = glyphs
++    this.subtable = subtable;
++    this.glyphs = glyphs;
+     if (this.subtable.type === 4) {
+-      this.processNoncontextualSubstitutions(this.subtable, this.glyphs)
+-      return
++      this.processNoncontextualSubstitutions(this.subtable, this.glyphs);
++      return;
+     }
+ 
+-    this.ligatureStack = []
+-    this.markedGlyph = null
+-    this.firstGlyph = null
+-    this.lastGlyph = null
+-    this.markedIndex = null
++    this.ligatureStack = [];
++    this.markedGlyph = null;
++    this.firstGlyph = null;
++    this.lastGlyph = null;
++    this.markedIndex = null;
+ 
+-    let stateMachine = this.getStateMachine(subtable)
+-    let process = this.getProcessor()
++    let stateMachine = this.getStateMachine(subtable);
++    let process = this.getProcessor();
+ 
+-    let reverse = !!(this.subtable.coverage & REVERSE_DIRECTION)
+-    return stateMachine.process(this.glyphs, reverse, process)
++    let reverse = !!(this.subtable.coverage & REVERSE_DIRECTION);
++    return stateMachine.process(this.glyphs, reverse, process);
+   }
+ 
+   @cache
+   getStateMachine(subtable) {
+-    return new AATStateMachine(subtable.table.stateTable)
++    return new AATStateMachine(subtable.table.stateTable);
+   }
+ 
+   getProcessor() {
+     switch (this.subtable.type) {
+       case 0:
+-        return this.processIndicRearragement
++        return this.processIndicRearragement;
+       case 1:
+-        return this.processContextualSubstitution
++        return this.processContextualSubstitution;
+       case 2:
+-        return this.processLigature
++        return this.processLigature;
+       case 4:
+-        return this.processNoncontextualSubstitutions
++        return this.processNoncontextualSubstitutions;
+       case 5:
+-        return this.processGlyphInsertion
++        return this.processGlyphInsertion;
+       default:
+-        throw new Error(`Invalid morx subtable type: ${this.subtable.type}`)
++        throw new Error(`Invalid morx subtable type: ${this.subtable.type}`);
+     }
+   }
+ 
+   processIndicRearragement(glyph, entry, index) {
+     if (entry.flags & MARK_FIRST) {
+-      this.firstGlyph = index
++      this.firstGlyph = index;
+     }
+ 
+     if (entry.flags & MARK_LAST) {
+-      this.lastGlyph = index
++      this.lastGlyph = index;
+     }
+ 
+-    reorderGlyphs(this.glyphs, entry.flags & VERB, this.firstGlyph, this.lastGlyph)
++    reorderGlyphs(this.glyphs, entry.flags & VERB, this.firstGlyph, this.lastGlyph);
+   }
+ 
+   processContextualSubstitution(glyph, entry, index) {
+-    let subsitutions = this.subtable.table.substitutionTable.items
++    let subsitutions = this.subtable.table.substitutionTable.items;
+     if (entry.markIndex !== 0xffff) {
+-      let lookup = subsitutions.getItem(entry.markIndex)
+-      let lookupTable = new AATLookupTable(lookup)
+-      glyph = this.glyphs[this.markedGlyph]
+-      var gid = lookupTable.lookup(glyph.id)
++      let lookup = subsitutions.getItem(entry.markIndex);
++      let lookupTable = new AATLookupTable(lookup);
++      glyph = this.glyphs[this.markedGlyph];
++      var gid = lookupTable.lookup(glyph.id);
+       if (gid) {
+-        this.glyphs[this.markedGlyph] = this.font.getGlyph(gid, glyph.codePoints)
++        this.glyphs[this.markedGlyph] = this.font.getGlyph(gid, glyph.codePoints);
+       }
+     }
+ 
+     if (entry.currentIndex !== 0xffff) {
+-      let lookup = subsitutions.getItem(entry.currentIndex)
+-      let lookupTable = new AATLookupTable(lookup)
+-      glyph = this.glyphs[index]
+-      var gid = lookupTable.lookup(glyph.id)
++      let lookup = subsitutions.getItem(entry.currentIndex);
++      let lookupTable = new AATLookupTable(lookup);
++      glyph = this.glyphs[index];
++      var gid = lookupTable.lookup(glyph.id);
+       if (gid) {
+-        this.glyphs[index] = this.font.getGlyph(gid, glyph.codePoints)
++        this.glyphs[index] = this.font.getGlyph(gid, glyph.codePoints);
+       }
+     }
+ 
+     if (entry.flags & SET_MARK) {
+-      this.markedGlyph = index
++      this.markedGlyph = index;
+     }
+   }
+ 
+   processLigature(glyph, entry, index) {
+     if (entry.flags & SET_COMPONENT) {
+-      this.ligatureStack.push(index)
++      this.ligatureStack.push(index);
+     }
+ 
+     if (entry.flags & PERFORM_ACTION) {
+-      let actions = this.subtable.table.ligatureActions
+-      let components = this.subtable.table.components
+-      let ligatureList = this.subtable.table.ligatureList
++      let actions = this.subtable.table.ligatureActions;
++      let components = this.subtable.table.components;
++      let ligatureList = this.subtable.table.ligatureList;
+ 
+-      let actionIndex = entry.action
+-      let last = false
+-      let ligatureIndex = 0
+-      let codePoints = []
+-      let ligatureGlyphs = []
++      let actionIndex = entry.action;
++      let last = false;
++      let ligatureIndex = 0;
++      let codePoints = [];
++      let ligatureGlyphs = [];
+ 
+       while (!last) {
+-        let componentGlyph = this.ligatureStack.pop()
+-        codePoints.unshift(...this.glyphs[componentGlyph].codePoints)
++        let componentGlyph = this.ligatureStack.pop();
++        codePoints.unshift(...this.glyphs[componentGlyph].codePoints);
+ 
+-        let action = actions.getItem(actionIndex++)
+-        last = !!(action & LAST_MASK)
+-        let store = !!(action & STORE_MASK)
+-        let offset = ((action & OFFSET_MASK) << 2) >> 2 // sign extend 30 to 32 bits
+-        offset += this.glyphs[componentGlyph].id
++        let action = actions.getItem(actionIndex++);
++        last = !!(action & LAST_MASK);
++        let store = !!(action & STORE_MASK);
++        let offset = (action & OFFSET_MASK) << 2 >> 2; // sign extend 30 to 32 bits
++        offset += this.glyphs[componentGlyph].id;
+ 
+-        let component = components.getItem(offset)
+-        ligatureIndex += component
++        let component = components.getItem(offset);
++        ligatureIndex += component;
+ 
+         if (last || store) {
+-          let ligatureEntry = ligatureList.getItem(ligatureIndex)
+-          this.glyphs[componentGlyph] = this.font.getGlyph(ligatureEntry, codePoints)
+-          ligatureGlyphs.push(componentGlyph)
+-          ligatureIndex = 0
+-          codePoints = []
++          let ligatureEntry = ligatureList.getItem(ligatureIndex);
++          this.glyphs[componentGlyph] = this.font.getGlyph(ligatureEntry, codePoints);
++          ligatureGlyphs.push(componentGlyph);
++          ligatureIndex = 0;
++          codePoints = [];
+         } else {
+-          this.glyphs[componentGlyph] = this.font.getGlyph(0xffff)
++          this.glyphs[componentGlyph] = this.font.getGlyph(0xffff);
+         }
+       }
+ 
+       // Put ligature glyph indexes back on the stack
+-      this.ligatureStack.push(...ligatureGlyphs)
++      this.ligatureStack.push(...ligatureGlyphs);
+     }
+   }
+ 
+   processNoncontextualSubstitutions(subtable, glyphs, index) {
+-    let lookupTable = new AATLookupTable(subtable.table.lookupTable)
++    let lookupTable = new AATLookupTable(subtable.table.lookupTable);
+ 
+     for (index = 0; index < glyphs.length; index++) {
+-      let glyph = glyphs[index]
++      let glyph = glyphs[index];
+       if (glyph.id !== 0xffff) {
+-        let gid = lookupTable.lookup(glyph.id)
+-        if (gid) {
+-          // 0 means do nothing
+-          glyphs[index] = this.font.getGlyph(gid, glyph.codePoints)
++        let gid = lookupTable.lookup(glyph.id);
++        if (gid) { // 0 means do nothing
++          glyphs[index] = this.font.getGlyph(gid, glyph.codePoints);
+         }
+       }
+     }
+   }
+ 
+   _insertGlyphs(glyphIndex, insertionActionIndex, count, isBefore) {
+-    let stringIndex = this.glyphs[glyphIndex].stringIndex
+-    let insertions = []
++    let insertions = [];
+     while (count--) {
+-      let gid = this.subtable.table.insertionActions.getItem(insertionActionIndex++)
+-      insertions.push(this.font.getGlyph(gid))
++      let gid = this.subtable.table.insertionActions.getItem(insertionActionIndex++);
++      insertions.push(this.font.getGlyph(gid));
+     }
+ 
+     if (!isBefore) {
+-      glyphIndex++
++      glyphIndex++;
+     }
+ 
+-    this.glyphs.splice(glyphIndex, 0, ...insertions)
++    this.glyphs.splice(glyphIndex, 0, ...insertions);
+   }
+ 
+   processGlyphInsertion(glyph, entry, index) {
+     if (entry.flags & SET_MARK) {
+-      this.markedIndex = index
++      this.markedIndex = index;
+     }
+ 
+     if (entry.markedInsertIndex !== 0xffff) {
+-      let count = (entry.flags & MARKED_INSERT_COUNT) >>> 5
+-      let isBefore = !!(entry.flags & MARKED_INSERT_BEFORE)
+-      this._insertGlyphs(this.markedIndex, entry.markedInsertIndex, count, isBefore)
++      let count = (entry.flags & MARKED_INSERT_COUNT) >>> 5;
++      let isBefore = !!(entry.flags & MARKED_INSERT_BEFORE);
++      this._insertGlyphs(this.markedIndex, entry.markedInsertIndex, count, isBefore);
+     }
+ 
+     if (entry.currentInsertIndex !== 0xffff) {
+-      let count = (entry.flags & CURRENT_INSERT_COUNT) >>> 5
+-      let isBefore = !!(entry.flags & CURRENT_INSERT_BEFORE)
+-      this._insertGlyphs(index, entry.currentInsertIndex, count, isBefore)
++      let count = (entry.flags & CURRENT_INSERT_COUNT) >>> 5;
++      let isBefore = !!(entry.flags & CURRENT_INSERT_BEFORE);
++      this._insertGlyphs(index, entry.currentInsertIndex, count, isBefore);
+     }
+   }
+ 
+   getSupportedFeatures() {
+-    let features = []
++    let features = [];
+     for (let chain of this.morx.chains) {
+       for (let feature of chain.features) {
+-        features.push([feature.featureType, feature.featureSetting])
++        features.push([feature.featureType, feature.featureSetting]);
+       }
+     }
+ 
+-    return features
++    return features;
+   }
+ 
+   generateInputs(gid) {
+     if (!this.inputCache) {
+-      this.generateInputCache()
++      this.generateInputCache();
+     }
+ 
+-    return this.inputCache[gid] || []
++    return this.inputCache[gid] || [];
+   }
+ 
+   generateInputCache() {
+-    this.inputCache = {}
++    this.inputCache = {};
+ 
+     for (let chain of this.morx.chains) {
+-      let flags = chain.defaultFlags
++      let flags = chain.defaultFlags;
+ 
+       for (let subtable of chain.subtables) {
+         if (subtable.subFeatureFlags & flags) {
+-          this.generateInputsForSubtable(subtable)
++          this.generateInputsForSubtable(subtable);
+         }
+       }
+     }
+@@ -289,66 +292,66 @@ export default class AATMorxProcessor {
+   generateInputsForSubtable(subtable) {
+     // Currently, only supporting ligature subtables.
+     if (subtable.type !== 2) {
+-      return
++      return;
+     }
+ 
+-    let reverse = !!(subtable.coverage & REVERSE_DIRECTION)
++    let reverse = !!(subtable.coverage & REVERSE_DIRECTION);
+     if (reverse) {
+-      throw new Error('Reverse subtable, not supported.')
++      throw new Error('Reverse subtable, not supported.');
+     }
+ 
+-    this.subtable = subtable
+-    this.ligatureStack = []
++    this.subtable = subtable;
++    this.ligatureStack = [];
+ 
+-    let stateMachine = this.getStateMachine(subtable)
+-    let process = this.getProcessor()
++    let stateMachine = this.getStateMachine(subtable);
++    let process = this.getProcessor();
+ 
+-    let input = []
+-    let stack = []
+-    this.glyphs = []
++    let input = [];
++    let stack = [];
++    this.glyphs = [];
+ 
+     stateMachine.traverse({
+       enter: (glyph, entry) => {
+-        let glyphs = this.glyphs
++        let glyphs = this.glyphs;
+         stack.push({
+           glyphs: glyphs.slice(),
+           ligatureStack: this.ligatureStack.slice()
+-        })
++        });
+ 
+         // Add glyph to input and glyphs to process.
+-        let g = this.font.getGlyph(glyph)
+-        input.push(g)
+-        glyphs.push(input[input.length - 1])
++        let g = this.font.getGlyph(glyph);
++        input.push(g);
++        glyphs.push(input[input.length - 1]);
+ 
+         // Process ligature substitution
+-        process(glyphs[glyphs.length - 1], entry, glyphs.length - 1)
++        process(glyphs[glyphs.length - 1], entry, glyphs.length - 1);
+ 
+         // Add input to result if only one matching (non-deleted) glyph remains.
+-        let count = 0
+-        let found = 0
++        let count = 0;
++        let found = 0;
+         for (let i = 0; i < glyphs.length && count <= 1; i++) {
+           if (glyphs[i].id !== 0xffff) {
+-            count++
+-            found = glyphs[i].id
++            count++;
++            found = glyphs[i].id;
+           }
+         }
+ 
+         if (count === 1) {
+-          let result = input.map(g => g.id)
+-          let cache = this.inputCache[found]
++          let result = input.map(g => g.id);
++          let cache = this.inputCache[found];
+           if (cache) {
+-            cache.push(result)
++            cache.push(result);
+           } else {
+-            this.inputCache[found] = [result]
++            this.inputCache[found] = [result];
+           }
+         }
+       },
+ 
+       exit: () => {
+-        ;({ glyphs: this.glyphs, ligatureStack: this.ligatureStack } = stack.pop())
+-        input.pop()
++        ({glyphs: this.glyphs, ligatureStack: this.ligatureStack} = stack.pop());
++        input.pop();
+       }
+-    })
++    });
+   }
+ }
+ 
+@@ -356,72 +359,72 @@ export default class AATMorxProcessor {
+ // reverse the glyphs inside those ranges if specified
+ // ranges are in [offset, length] format
+ function swap(glyphs, rangeA, rangeB, reverseA = false, reverseB = false) {
+-  let end = glyphs.splice(rangeB[0] - (rangeB[1] - 1), rangeB[1])
++  let end = glyphs.splice(rangeB[0] - (rangeB[1] - 1), rangeB[1]);
+   if (reverseB) {
+-    end.reverse()
++    end.reverse();
+   }
+ 
+-  let start = glyphs.splice(rangeA[0], rangeA[1], ...end)
++  let start = glyphs.splice(rangeA[0], rangeA[1], ...end);
+   if (reverseA) {
+-    start.reverse()
++    start.reverse();
+   }
+ 
+-  glyphs.splice(rangeB[0] - (rangeA[1] - 1), 0, ...start)
+-  return glyphs
++  glyphs.splice(rangeB[0] - (rangeA[1] - 1), 0, ...start);
++  return glyphs;
+ }
+ 
+ function reorderGlyphs(glyphs, verb, firstGlyph, lastGlyph) {
+-  let length = lastGlyph - firstGlyph + 1
++  let length = lastGlyph - firstGlyph + 1;
+   switch (verb) {
+     case 0: // no change
+-      return glyphs
++      return glyphs;
+ 
+     case 1: // Ax => xA
+-      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 0])
++      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 0]);
+ 
+     case 2: // xD => Dx
+-      return swap(glyphs, [firstGlyph, 0], [lastGlyph, 1])
++      return swap(glyphs, [firstGlyph, 0], [lastGlyph, 1]);
+ 
+     case 3: // AxD => DxA
+-      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 1])
++      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 1]);
+ 
+     case 4: // ABx => xAB
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 0])
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 0]);
+ 
+     case 5: // ABx => xBA
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 0], true, false)
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 0], true, false);
+ 
+     case 6: // xCD => CDx
+-      return swap(glyphs, [firstGlyph, 0], [lastGlyph, 2])
++      return swap(glyphs, [firstGlyph, 0], [lastGlyph, 2]);
+ 
+     case 7: // xCD => DCx
+-      return swap(glyphs, [firstGlyph, 0], [lastGlyph, 2], false, true)
++      return swap(glyphs, [firstGlyph, 0], [lastGlyph, 2], false, true);
+ 
+     case 8: // AxCD => CDxA
+-      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 2])
++      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 2]);
+ 
+     case 9: // AxCD => DCxA
+-      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 2], false, true)
++      return swap(glyphs, [firstGlyph, 1], [lastGlyph, 2], false, true);
+ 
+     case 10: // ABxD => DxAB
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 1])
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 1]);
+ 
+     case 11: // ABxD => DxBA
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 1], true, false)
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 1], true, false);
+ 
+     case 12: // ABxCD => CDxAB
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2])
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2]);
+ 
+     case 13: // ABxCD => CDxBA
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2], true, false)
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2], true, false);
+ 
+     case 14: // ABxCD => DCxAB
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2], false, true)
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2], false, true);
+ 
+     case 15: // ABxCD => DCxBA
+-      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2], true, true)
++      return swap(glyphs, [firstGlyph, 2], [lastGlyph, 2], true, true);
+ 
+     default:
+-      throw new Error(`Unknown verb: ${verb}`)
++      throw new Error(`Unknown verb: ${verb}`);
+   }
+ }
+diff --git a/packages/fontkit/src/base.js b/packages/fontkit/src/base.js
+index 956c906bb..e0923862b 100644
+--- a/packages/fontkit/src/base.js
++++ b/packages/fontkit/src/base.js
+@@ -1,5 +1,5 @@
+ import r from 'restructure';
+-import fs from 'fs';
++const fs = require('fs');
+ 
+ var fontkit = {};
+ export default fontkit;
+@@ -59,3 +59,8 @@ fontkit.create = function(buffer, postscriptName) {
+ 
+   throw new Error('Unknown font format');
+ };
++
++fontkit.defaultLanguage = 'en';
++fontkit.setDefaultLanguage = function(lang = 'en') {
++  fontkit.defaultLanguage = lang;
++};
+diff --git a/packages/fontkit/src/cff/CFFFont.js b/packages/fontkit/src/cff/CFFFont.js
+index 60d9e5f12..6f0cc39fa 100644
+--- a/packages/fontkit/src/cff/CFFFont.js
++++ b/packages/fontkit/src/cff/CFFFont.js
+@@ -127,7 +127,7 @@ class CFFFont {
+ 
+           if (gid < ranges[mid].first) {
+             high = mid - 1;
+-          } else if (mid < high && gid > ranges[mid + 1].first) {
++          } else if (mid < high && gid >= ranges[mid + 1].first) {
+             low = mid + 1;
+           } else {
+             return ranges[mid].fd;
+diff --git a/packages/fontkit/src/cff/CFFTop.js b/packages/fontkit/src/cff/CFFTop.js
+index c9444fca8..12a33e86b 100644
+--- a/packages/fontkit/src/cff/CFFTop.js
++++ b/packages/fontkit/src/cff/CFFTop.js
+@@ -156,7 +156,9 @@ class CFFPrivateOp {
+ let FontDict = new CFFDict([
+   // key       name                   type(s)                                 default
+   [18,        'Private',              new CFFPrivateOp,                       null],
+-  [[12, 38],  'FontName',             'sid',                                  null]
++  [[12, 38],  'FontName',             'sid',                                  null],
++  [[12, 7],   'FontMatrix',           'array',                                [0.001, 0, 0, 0.001, 0, 0]],
++  [[12, 5],   'PaintType',            'number',                               0],
+ ]);
+ 
+ let CFFTopDict = new CFFDict([
+diff --git a/packages/fontkit/src/glyph/CFFGlyph.js b/packages/fontkit/src/glyph/CFFGlyph.js
+index a9eb8a62e..2b83bc495 100644
+--- a/packages/fontkit/src/glyph/CFFGlyph.js
++++ b/packages/fontkit/src/glyph/CFFGlyph.js
+@@ -24,10 +24,8 @@ export default class CFFGlyph extends Glyph {
+   }
+ 
+   _getPath() {
+-    let { stream } = this._font;
+-    let { pos } = stream;
+-
+     let cff = this._font.CFF2 || this._font['CFF '];
++    let { stream } = cff;
+     let str = cff.topDict.CharStrings[this.id];
+     let end = str.offset + str.length;
+     stream.pos = str.offset;
+@@ -49,7 +47,7 @@ export default class CFFGlyph extends Glyph {
+     let gsubrs = cff.globalSubrIndex || [];
+     let gsubrsBias = this.bias(gsubrs);
+ 
+-    let privateDict = cff.privateDictForGlyph(this.id);
++    let privateDict = cff.privateDictForGlyph(this.id) || {};
+     let subrs = privateDict.Subrs || [];
+     let subrsBias = this.bias(subrs);
+ 
+diff --git a/packages/fontkit/src/glyph/Glyph.js b/packages/fontkit/src/glyph/Glyph.js
+index 8fad75222..567fa6915 100644
+--- a/packages/fontkit/src/glyph/Glyph.js
++++ b/packages/fontkit/src/glyph/Glyph.js
+@@ -1,7 +1,7 @@
+-import unicode from '@react-pdf/unicode-properties'
+-import { cache } from '../decorators'
+-import Path from './Path'
+-import StandardNames from './StandardNames'
++import { cache } from '../decorators';
++import Path from './Path';
++import unicode from '@react-pdf/unicode-properties';
++import StandardNames from './StandardNames';
+ 
+ /**
+  * Glyph objects represent a glyph in the font. They have various properties for accessing metrics and
+@@ -17,7 +17,7 @@ export default class Glyph {
+      * The glyph id in the font
+      * @type {number}
+      */
+-    this.id = id
++    this.id = id;
+ 
+     /**
+      * An array of unicode code points that are represented by this glyph.
+@@ -25,71 +25,69 @@ export default class Glyph {
+      * that represent multiple visual characters.
+      * @type {number[]}
+      */
+-    this.codePoints = codePoints
+-    this._font = font
++    this.codePoints = codePoints;
++    this._font = font;
+ 
+     // TODO: get this info from GDEF if available
+-    this.isMark = this.codePoints.length > 0 && this.codePoints.every(unicode.isMark)
+-    this.isLigature = this.codePoints.length > 1
++    this.isMark = this.codePoints.length > 0 && this.codePoints.every(unicode.isMark);
++    this.isLigature = this.codePoints.length > 1;
+   }
+ 
+   _getPath() {
+-    return new Path()
++    return new Path();
+   }
+ 
+   _getCBox() {
+-    return this.path.cbox
++    return this.path.cbox;
+   }
+ 
+   _getBBox() {
+-    return this.path.bbox
++    return this.path.bbox;
+   }
+ 
+   _getTableMetrics(table) {
+     if (this.id < table.metrics.length) {
+-      return table.metrics.get(this.id)
++      return table.metrics.get(this.id);
+     }
+ 
+-    let metric = table.metrics.get(table.metrics.length - 1)
++    let metric = table.metrics.get(table.metrics.length - 1);
+     let res = {
+       advance: metric ? metric.advance : 0,
+       bearing: table.bearings.get(this.id - table.metrics.length) || 0
+-    }
++    };
+ 
+-    return res
++    return res;
+   }
+ 
+   _getMetrics(cbox) {
+-    if (this._metrics) {
+-      return this._metrics
+-    }
++    if (this._metrics) { return this._metrics; }
+ 
+-    let { advance: advanceWidth, bearing: leftBearing } = this._getTableMetrics(this._font.hmtx)
++    let {advance:advanceWidth, bearing:leftBearing} = this._getTableMetrics(this._font.hmtx);
+ 
+     // For vertical metrics, use vmtx if available, or fall back to global data from OS/2 or hhea
+     if (this._font.vmtx) {
+-      var { advance: advanceHeight, bearing: topBearing } = this._getTableMetrics(this._font.vmtx)
++      var {advance:advanceHeight, bearing:topBearing} = this._getTableMetrics(this._font.vmtx);
++
+     } else {
+-      let os2
+-      if (typeof cbox === 'undefined' || cbox === null) {
+-        ;({ cbox } = this)
+-      }
++      let os2;
++      if (typeof cbox === 'undefined' || cbox === null) { ({ cbox } = this); }
+ 
+       if ((os2 = this._font['OS/2']) && os2.version > 0) {
+-        var advanceHeight = Math.abs(os2.typoAscender - os2.typoDescender)
+-        var topBearing = os2.typoAscender - cbox.maxY
++        var advanceHeight = Math.abs(os2.typoAscender - os2.typoDescender);
++        var topBearing = os2.typoAscender - cbox.maxY;
++
+       } else {
+-        let { hhea } = this._font
+-        var advanceHeight = Math.abs(hhea.ascent - hhea.descent)
+-        var topBearing = hhea.ascent - cbox.maxY
++        let { hhea } = this._font;
++        var advanceHeight = Math.abs(hhea.ascent - hhea.descent);
++        var topBearing = hhea.ascent - cbox.maxY;
+       }
+     }
+ 
+     if (this._font._variationProcessor && this._font.HVAR) {
+-      advanceWidth += this._font._variationProcessor.getAdvanceAdjustment(this.id, this._font.HVAR)
++      advanceWidth += this._font._variationProcessor.getAdvanceAdjustment(this.id, this._font.HVAR);
+     }
+ 
+-    return (this._metrics = { advanceWidth, advanceHeight, leftBearing, topBearing })
++    return this._metrics = { advanceWidth, advanceHeight, leftBearing, topBearing };
+   }
+ 
+   /**
+@@ -105,7 +103,7 @@ export default class Glyph {
+    */
+   @cache
+   get cbox() {
+-    return this._getCBox()
++    return this._getCBox();
+   }
+ 
+   /**
+@@ -115,7 +113,7 @@ export default class Glyph {
+    */
+   @cache
+   get bbox() {
+-    return this._getBBox()
++    return this._getBBox();
+   }
+ 
+   /**
+@@ -126,7 +124,7 @@ export default class Glyph {
+   get path() {
+     // Cache the path so we only decode it once
+     // Decoding is actually performed by subclasses
+-    return this._getPath()
++    return this._getPath();
+   }
+ 
+   /**
+@@ -135,8 +133,8 @@ export default class Glyph {
+    * @return {Path}
+    */
+   getScaledPath(size) {
+-    let scale = (1 / this._font.unitsPerEm) * size
+-    return this.path.scale(scale)
++    let scale = 1 / this._font.unitsPerEm * size;
++    return this.path.scale(scale);
+   }
+ 
+   /**
+@@ -145,7 +143,7 @@ export default class Glyph {
+    */
+   @cache
+   get advanceWidth() {
+-    return this._getMetrics().advanceWidth
++    return this._getMetrics().advanceWidth;
+   }
+ 
+   /**
+@@ -154,34 +152,34 @@ export default class Glyph {
+    */
+   @cache
+   get advanceHeight() {
+-    return this._getMetrics().advanceHeight
++    return this._getMetrics().advanceHeight;
+   }
+ 
+   get ligatureCaretPositions() {}
+ 
+   _getName() {
+-    let { post } = this._font
++    let { post } = this._font;
+     if (!post) {
+-      return null
++      return null;
+     }
+ 
+     switch (post.version) {
+       case 1:
+-        return StandardNames[this.id]
++        return StandardNames[this.id];
+ 
+       case 2:
+-        let id = post.glyphNameIndex[this.id]
++        let id = post.glyphNameIndex[this.id];
+         if (id < StandardNames.length) {
+-          return StandardNames[id]
++          return StandardNames[id];
+         }
+ 
+-        return post.names[id - StandardNames.length]
++        return post.names[id - StandardNames.length];
+ 
+       case 2.5:
+-        return StandardNames[this.id + post.offsets[this.id]]
++        return StandardNames[this.id + post.offsets[this.id]];
+ 
+       case 4:
+-        return String.fromCharCode(post.map[this.id])
++        return String.fromCharCode(post.map[this.id]);
+     }
+   }
+ 
+@@ -191,7 +189,7 @@ export default class Glyph {
+    */
+   @cache
+   get name() {
+-    return this._getName()
++    return this._getName();
+   }
+ 
+   /**
+@@ -200,15 +198,15 @@ export default class Glyph {
+    * @param {number} size
+    */
+   render(ctx, size) {
+-    ctx.save()
++    ctx.save();
+ 
+-    let scale = (1 / this._font.head.unitsPerEm) * size
+-    ctx.scale(scale, scale)
++    let scale = 1 / this._font.head.unitsPerEm * size;
++    ctx.scale(scale, scale);
+ 
+-    let fn = this.path.toFunction()
+-    fn(ctx)
+-    ctx.fill()
++    let fn = this.path.toFunction();
++    fn(ctx);
++    ctx.fill();
+ 
+-    ctx.restore()
++    ctx.restore();
+   }
+ }
+diff --git a/packages/fontkit/src/glyph/Path.js b/packages/fontkit/src/glyph/Path.js
+index ae9b35c62..236bc92d6 100644
+--- a/packages/fontkit/src/glyph/Path.js
++++ b/packages/fontkit/src/glyph/Path.js
+@@ -27,8 +27,11 @@ export default class Path {
+    * @return {string}
+    */
+   toFunction() {
+-    let cmds = this.commands.map(c => `  ctx.${c.command}(${c.args.join(', ')});`);
+-    return new Function('ctx', cmds.join('\n'));
++    return ctx => {
++      this.commands.forEach(c => {
++        return ctx[c.command].apply(ctx, c.args)
++      })
++    };
+   }
+ 
+   /**
+diff --git a/packages/fontkit/src/layout/GlyphRun.js b/packages/fontkit/src/layout/GlyphRun.js
+index 3b8bcdc73..18e2f236d 100644
+--- a/packages/fontkit/src/layout/GlyphRun.js
++++ b/packages/fontkit/src/layout/GlyphRun.js
+@@ -19,12 +19,6 @@ export default class GlyphRun {
+      */
+     this.positions = null;
+ 
+-    /**
+-     * An array of indices to indices in the input string for each glyph
+-     * @type {number[]}
+-     */
+-    this.stringIndices = null;
+-
+     /**
+      * The script that was requested for shaping. This was either passed in or detected automatically.
+      * @type {string}
+diff --git a/packages/fontkit/src/layout/LayoutEngine.js b/packages/fontkit/src/layout/LayoutEngine.js
+index 8bb539ded..6dc3f77d5 100644
+--- a/packages/fontkit/src/layout/LayoutEngine.js
++++ b/packages/fontkit/src/layout/LayoutEngine.js
+@@ -1,160 +1,131 @@
+-import unicode from '@react-pdf/unicode-properties'
+-import KernProcessor from './KernProcessor'
+-import UnicodeLayoutEngine from './UnicodeLayoutEngine'
+-import GlyphRun from './GlyphRun'
+-import GlyphPosition from './GlyphPosition'
+-import * as Script from './Script'
+-import AATLayoutEngine from '../aat/AATLayoutEngine'
+-import OTLayoutEngine from '../opentype/OTLayoutEngine'
+-import GlyphInfo from '../opentype/GlyphInfo'
++import KernProcessor from './KernProcessor';
++import UnicodeLayoutEngine from './UnicodeLayoutEngine';
++import GlyphRun from './GlyphRun';
++import GlyphPosition from './GlyphPosition';
++import * as Script from './Script';
++import unicode from '@react-pdf/unicode-properties';
++import AATLayoutEngine from '../aat/AATLayoutEngine';
++import OTLayoutEngine from '../opentype/OTLayoutEngine';
+ 
+ export default class LayoutEngine {
+   constructor(font) {
+-    this.font = font
+-    this.unicodeLayoutEngine = null
+-    this.kernProcessor = null
++    this.font = font;
++    this.unicodeLayoutEngine = null;
++    this.kernProcessor = null;
+ 
+     // Choose an advanced layout engine. We try the AAT morx table first since more
+     // scripts are currently supported because the shaping logic is built into the font.
+     if (this.font.morx) {
+-      this.engine = new AATLayoutEngine(this.font)
++      this.engine = new AATLayoutEngine(this.font);
++
+     } else if (this.font.GSUB || this.font.GPOS) {
+-      this.engine = new OTLayoutEngine(this.font)
++      this.engine = new OTLayoutEngine(this.font);
+     }
+   }
+ 
+   layout(string, features, script, language, direction) {
+     // Make the features parameter optional
+     if (typeof features === 'string') {
+-      direction = language
+-      language = script
+-      script = features
+-      features = []
++      direction = language;
++      language = script;
++      script = features;
++      features = [];
+     }
+ 
+-    // Attempt to detect the script from the string if not provided.
+-    if (script == null) {
+-      script = Script.forString(string)
+-    }
++    // Map string to glyphs if needed
++    if (typeof string === 'string') {
++      // Attempt to detect the script from the string if not provided.
++      if (script == null) {
++        script = Script.forString(string);
++      }
+ 
+-    var glyphs = this.glyphsForString(string)
++      var glyphs = this.font.glyphsForString(string);
+ 
+-    let glyphRun = new GlyphRun(glyphs, features, script, language, direction)
++    } else {
++      // Attempt to detect the script from the glyph code points if not provided.
++      if (script == null) {
++        let codePoints = [];
++        for (let glyph of string) {
++          codePoints.push(...glyph.codePoints);
++        }
++
++        script = Script.forCodePoints(codePoints);
++      }
++
++      var glyphs = string;
++    }
++
++    let glyphRun = new GlyphRun(glyphs, features, script, language, direction);
+ 
+     // Return early if there are no glyphs
+     if (glyphs.length === 0) {
+-      glyphRun.positions = []
+-      return glyphRun
++      glyphRun.positions = [];
++      return glyphRun;
+     }
+ 
+     // Setup the advanced layout engine
+     if (this.engine && this.engine.setup) {
+-      this.engine.setup(glyphRun)
++      this.engine.setup(glyphRun);
+     }
+ 
+     // Substitute and position the glyphs
+-    this.substitute(glyphRun)
+-    this.position(glyphRun)
++    this.substitute(glyphRun);
++    this.position(glyphRun);
+ 
+-    this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions)
++    this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions);
+ 
+     // Let the layout engine clean up any state it might have
+     if (this.engine && this.engine.cleanup) {
+-      this.engine.cleanup()
+-    }
+-
+-    // Map glyph infos back to normal Glyph objects
+-    glyphRun.stringIndices = glyphRun.glyphs.map(glyphInfo => glyphInfo.stringIndex)
+-    glyphRun.glyphs = glyphRun.glyphs.map(glyphInfo => this.font.getGlyph(glyphInfo.id, glyphInfo.codePoints))
+-    return glyphRun
+-  }
+-
+-  glyphsForString(string) {
+-    let glyphs = []
+-    let len = string.length
+-    let idx = 0
+-    let last = -1
+-    let state = -1
+-
+-    while (idx <= len) {
+-      let code = 0
+-      let nextState = 0
+-      let stringIndex = idx - 1
+-      if (idx < len) {
+-        // Decode the next codepoint from UTF 16
+-        code = string.charCodeAt(idx++)
+-        if (0xd800 <= code && code <= 0xdbff && idx < len) {
+-          let next = string.charCodeAt(idx)
+-          if (0xdc00 <= next && next <= 0xdfff) {
+-            idx++
+-            code = ((code & 0x3ff) << 10) + (next & 0x3ff) + 0x10000
+-          }
+-        }
+-        // Compute the next state: 1 if the next codepoint is a variation selector, 0 otherwise.
+-        nextState = (0xfe00 <= code && code <= 0xfe0f) || (0xe0100 <= code && code <= 0xe01ef) ? 1 : 0
+-      } else {
+-        idx++
+-      }
+-      if (state === 0 && nextState === 1) {
+-        // Variation selector following normal codepoint.
+-        glyphs.push(
+-          new GlyphInfo(this.font, this.font._cmapProcessor.lookup(last, code), [last, code], null, stringIndex)
+-        )
+-      } else if (state === 0 && nextState === 0) {
+-        // Normal codepoint following normal codepoint.
+-        glyphs.push(new GlyphInfo(this.font, this.font._cmapProcessor.lookup(last), [last], null, stringIndex))
+-      }
+-      last = code
+-      state = nextState
++      this.engine.cleanup();
+     }
+ 
+-    return glyphs
++    return glyphRun;
+   }
+ 
+   substitute(glyphRun) {
+     // Call the advanced layout engine to make substitutions
+     if (this.engine && this.engine.substitute) {
+-      this.engine.substitute(glyphRun)
++      this.engine.substitute(glyphRun);
+     }
+   }
+ 
+   position(glyphRun) {
+     // Get initial glyph positions
+-    glyphRun.positions = glyphRun.glyphs.map(glyph => new GlyphPosition(glyph.advanceWidth))
+-    let positioned = null
++    glyphRun.positions = glyphRun.glyphs.map(glyph => new GlyphPosition(glyph.advanceWidth));
++    let positioned = null;
+ 
+     // Call the advanced layout engine. Returns the features applied.
+     if (this.engine && this.engine.position) {
+-      positioned = this.engine.position(glyphRun)
++      positioned = this.engine.position(glyphRun);
+     }
+ 
+     // if there is no GPOS table, use unicode properties to position marks.
+     if (!positioned && (!this.engine || this.engine.fallbackPosition)) {
+       if (!this.unicodeLayoutEngine) {
+-        this.unicodeLayoutEngine = new UnicodeLayoutEngine(this.font)
++        this.unicodeLayoutEngine = new UnicodeLayoutEngine(this.font);
+       }
+ 
+-      this.unicodeLayoutEngine.positionGlyphs(glyphRun.glyphs, glyphRun.positions)
++      this.unicodeLayoutEngine.positionGlyphs(glyphRun.glyphs, glyphRun.positions);
+     }
+ 
+     // if kerning is not supported by GPOS, do kerning with the TrueType/AAT kern table
+     if ((!positioned || !positioned.kern) && glyphRun.features.kern !== false && this.font.kern) {
+       if (!this.kernProcessor) {
+-        this.kernProcessor = new KernProcessor(this.font)
++        this.kernProcessor = new KernProcessor(this.font);
+       }
+ 
+-      this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions)
+-      glyphRun.features.kern = true
++      this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions);
++      glyphRun.features.kern = true;
+     }
+   }
+ 
+   hideDefaultIgnorables(glyphs, positions) {
+-    let space = this.font.glyphForCodePoint(0x20)
++    let space = this.font.glyphForCodePoint(0x20);
+     for (let i = 0; i < glyphs.length; i++) {
+       if (this.isDefaultIgnorable(glyphs[i].codePoints[0])) {
+-        glyphs[i] = space
+-        positions[i].xAdvance = 0
+-        positions[i].yAdvance = 0
++        glyphs[i] = space;
++        positions[i].xAdvance = 0;
++        positions[i].yAdvance = 0;
+       }
+     }
+   }
+@@ -163,70 +134,58 @@ export default class LayoutEngine {
+     // From DerivedCoreProperties.txt in the Unicode database,
+     // minus U+115F, U+1160, U+3164 and U+FFA0, which is what
+     // Harfbuzz and Uniscribe do.
+-    let plane = ch >> 16
++    let plane = ch >> 16;
+     if (plane === 0) {
+       // BMP
+       switch (ch >> 8) {
+-        case 0x00:
+-          return ch === 0x00ad
+-        case 0x03:
+-          return ch === 0x034f
+-        case 0x06:
+-          return ch === 0x061c
+-        case 0x17:
+-          return 0x17b4 <= ch && ch <= 0x17b5
+-        case 0x18:
+-          return 0x180b <= ch && ch <= 0x180e
+-        case 0x20:
+-          return (0x200b <= ch && ch <= 0x200f) || (0x202a <= ch && ch <= 0x202e) || (0x2060 <= ch && ch <= 0x206f)
+-        case 0xfe:
+-          return (0xfe00 <= ch && ch <= 0xfe0f) || ch === 0xfeff
+-        case 0xff:
+-          return 0xfff0 <= ch && ch <= 0xfff8
+-        default:
+-          return false
++      	case 0x00: return ch === 0x00AD;
++      	case 0x03: return ch === 0x034F;
++      	case 0x06: return ch === 0x061C;
++      	case 0x17: return 0x17B4 <= ch && ch <= 0x17B5;
++      	case 0x18: return 0x180B <= ch && ch <= 0x180E;
++      	case 0x20: return (0x200B <= ch && ch <= 0x200F) || (0x202A <= ch && ch <= 0x202E) || (0x2060 <= ch && ch <= 0x206F);
++      	case 0xFE: return (0xFE00 <= ch && ch <= 0xFE0F) || ch === 0xFEFF;
++      	case 0xFF: return 0xFFF0 <= ch && ch <= 0xFFF8;
++      	default:   return false;
+       }
+     } else {
+       // Other planes
+       switch (plane) {
+-        case 0x01:
+-          return (0x1bca0 <= ch && ch <= 0x1bca3) || (0x1d173 <= ch && ch <= 0x1d17a)
+-        case 0x0e:
+-          return 0xe0000 <= ch && ch <= 0xe0fff
+-        default:
+-          return false
++      	case 0x01: return (0x1BCA0 <= ch && ch <= 0x1BCA3) || (0x1D173 <= ch && ch <= 0x1D17A);
++      	case 0x0E: return 0xE0000 <= ch && ch <= 0xE0FFF;
++      	default:   return false;
+       }
+     }
+   }
+ 
+   getAvailableFeatures(script, language) {
+-    let features = []
++    let features = [];
+ 
+     if (this.engine) {
+-      features.push(...this.engine.getAvailableFeatures(script, language))
++      features.push(...this.engine.getAvailableFeatures(script, language));
+     }
+ 
+     if (this.font.kern && features.indexOf('kern') === -1) {
+-      features.push('kern')
++      features.push('kern');
+     }
+ 
+-    return features
++    return features;
+   }
+ 
+   stringsForGlyph(gid) {
+-    let result = new Set()
++    let result = new Set;
+ 
+-    let codePoints = this.font._cmapProcessor.codePointsForGlyph(gid)
++    let codePoints = this.font._cmapProcessor.codePointsForGlyph(gid);
+     for (let codePoint of codePoints) {
+-      result.add(String.fromCodePoint(codePoint))
++      result.add(String.fromCodePoint(codePoint));
+     }
+ 
+     if (this.engine && this.engine.stringsForGlyph) {
+       for (let string of this.engine.stringsForGlyph(gid)) {
+-        result.add(string)
++        result.add(string);
+       }
+     }
+ 
+-    return Array.from(result)
++    return Array.from(result);
+   }
+ }
+diff --git a/packages/fontkit/src/opentype/GSUBProcessor.js b/packages/fontkit/src/opentype/GSUBProcessor.js
+index 8532b8508..f5672d5db 100644
+--- a/packages/fontkit/src/opentype/GSUBProcessor.js
++++ b/packages/fontkit/src/opentype/GSUBProcessor.js
+@@ -1,101 +1,99 @@
+-import OTProcessor from './OTProcessor'
+-import GlyphInfo from './GlyphInfo'
++import OTProcessor from './OTProcessor';
++import GlyphInfo from './GlyphInfo';
+ 
+ export default class GSUBProcessor extends OTProcessor {
+   applyLookup(lookupType, table) {
+     switch (lookupType) {
+-      case 1: {
+-        // Single Substitution
+-        let index = this.coverageIndex(table.coverage)
++      case 1: { // Single Substitution
++        let index = this.coverageIndex(table.coverage);
+         if (index === -1) {
+-          return false
++          return false;
+         }
+ 
+-        let glyph = this.glyphIterator.cur
++        let glyph = this.glyphIterator.cur;
+         switch (table.version) {
+           case 1:
+-            glyph.id = (glyph.id + table.deltaGlyphID) & 0xffff
+-            break
++            glyph.id = (glyph.id + table.deltaGlyphID) & 0xffff;
++            break;
+ 
+           case 2:
+-            glyph.id = table.substitute.get(index)
+-            break
++            glyph.id = table.substitute.get(index);
++            break;
+         }
+ 
+-        return true
++        return true;
+       }
+ 
+-      case 2: {
+-        // Multiple Substitution
+-        let index = this.coverageIndex(table.coverage)
++      case 2: { // Multiple Substitution
++        let index = this.coverageIndex(table.coverage);
+         if (index !== -1) {
+-          let sequence = table.sequences.get(index)
+-          this.glyphIterator.cur.id = sequence[0]
+-          this.glyphIterator.cur.ligatureComponent = 0
++          let sequence = table.sequences.get(index);
+ 
+-          let features = this.glyphIterator.cur.features
+-          let curGlyph = this.glyphIterator.cur
++          if (sequence.length === 0) {
++            // If the sequence length is zero, delete the glyph.
++            // The OpenType spec disallows this, but seems like Harfbuzz and Uniscribe allow it.
++            this.glyphs.splice(this.glyphIterator.index, 1);
++            return true;
++          }
++
++          this.glyphIterator.cur.id = sequence[0];
++          this.glyphIterator.cur.ligatureComponent = 0;
++
++          let features = this.glyphIterator.cur.features;
++          let curGlyph = this.glyphIterator.cur;
+           let replacement = sequence.slice(1).map((gid, i) => {
+-            let glyph = new GlyphInfo(this.font, gid, undefined, features)
+-            glyph.shaperInfo = curGlyph.shaperInfo
+-            glyph.isLigated = curGlyph.isLigated
+-            glyph.ligatureComponent = i + 1
+-            glyph.substituted = true
+-            glyph.isMultiplied = true
+-            return glyph
+-          })
+-
+-          this.glyphs.splice(this.glyphIterator.index + 1, 0, ...replacement)
+-          return true
++            let glyph = new GlyphInfo(this.font, gid, undefined, features);
++            glyph.shaperInfo = curGlyph.shaperInfo;
++            glyph.isLigated = curGlyph.isLigated;
++            glyph.ligatureComponent = i + 1;
++            glyph.substituted = true;
++            glyph.isMultiplied = true;
++            return glyph;
++          });
++
++          this.glyphs.splice(this.glyphIterator.index + 1, 0, ...replacement);
++          return true;
+         }
+ 
+-        return false
++        return false;
+       }
+ 
+-      case 3: {
+-        // Alternate Substitution
+-        let index = this.coverageIndex(table.coverage)
++      case 3: { // Alternate Substitution
++        let index = this.coverageIndex(table.coverage);
+         if (index !== -1) {
+-          let USER_INDEX = 0 // TODO
+-          this.glyphIterator.cur.id = table.alternateSet.get(index)[USER_INDEX]
+-          return true
++          let USER_INDEX = 0; // TODO
++          this.glyphIterator.cur.id = table.alternateSet.get(index)[USER_INDEX];
++          return true;
+         }
+ 
+-        return false
++        return false;
+       }
+ 
+-      case 4: {
+-        // Ligature Substitution
+-        let index = this.coverageIndex(table.coverage)
++      case 4: { // Ligature Substitution
++        let index = this.coverageIndex(table.coverage);
+         if (index === -1) {
+-          return false
++          return false;
+         }
+ 
+         for (let ligature of table.ligatureSets.get(index)) {
+-          let matched = this.sequenceMatchIndices(1, ligature.components)
++          let matched = this.sequenceMatchIndices(1, ligature.components);
+           if (!matched) {
+-            continue
++            continue;
+           }
+ 
+-          let curGlyph = this.glyphIterator.cur
++          let curGlyph = this.glyphIterator.cur;
+ 
+           // Concatenate all of the characters the new ligature will represent
+-          let characters = curGlyph.codePoints.slice()
++          let characters = curGlyph.codePoints.slice();
+           for (let index of matched) {
+-            characters.push(...this.glyphs[index].codePoints)
++            characters.push(...this.glyphs[index].codePoints);
+           }
+ 
+           // Create the replacement ligature glyph
+-          let ligatureGlyph = new GlyphInfo(
+-            this.font,
+-            ligature.glyph,
+-            characters,
+-            curGlyph.features,
+-            curGlyph.stringIndex
+-          )
+-          ligatureGlyph.shaperInfo = curGlyph.shaperInfo
+-          ligatureGlyph.isLigated = true
+-          ligatureGlyph.substituted = true
++          let ligatureGlyph = new GlyphInfo(this.font, ligature.glyph, characters, curGlyph.features);
++          ligatureGlyph.shaperInfo = curGlyph.shaperInfo;
++          ligatureGlyph.isLigated = true;
++          ligatureGlyph.substituted = true;
+ 
+           // From Harfbuzz:
+           // - If it *is* a mark ligature, we don't allocate a new ligature id, and leave
+@@ -121,76 +119,74 @@ export default class GSUBProcessor extends OTProcessor {
+           //   the new ligature with a component value of 2.
+           //
+           //   This in fact happened to a font...  See https://bugzilla.gnome.org/show_bug.cgi?id=437633
+-          let isMarkLigature = curGlyph.isMark
++          let isMarkLigature = curGlyph.isMark;
+           for (let i = 0; i < matched.length && isMarkLigature; i++) {
+-            isMarkLigature = this.glyphs[matched[i]].isMark
++            isMarkLigature = this.glyphs[matched[i]].isMark;
+           }
+ 
+-          ligatureGlyph.ligatureID = isMarkLigature ? null : this.ligatureID++
++          ligatureGlyph.ligatureID = isMarkLigature ? null : this.ligatureID++;
+ 
+-          let lastLigID = curGlyph.ligatureID
+-          let lastNumComps = curGlyph.codePoints.length
+-          let curComps = lastNumComps
+-          let idx = this.glyphIterator.index + 1
++          let lastLigID = curGlyph.ligatureID;
++          let lastNumComps = curGlyph.codePoints.length;
++          let curComps = lastNumComps;
++          let idx = this.glyphIterator.index + 1;
+ 
+           // Set ligatureID and ligatureComponent on glyphs that were skipped in the matched sequence.
+           // This allows GPOS to attach marks to the correct ligature components.
+           for (let matchIndex of matched) {
+             // Don't assign new ligature components for mark ligatures (see above)
+             if (isMarkLigature) {
+-              idx = matchIndex
++              idx = matchIndex;
+             } else {
+               while (idx < matchIndex) {
+-                var ligatureComponent =
+-                  curComps - lastNumComps + Math.min(this.glyphs[idx].ligatureComponent || 1, lastNumComps)
+-                this.glyphs[idx].ligatureID = ligatureGlyph.ligatureID
+-                this.glyphs[idx].ligatureComponent = ligatureComponent
+-                idx++
++                var ligatureComponent = curComps - lastNumComps + Math.min(this.glyphs[idx].ligatureComponent || 1, lastNumComps);
++                this.glyphs[idx].ligatureID = ligatureGlyph.ligatureID;
++                this.glyphs[idx].ligatureComponent = ligatureComponent;
++                idx++;
+               }
+             }
+ 
+-            lastLigID = this.glyphs[idx].ligatureID
+-            lastNumComps = this.glyphs[idx].codePoints.length
+-            curComps += lastNumComps
+-            idx++ // skip base glyph
++            lastLigID = this.glyphs[idx].ligatureID;
++            lastNumComps = this.glyphs[idx].codePoints.length;
++            curComps += lastNumComps;
++            idx++; // skip base glyph
+           }
+ 
+           // Adjust ligature components for any marks following
+           if (lastLigID && !isMarkLigature) {
+             for (let i = idx; i < this.glyphs.length; i++) {
+               if (this.glyphs[i].ligatureID === lastLigID) {
+-                var ligatureComponent =
+-                  curComps - lastNumComps + Math.min(this.glyphs[i].ligatureComponent || 1, lastNumComps)
+-                this.glyphs[i].ligatureComponent = ligatureComponent
++                var ligatureComponent = curComps - lastNumComps + Math.min(this.glyphs[i].ligatureComponent || 1, lastNumComps);
++                this.glyphs[i].ligatureComponent = ligatureComponent;
+               } else {
+-                break
++                break;
+               }
+             }
+           }
+ 
+           // Delete the matched glyphs, and replace the current glyph with the ligature glyph
+           for (let i = matched.length - 1; i >= 0; i--) {
+-            this.glyphs.splice(matched[i], 1)
++            this.glyphs.splice(matched[i], 1);
+           }
+ 
+-          this.glyphs[this.glyphIterator.index] = ligatureGlyph
+-          return true
++          this.glyphs[this.glyphIterator.index] = ligatureGlyph;
++          return true;
+         }
+ 
+-        return false
++        return false;
+       }
+ 
+       case 5: // Contextual Substitution
+-        return this.applyContext(table)
++        return this.applyContext(table);
+ 
+       case 6: // Chaining Contextual Substitution
+-        return this.applyChainingContext(table)
++        return this.applyChainingContext(table);
+ 
+       case 7: // Extension Substitution
+-        return this.applyLookup(table.lookupType, table.extension)
++        return this.applyLookup(table.lookupType, table.extension);
+ 
+       default:
+-        throw new Error(`GSUB lookupType ${lookupType} is not supported`)
++        throw new Error(`GSUB lookupType ${lookupType} is not supported`);
+     }
+   }
+ }
+diff --git a/packages/fontkit/src/opentype/GlyphInfo.js b/packages/fontkit/src/opentype/GlyphInfo.js
+index bf417523c..29a910c9e 100644
+--- a/packages/fontkit/src/opentype/GlyphInfo.js
++++ b/packages/fontkit/src/opentype/GlyphInfo.js
+@@ -1,64 +1,57 @@
+-import unicode from '@react-pdf/unicode-properties'
+-import OTProcessor from './OTProcessor'
++import unicode from '@react-pdf/unicode-properties';
++import OTProcessor from './OTProcessor';
+ 
+ export default class GlyphInfo {
+-  constructor(font, id, codePoints = [], features, stringIndex) {
+-    this._font = font
+-    this.codePoints = codePoints
+-    this.stringIndex = stringIndex
+-    this.id = id
++  constructor(font, id, codePoints = [], features) {
++    this._font = font;
++    this.codePoints = codePoints;
++    this.id = id;
+ 
+-    this.features = {}
++    this.features = {};
+     if (Array.isArray(features)) {
+       for (let i = 0; i < features.length; i++) {
+-        let feature = features[i]
+-        this.features[feature] = true
++        let feature = features[i];
++        this.features[feature] = true;
+       }
+     } else if (typeof features === 'object') {
+-      Object.assign(this.features, features)
++      Object.assign(this.features, features);
+     }
+ 
+-    this.ligatureID = null
+-    this.ligatureComponent = null
+-    this.isLigated = false
+-    this.cursiveAttachment = null
+-    this.markAttachment = null
+-    this.shaperInfo = null
+-    this.substituted = false
+-    this.isMultiplied = false
++    this.ligatureID = null;
++    this.ligatureComponent = null;
++    this.isLigated = false;
++    this.cursiveAttachment = null;
++    this.markAttachment = null;
++    this.shaperInfo = null;
++    this.substituted = false;
++    this.isMultiplied = false;
+   }
+ 
+   get id() {
+-    return this._id
++    return this._id;
+   }
+ 
+   set id(id) {
+-    this._id = id
+-    this.substituted = true
++    this._id = id;
++    this.substituted = true;
+ 
+-    let GDEF = this._font.GDEF
++    let GDEF = this._font.GDEF;
+     if (GDEF && GDEF.glyphClassDef) {
+       // TODO: clean this up
+-      let classID = OTProcessor.prototype.getClassID(id, GDEF.glyphClassDef)
+-      this.isBase = classID === 1
+-      this.isLigature = classID === 2
+-      this.isMark = classID === 3
+-      this.markAttachmentType = GDEF.markAttachClassDef
+-        ? OTProcessor.prototype.getClassID(id, GDEF.markAttachClassDef)
+-        : 0
++      let classID = OTProcessor.prototype.getClassID(id, GDEF.glyphClassDef);
++      this.isBase = classID === 1;
++      this.isLigature = classID === 2;
++      this.isMark = classID === 3;
++      this.markAttachmentType = GDEF.markAttachClassDef ? OTProcessor.prototype.getClassID(id, GDEF.markAttachClassDef) : 0;
+     } else {
+-      this.isMark = this.codePoints.length > 0 && this.codePoints.every(unicode.isMark)
+-      this.isBase = !this.isMark
+-      this.isLigature = this.codePoints.length > 1
+-      this.markAttachmentType = 0
++      this.isMark = this.codePoints.length > 0 && this.codePoints.every(unicode.isMark);
++      this.isBase = !this.isMark;
++      this.isLigature = this.codePoints.length > 1;
++      this.markAttachmentType = 0;
+     }
+   }
+ 
+-  get advanceWidth() {
+-    return this._font.getGlyph(this.id, this.codePoints).advanceWidth
+-  }
+-
+   copy() {
+-    return new GlyphInfo(this._font, this.id, this.codePoints, this.features, this.stringIndex)
++    return new GlyphInfo(this._font, this.id, this.codePoints, this.features);
+   }
+ }
+diff --git a/packages/fontkit/src/opentype/OTLayoutEngine.js b/packages/fontkit/src/opentype/OTLayoutEngine.js
+index fe7db7556..15cf36272 100644
+--- a/packages/fontkit/src/opentype/OTLayoutEngine.js
++++ b/packages/fontkit/src/opentype/OTLayoutEngine.js
+@@ -1,105 +1,113 @@
+-import ShapingPlan from './ShapingPlan'
+-import * as Shapers from './shapers'
+-import GlyphInfo from './GlyphInfo'
+-import GSUBProcessor from './GSUBProcessor'
+-import GPOSProcessor from './GPOSProcessor'
++import ShapingPlan from './ShapingPlan';
++import * as Shapers from './shapers';
++import GlyphInfo from './GlyphInfo';
++import GSUBProcessor from './GSUBProcessor';
++import GPOSProcessor from './GPOSProcessor';
+ 
+ export default class OTLayoutEngine {
+   constructor(font) {
+-    this.font = font
+-    this.plan = null
+-    this.GSUBProcessor = null
+-    this.GPOSProcessor = null
+-    this.fallbackPosition = true
++    this.font = font;
++    this.glyphInfos = null;
++    this.plan = null;
++    this.GSUBProcessor = null;
++    this.GPOSProcessor = null;
++    this.fallbackPosition = true;
+ 
+     if (font.GSUB) {
+-      this.GSUBProcessor = new GSUBProcessor(font, font.GSUB)
++      this.GSUBProcessor = new GSUBProcessor(font, font.GSUB);
+     }
+ 
+     if (font.GPOS) {
+-      this.GPOSProcessor = new GPOSProcessor(font, font.GPOS)
++      this.GPOSProcessor = new GPOSProcessor(font, font.GPOS);
+     }
+   }
+ 
+   setup(glyphRun) {
++    // Map glyphs to GlyphInfo objects so data can be passed between
++    // GSUB and GPOS without mutating the real (shared) Glyph objects.
++    this.glyphInfos = glyphRun.glyphs.map(glyph => new GlyphInfo(this.font, glyph.id, [...glyph.codePoints]));
++
+     // Select a script based on what is available in GSUB/GPOS.
+-    let script = null
++    let script = null;
+     if (this.GPOSProcessor) {
+-      script = this.GPOSProcessor.selectScript(glyphRun.script, glyphRun.language, glyphRun.direction)
++      script = this.GPOSProcessor.selectScript(glyphRun.script, glyphRun.language, glyphRun.direction);
+     }
+ 
+     if (this.GSUBProcessor) {
+-      script = this.GSUBProcessor.selectScript(glyphRun.script, glyphRun.language, glyphRun.direction)
++      script = this.GSUBProcessor.selectScript(glyphRun.script, glyphRun.language, glyphRun.direction);
+     }
+ 
+     // Choose a shaper based on the script, and setup a shaping plan.
+     // This determines which features to apply to which glyphs.
+-    this.shaper = Shapers.choose(script)
+-    this.plan = new ShapingPlan(this.font, script, glyphRun.direction)
+-    this.shaper.plan(this.plan, glyphRun.glyphs, glyphRun.features)
++    this.shaper = Shapers.choose(script);
++    this.plan = new ShapingPlan(this.font, script, glyphRun.direction);
++    this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
+ 
+     // Assign chosen features to output glyph run
+     for (let key in this.plan.allFeatures) {
+-      glyphRun.features[key] = true
++      glyphRun.features[key] = true;
+     }
+   }
+ 
+   substitute(glyphRun) {
+     if (this.GSUBProcessor) {
+-      this.plan.process(this.GSUBProcessor, glyphRun.glyphs)
++      this.plan.process(this.GSUBProcessor, this.glyphInfos);
++
++      // Map glyph infos back to normal Glyph objects
++      glyphRun.glyphs = this.glyphInfos.map(glyphInfo => this.font.getGlyph(glyphInfo.id, glyphInfo.codePoints));
+     }
+   }
+ 
+   position(glyphRun) {
+     if (this.shaper.zeroMarkWidths === 'BEFORE_GPOS') {
+-      this.zeroMarkAdvances(glyphRun)
++      this.zeroMarkAdvances(glyphRun.positions);
+     }
+ 
+     if (this.GPOSProcessor) {
+-      this.plan.process(this.GPOSProcessor, glyphRun.glyphs, glyphRun.positions)
++      this.plan.process(this.GPOSProcessor, this.glyphInfos, glyphRun.positions);
+     }
+ 
+     if (this.shaper.zeroMarkWidths === 'AFTER_GPOS') {
+-      this.zeroMarkAdvances(glyphRun)
++      this.zeroMarkAdvances(glyphRun.positions);
+     }
+ 
+     // Reverse the glyphs and positions if the script is right-to-left
+     if (glyphRun.direction === 'rtl') {
+-      glyphRun.glyphs.reverse()
+-      glyphRun.positions.reverse()
++      glyphRun.glyphs.reverse();
++      glyphRun.positions.reverse();
+     }
+ 
+-    return this.GPOSProcessor && this.GPOSProcessor.features
++    return this.GPOSProcessor && this.GPOSProcessor.features;
+   }
+ 
+-  zeroMarkAdvances(glyphRun) {
+-    for (let i = 0; i < glyphRun.glyphs; i++) {
+-      if (glyphRun.glyphs[i].isMark) {
+-        positions[i].xAdvance = 0
+-        positions[i].yAdvance = 0
++  zeroMarkAdvances(positions) {
++    for (let i = 0; i < this.glyphInfos.length; i++) {
++      if (this.glyphInfos[i].isMark) {
++        positions[i].xAdvance = 0;
++        positions[i].yAdvance = 0;
+       }
+     }
+   }
+ 
+   cleanup() {
+-    this.glyphInfos = null
+-    this.plan = null
+-    this.shaper = null
++    this.glyphInfos = null;
++    this.plan = null;
++    this.shaper = null;
+   }
+ 
+   getAvailableFeatures(script, language) {
+-    let features = []
++    let features = [];
+ 
+     if (this.GSUBProcessor) {
+-      this.GSUBProcessor.selectScript(script, language)
+-      features.push(...Object.keys(this.GSUBProcessor.features))
++      this.GSUBProcessor.selectScript(script, language);
++      features.push(...Object.keys(this.GSUBProcessor.features));
+     }
+ 
+     if (this.GPOSProcessor) {
+-      this.GPOSProcessor.selectScript(script, language)
+-      features.push(...Object.keys(this.GPOSProcessor.features))
++      this.GPOSProcessor.selectScript(script, language);
++      features.push(...Object.keys(this.GPOSProcessor.features));
+     }
+ 
+-    return features
++    return features;
+   }
+ }
+diff --git a/packages/fontkit/src/opentype/shapers/ArabicShaper.js b/packages/fontkit/src/opentype/shapers/ArabicShaper.js
+index 7b5f4f966..769775392 100644
+--- a/packages/fontkit/src/opentype/shapers/ArabicShaper.js
++++ b/packages/fontkit/src/opentype/shapers/ArabicShaper.js
+@@ -1,10 +1,12 @@
+-import unicode from '@react-pdf/unicode-properties'
+-import DefaultShaper from './DefaultShaper'
+-import UnicodeTrie from 'unicode-trie'
+-import trieData from './dataTrie.json'
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
+ 
+-const trie = new UnicodeTrie(new Uint8Array(trieData.data))
+-const FEATURES = ['isol', 'fina', 'fin2', 'fin3', 'medi', 'med2', 'init']
++import unicode from '@react-pdf/unicode-properties';
++import DefaultShaper from './DefaultShaper';
++import UnicodeTrie from 'unicode-trie';
++import trieData from './dataTrie.json';
++
++const trie = new UnicodeTrie(new Uint8Array(trieData.data));
++const FEATURES = ['isol', 'fina', 'fin2', 'fin3', 'medi', 'med2', 'init'];
+ 
+ const ShapingClasses = {
+   Non_Joining: 0,
+@@ -14,42 +16,91 @@ const ShapingClasses = {
+   Join_Causing: 3,
+   ALAPH: 4,
+   'DALATH RISH': 5,
+-  Transparent: 6
+-}
+-
+-const ISOL = 'isol'
+-const FINA = 'fina'
+-const FIN2 = 'fin2'
+-const FIN3 = 'fin3'
+-const MEDI = 'medi'
+-const MED2 = 'med2'
+-const INIT = 'init'
+-const NONE = null
++  Transparent: 6,
++};
++
++const ISOL = 'isol';
++const FINA = 'fina';
++const FIN2 = 'fin2';
++const FIN3 = 'fin3';
++const MEDI = 'medi';
++const MED2 = 'med2';
++const INIT = 'init';
++const NONE = null;
+ 
+ // Each entry is [prevAction, curAction, nextState]
+ const STATE_TABLE = [
+   //   Non_Joining,        Left_Joining,       Right_Joining,     Dual_Joining,           ALAPH,            DALATH RISH
+   // State 0: prev was U,  not willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [NONE, ISOL, 1], [NONE, ISOL, 2], [NONE, ISOL, 1], [NONE, ISOL, 6]],
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [NONE, ISOL, 1],
++    [NONE, ISOL, 2],
++    [NONE, ISOL, 1],
++    [NONE, ISOL, 6],
++  ],
+ 
+   // State 1: prev was R or ISOL/ALAPH,  not willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [NONE, ISOL, 1], [NONE, ISOL, 2], [NONE, FIN2, 5], [NONE, ISOL, 6]],
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [NONE, ISOL, 1],
++    [NONE, ISOL, 2],
++    [NONE, FIN2, 5],
++    [NONE, ISOL, 6],
++  ],
+ 
+   // State 2: prev was D/L in ISOL form,  willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [INIT, FINA, 1], [INIT, FINA, 3], [INIT, FINA, 4], [INIT, FINA, 6]],
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [INIT, FINA, 1],
++    [INIT, FINA, 3],
++    [INIT, FINA, 4],
++    [INIT, FINA, 6],
++  ],
+ 
+   // State 3: prev was D in FINA form,  willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [MEDI, FINA, 1], [MEDI, FINA, 3], [MEDI, FINA, 4], [MEDI, FINA, 6]],
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [MEDI, FINA, 1],
++    [MEDI, FINA, 3],
++    [MEDI, FINA, 4],
++    [MEDI, FINA, 6],
++  ],
+ 
+   // State 4: prev was FINA ALAPH,  not willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [MED2, ISOL, 1], [MED2, ISOL, 2], [MED2, FIN2, 5], [MED2, ISOL, 6]],
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [MED2, ISOL, 1],
++    [MED2, ISOL, 2],
++    [MED2, FIN2, 5],
++    [MED2, ISOL, 6],
++  ],
+ 
+   // State 5: prev was FIN2/FIN3 ALAPH,  not willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [ISOL, ISOL, 1], [ISOL, ISOL, 2], [ISOL, FIN2, 5], [ISOL, ISOL, 6]],
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [ISOL, ISOL, 1],
++    [ISOL, ISOL, 2],
++    [ISOL, FIN2, 5],
++    [ISOL, ISOL, 6],
++  ],
+ 
+   // State 6: prev was DALATH/RISH,  not willing to join.
+-  [[NONE, NONE, 0], [NONE, ISOL, 2], [NONE, ISOL, 1], [NONE, ISOL, 2], [NONE, FIN3, 5], [NONE, ISOL, 6]]
+-]
++  [
++    [NONE, NONE, 0],
++    [NONE, ISOL, 2],
++    [NONE, ISOL, 1],
++    [NONE, ISOL, 2],
++    [NONE, FIN3, 5],
++    [NONE, ISOL, 6],
++  ],
++];
+ 
+ /**
+  * This is a shaper for Arabic, and other cursive scripts.
+@@ -61,63 +112,63 @@ const STATE_TABLE = [
+  */
+ export default class ArabicShaper extends DefaultShaper {
+   static planFeatures(plan) {
+-    plan.add(['ccmp', 'locl'])
++    plan.add(['ccmp', 'locl']);
+     for (let i = 0; i < FEATURES.length; i++) {
+-      let feature = FEATURES[i]
+-      plan.addStage(feature, false)
++      let feature = FEATURES[i];
++      plan.addStage(feature, false);
+     }
+ 
+-    plan.addStage('mset')
++    plan.addStage('mset');
+   }
+ 
+   static assignFeatures(plan, glyphs) {
+-    super.assignFeatures(plan, glyphs)
++    super.assignFeatures(plan, glyphs);
+ 
+-    let prev = -1
+-    let state = 0
+-    let actions = []
++    let prev = -1;
++    let state = 0;
++    let actions = [];
+ 
+     // Apply the state machine to map glyphs to features
+     for (let i = 0; i < glyphs.length; i++) {
+-      let curAction, prevAction
+-      var glyph = glyphs[i]
+-      let type = getShapingClass(glyph.codePoints[0])
++      let curAction, prevAction;
++      var glyph = glyphs[i];
++      let type = getShapingClass(glyph.codePoints[0]);
+       if (type === ShapingClasses.Transparent) {
+-        actions[i] = NONE
+-        continue
++        actions[i] = NONE;
++        continue;
+       }
+ 
+-      ;[prevAction, curAction, state] = STATE_TABLE[state][type]
++      [prevAction, curAction, state] = STATE_TABLE[state][type];
+ 
+       if (prevAction !== NONE && prev !== -1) {
+-        actions[prev] = prevAction
++        actions[prev] = prevAction;
+       }
+ 
+-      actions[i] = curAction
+-      prev = i
++      actions[i] = curAction;
++      prev = i;
+     }
+ 
+     // Apply the chosen features to their respective glyphs
+     for (let index = 0; index < glyphs.length; index++) {
+-      let feature
+-      var glyph = glyphs[index]
++      let feature;
++      var glyph = glyphs[index];
+       if ((feature = actions[index])) {
+-        glyph.features[feature] = true
++        glyph.features[feature] = true;
+       }
+     }
+   }
+ }
+ 
+ function getShapingClass(codePoint) {
+-  let res = trie.get(codePoint)
++  let res = trie.get(codePoint);
+   if (res) {
+-    return res - 1
++    return res - 1;
+   }
+ 
+-  let category = unicode.getCategory(codePoint)
++  let category = unicode.getCategory(codePoint);
+   if (category === 'Mn' || category === 'Me' || category === 'Cf') {
+-    return ShapingClasses.Transparent
++    return ShapingClasses.Transparent;
+   }
+ 
+-  return ShapingClasses.Non_Joining
++  return ShapingClasses.Non_Joining;
+ }
+diff --git a/packages/fontkit/src/opentype/shapers/DefaultShaper.js b/packages/fontkit/src/opentype/shapers/DefaultShaper.js
+index 2cf3ca788..1b2485dea 100644
+--- a/packages/fontkit/src/opentype/shapers/DefaultShaper.js
++++ b/packages/fontkit/src/opentype/shapers/DefaultShaper.js
+@@ -1,3 +1,5 @@
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ import unicode from '@react-pdf/unicode-properties';
+ 
+ const VARIATION_FEATURES = ['rvrn'];
+diff --git a/packages/fontkit/src/opentype/shapers/HangulShaper.js b/packages/fontkit/src/opentype/shapers/HangulShaper.js
+index 8824e2f2f..70a64dc93 100644
+--- a/packages/fontkit/src/opentype/shapers/HangulShaper.js
++++ b/packages/fontkit/src/opentype/shapers/HangulShaper.js
+@@ -1,5 +1,7 @@
+-import DefaultShaper from './DefaultShaper'
+-import GlyphInfo from '../GlyphInfo'
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
++import DefaultShaper from './DefaultShaper';
++import GlyphInfo from '../GlyphInfo';
+ 
+ /**
+  * This is a shaper for the Hangul script, used by the Korean language.
+@@ -24,148 +26,180 @@ import GlyphInfo from '../GlyphInfo'
+  *   - http://ktug.org/~nomos/harfbuzz-hangul/hangulshaper.pdf
+  */
+ export default class HangulShaper extends DefaultShaper {
+-  static zeroMarkWidths = 'NONE'
++  static zeroMarkWidths = 'NONE';
+   static planFeatures(plan) {
+-    plan.add(['ljmo', 'vjmo', 'tjmo'], false)
++    plan.add(['ljmo', 'vjmo', 'tjmo'], false);
+   }
+ 
+   static assignFeatures(plan, glyphs) {
+-    let state = 0
+-    let i = 0
++    let state = 0;
++    let i = 0;
+     while (i < glyphs.length) {
+-      let action
+-      let glyph = glyphs[i]
+-      let code = glyph.codePoints[0]
+-      let type = getType(code)
++      let action;
++      let glyph = glyphs[i];
++      let code = glyph.codePoints[0];
++      let type = getType(code);
+ 
+-      ;[action, state] = STATE_TABLE[state][type]
++      [action, state] = STATE_TABLE[state][type];
+ 
+       switch (action) {
+         case DECOMPOSE:
+           // Decompose the composed syllable if it is not supported by the font.
+           if (!plan.font.hasGlyphForCodePoint(code)) {
+-            i = decompose(glyphs, i, plan.font)
++            i = decompose(glyphs, i, plan.font);
+           }
+-          break
++          break;
+ 
+         case COMPOSE:
+           // Found a decomposed syllable. Try to compose if supported by the font.
+-          i = compose(
+-            glyphs,
+-            i,
+-            plan.font
+-          )
+-          break
++          i = compose(glyphs, i, plan.font);
++          break;
+ 
+         case TONE_MARK:
+           // Got a valid syllable, followed by a tone mark. Move the tone mark to the beginning of the syllable.
+-          reorderToneMark(glyphs, i, plan.font)
+-          break
++          reorderToneMark(glyphs, i, plan.font);
++          break;
+ 
+         case INVALID:
+           // Tone mark has no valid syllable to attach to, so insert a dotted circle
+-          i = insertDottedCircle(glyphs, i, plan.font)
+-          break
++          i = insertDottedCircle(glyphs, i, plan.font);
++          break;
+       }
+ 
+-      i++
++      i++;
+     }
+   }
+ }
+ 
+-const HANGUL_BASE = 0xac00
+-const HANGUL_END = 0xd7a4
+-const HANGUL_COUNT = HANGUL_END - HANGUL_BASE + 1
+-const L_BASE = 0x1100 // lead
+-const V_BASE = 0x1161 // vowel
+-const T_BASE = 0x11a7 // trail
+-const L_COUNT = 19
+-const V_COUNT = 21
+-const T_COUNT = 28
+-const L_END = L_BASE + L_COUNT - 1
+-const V_END = V_BASE + V_COUNT - 1
+-const T_END = T_BASE + T_COUNT - 1
+-const DOTTED_CIRCLE = 0x25cc
+-
+-const isL = code => (0x1100 <= code && code <= 0x115f) || (0xa960 <= code && code <= 0xa97c)
+-const isV = code => (0x1160 <= code && code <= 0x11a7) || (0xd7b0 <= code && code <= 0xd7c6)
+-const isT = code => (0x11a8 <= code && code <= 0x11ff) || (0xd7cb <= code && code <= 0xd7fb)
+-const isTone = code => 0x302e <= code && code <= 0x302f
+-const isLVT = code => HANGUL_BASE <= code && code <= HANGUL_END
+-const isLV = code => code - HANGUL_BASE < HANGUL_COUNT && (code - HANGUL_BASE) % T_COUNT === 0
+-const isCombiningL = code => L_BASE <= code && code <= L_END
+-const isCombiningV = code => V_BASE <= code && code <= V_END
+-const isCombiningT = code => T_BASE + 1 && 1 <= code && code <= T_END
++const HANGUL_BASE = 0xac00;
++const HANGUL_END = 0xd7a4;
++const HANGUL_COUNT = HANGUL_END - HANGUL_BASE + 1;
++const L_BASE = 0x1100; // lead
++const V_BASE = 0x1161; // vowel
++const T_BASE = 0x11a7; // trail
++const L_COUNT = 19;
++const V_COUNT = 21;
++const T_COUNT = 28;
++const L_END = L_BASE + L_COUNT - 1;
++const V_END = V_BASE + V_COUNT - 1;
++const T_END = T_BASE + T_COUNT - 1;
++const DOTTED_CIRCLE = 0x25cc;
++
++const isL = code =>
++  (0x1100 <= code && code <= 0x115f) || (0xa960 <= code && code <= 0xa97c);
++const isV = code =>
++  (0x1160 <= code && code <= 0x11a7) || (0xd7b0 <= code && code <= 0xd7c6);
++const isT = code =>
++  (0x11a8 <= code && code <= 0x11ff) || (0xd7cb <= code && code <= 0xd7fb);
++const isTone = code => 0x302e <= code && code <= 0x302f;
++const isLVT = code => HANGUL_BASE <= code && code <= HANGUL_END;
++const isLV = code =>
++  code - HANGUL_BASE < HANGUL_COUNT && (code - HANGUL_BASE) % T_COUNT === 0;
++const isCombiningL = code => L_BASE <= code && code <= L_END;
++const isCombiningV = code => V_BASE <= code && code <= V_END;
++const isCombiningT = code => T_BASE + 1 && 1 <= code && code <= T_END;
+ 
+ // Character categories
+-const X = 0 // Other character
+-const L = 1 // Leading consonant
+-const V = 2 // Medial vowel
+-const T = 3 // Trailing consonant
+-const LV = 4 // Composed <LV> syllable
+-const LVT = 5 // Composed <LVT> syllable
+-const M = 6 // Tone mark
++const X = 0; // Other character
++const L = 1; // Leading consonant
++const V = 2; // Medial vowel
++const T = 3; // Trailing consonant
++const LV = 4; // Composed <LV> syllable
++const LVT = 5; // Composed <LVT> syllable
++const M = 6; // Tone mark
+ 
+ // This function classifies a character using the above categories.
+ function getType(code) {
+   if (isL(code)) {
+-    return L
++    return L;
+   }
+   if (isV(code)) {
+-    return V
++    return V;
+   }
+   if (isT(code)) {
+-    return T
++    return T;
+   }
+   if (isLV(code)) {
+-    return LV
++    return LV;
+   }
+   if (isLVT(code)) {
+-    return LVT
++    return LVT;
+   }
+   if (isTone(code)) {
+-    return M
++    return M;
+   }
+-  return X
++  return X;
+ }
+ 
+ // State machine actions
+-const NO_ACTION = 0
+-const DECOMPOSE = 1
+-const COMPOSE = 2
+-const TONE_MARK = 4
+-const INVALID = 5
++const NO_ACTION = 0;
++const DECOMPOSE = 1;
++const COMPOSE = 2;
++const TONE_MARK = 4;
++const INVALID = 5;
+ 
+ // Build a state machine that accepts valid syllables, and applies actions along the way.
+ // The logic this is implementing is documented at the top of the file.
+ const STATE_TABLE = [
+   //       X                 L                 V                T                  LV                LVT               M
+   // State 0: start state
+-  [[NO_ACTION, 0], [NO_ACTION, 1], [NO_ACTION, 0], [NO_ACTION, 0], [DECOMPOSE, 2], [DECOMPOSE, 3], [INVALID, 0]],
++  [
++    [NO_ACTION, 0],
++    [NO_ACTION, 1],
++    [NO_ACTION, 0],
++    [NO_ACTION, 0],
++    [DECOMPOSE, 2],
++    [DECOMPOSE, 3],
++    [INVALID, 0],
++  ],
+ 
+   // State 1: <L>
+-  [[NO_ACTION, 0], [NO_ACTION, 1], [COMPOSE, 2], [NO_ACTION, 0], [DECOMPOSE, 2], [DECOMPOSE, 3], [INVALID, 0]],
++  [
++    [NO_ACTION, 0],
++    [NO_ACTION, 1],
++    [COMPOSE, 2],
++    [NO_ACTION, 0],
++    [DECOMPOSE, 2],
++    [DECOMPOSE, 3],
++    [INVALID, 0],
++  ],
+ 
+   // State 2: <L,V> or <LV>
+-  [[NO_ACTION, 0], [NO_ACTION, 1], [NO_ACTION, 0], [COMPOSE, 3], [DECOMPOSE, 2], [DECOMPOSE, 3], [TONE_MARK, 0]],
++  [
++    [NO_ACTION, 0],
++    [NO_ACTION, 1],
++    [NO_ACTION, 0],
++    [COMPOSE, 3],
++    [DECOMPOSE, 2],
++    [DECOMPOSE, 3],
++    [TONE_MARK, 0],
++  ],
+ 
+   // State 3: <L,V,T> or <LVT>
+-  [[NO_ACTION, 0], [NO_ACTION, 1], [NO_ACTION, 0], [NO_ACTION, 0], [DECOMPOSE, 2], [DECOMPOSE, 3], [TONE_MARK, 0]]
+-]
++  [
++    [NO_ACTION, 0],
++    [NO_ACTION, 1],
++    [NO_ACTION, 0],
++    [NO_ACTION, 0],
++    [DECOMPOSE, 2],
++    [DECOMPOSE, 3],
++    [TONE_MARK, 0],
++  ],
++];
+ 
+ function getGlyph(font, code, features) {
+-  return new GlyphInfo(font, font.glyphForCodePoint(code).id, [code], features)
++  return new GlyphInfo(font, font.glyphForCodePoint(code).id, [code], features);
+ }
+ 
+ function decompose(glyphs, i, font) {
+-  let glyph = glyphs[i]
+-  let code = glyph.codePoints[0]
++  let glyph = glyphs[i];
++  let code = glyph.codePoints[0];
+ 
+-  let s = code - HANGUL_BASE
+-  let t = T_BASE + (s % T_COUNT)
+-  s = (s / T_COUNT) | 0
+-  let l = (L_BASE + s / V_COUNT) | 0
+-  let v = V_BASE + (s % V_COUNT)
++  let s = code - HANGUL_BASE;
++  let t = T_BASE + (s % T_COUNT);
++  s = (s / T_COUNT) | 0;
++  let l = (L_BASE + s / V_COUNT) | 0;
++  let v = V_BASE + (s % V_COUNT);
+ 
+   // Don't decompose if all of the components are not available
+   if (
+@@ -173,139 +207,139 @@ function decompose(glyphs, i, font) {
+     !font.hasGlyphForCodePoint(v) ||
+     (t !== T_BASE && !font.hasGlyphForCodePoint(t))
+   ) {
+-    return i
++    return i;
+   }
+ 
+   // Replace the current glyph with decomposed L, V, and T glyphs,
+   // and apply the proper OpenType features to each component.
+-  let ljmo = getGlyph(font, l, glyph.features)
+-  ljmo.features.ljmo = true
++  let ljmo = getGlyph(font, l, glyph.features);
++  ljmo.features.ljmo = true;
+ 
+-  let vjmo = getGlyph(font, v, glyph.features)
+-  vjmo.features.vjmo = true
++  let vjmo = getGlyph(font, v, glyph.features);
++  vjmo.features.vjmo = true;
+ 
+-  let insert = [ljmo, vjmo]
++  let insert = [ljmo, vjmo];
+ 
+   if (t > T_BASE) {
+-    let tjmo = getGlyph(font, t, glyph.features)
+-    tjmo.features.tjmo = true
+-    insert.push(tjmo)
++    let tjmo = getGlyph(font, t, glyph.features);
++    tjmo.features.tjmo = true;
++    insert.push(tjmo);
+   }
+ 
+-  glyphs.splice(i, 1, ...insert)
+-  return i + insert.length - 1
++  glyphs.splice(i, 1, ...insert);
++  return i + insert.length - 1;
+ }
+ 
+ function compose(glyphs, i, font) {
+-  let glyph = glyphs[i]
+-  let code = glyphs[i].codePoints[0]
+-  let type = getType(code)
++  let glyph = glyphs[i];
++  let code = glyphs[i].codePoints[0];
++  let type = getType(code);
+ 
+-  let prev = glyphs[i - 1].codePoints[0]
+-  let prevType = getType(prev)
++  let prev = glyphs[i - 1].codePoints[0];
++  let prevType = getType(prev);
+ 
+   // Figure out what type of syllable we're dealing with
+-  let lv, ljmo, vjmo, tjmo
++  let lv, ljmo, vjmo, tjmo;
+   if (prevType === LV && type === T) {
+     // <LV,T>
+-    lv = prev
+-    tjmo = glyph
++    lv = prev;
++    tjmo = glyph;
+   } else {
+     if (type === V) {
+       // <L,V>
+-      ljmo = glyphs[i - 1]
+-      vjmo = glyph
++      ljmo = glyphs[i - 1];
++      vjmo = glyph;
+     } else {
+       // <L,V,T>
+-      ljmo = glyphs[i - 2]
+-      vjmo = glyphs[i - 1]
+-      tjmo = glyph
++      ljmo = glyphs[i - 2];
++      vjmo = glyphs[i - 1];
++      tjmo = glyph;
+     }
+ 
+-    let l = ljmo.codePoints[0]
+-    let v = vjmo.codePoints[0]
++    let l = ljmo.codePoints[0];
++    let v = vjmo.codePoints[0];
+ 
+     // Make sure L and V are combining characters
+     if (isCombiningL(l) && isCombiningV(v)) {
+-      lv = HANGUL_BASE + ((l - L_BASE) * V_COUNT + (v - V_BASE)) * T_COUNT
++      lv = HANGUL_BASE + ((l - L_BASE) * V_COUNT + (v - V_BASE)) * T_COUNT;
+     }
+   }
+ 
+-  let t = (tjmo && tjmo.codePoints[0]) || T_BASE
++  let t = (tjmo && tjmo.codePoints[0]) || T_BASE;
+   if (lv != null && (t === T_BASE || isCombiningT(t))) {
+-    let s = lv + (t - T_BASE)
++    let s = lv + (t - T_BASE);
+ 
+     // Replace with a composed glyph if supported by the font,
+     // otherwise apply the proper OpenType features to each component.
+     if (font.hasGlyphForCodePoint(s)) {
+-      let del = prevType === V ? 3 : 2
+-      glyphs.splice(i - del + 1, del, getGlyph(font, s, glyph.features))
+-      return i - del + 1
++      let del = prevType === V ? 3 : 2;
++      glyphs.splice(i - del + 1, del, getGlyph(font, s, glyph.features));
++      return i - del + 1;
+     }
+   }
+ 
+   // Didn't compose (either a non-combining component or unsupported by font).
+   if (ljmo) {
+-    ljmo.features.ljmo = true
++    ljmo.features.ljmo = true;
+   }
+   if (vjmo) {
+-    vjmo.features.vjmo = true
++    vjmo.features.vjmo = true;
+   }
+   if (tjmo) {
+-    tjmo.features.tjmo = true
++    tjmo.features.tjmo = true;
+   }
+ 
+   if (prevType === LV) {
+     // Sequence was originally <L,V>, which got combined earlier.
+     // Either the T was non-combining, or the LVT glyph wasn't supported.
+     // Decompose the glyph again and apply OT features.
+-    decompose(glyphs, i - 1, font)
+-    return i + 1
++    decompose(glyphs, i - 1, font);
++    return i + 1;
+   }
+ 
+-  return i
++  return i;
+ }
+ 
+ function getLength(code) {
+   switch (getType(code)) {
+     case LV:
+     case LVT:
+-      return 1
++      return 1;
+     case V:
+-      return 2
++      return 2;
+     case T:
+-      return 3
++      return 3;
+   }
+ }
+ 
+ function reorderToneMark(glyphs, i, font) {
+-  let glyph = glyphs[i]
+-  let code = glyphs[i].codePoints[0]
++  let glyph = glyphs[i];
++  let code = glyphs[i].codePoints[0];
+ 
+   // Move tone mark to the beginning of the previous syllable, unless it is zero width
+   if (font.glyphForCodePoint(code).advanceWidth === 0) {
+-    return
++    return;
+   }
+ 
+-  let prev = glyphs[i - 1].codePoints[0]
+-  let len = getLength(prev)
++  let prev = glyphs[i - 1].codePoints[0];
++  let len = getLength(prev);
+ 
+-  glyphs.splice(i, 1)
+-  return glyphs.splice(i - len, 0, glyph)
++  glyphs.splice(i, 1);
++  return glyphs.splice(i - len, 0, glyph);
+ }
+ 
+ function insertDottedCircle(glyphs, i, font) {
+-  let glyph = glyphs[i]
+-  let code = glyphs[i].codePoints[0]
++  let glyph = glyphs[i];
++  let code = glyphs[i].codePoints[0];
+ 
+   if (font.hasGlyphForCodePoint(DOTTED_CIRCLE)) {
+-    let dottedCircle = getGlyph(font, DOTTED_CIRCLE, glyph.features)
++    let dottedCircle = getGlyph(font, DOTTED_CIRCLE, glyph.features);
+ 
+     // If the tone mark is zero width, insert the dotted circle before, otherwise after
+-    let idx = font.glyphForCodePoint(code).advanceWidth === 0 ? i : i + 1
+-    glyphs.splice(idx, 0, dottedCircle)
+-    i++
++    let idx = font.glyphForCodePoint(code).advanceWidth === 0 ? i : i + 1;
++    glyphs.splice(idx, 0, dottedCircle);
++    i++;
+   }
+ 
+-  return i
++  return i;
+ }
+diff --git a/packages/fontkit/src/opentype/shapers/IndicShaper.js b/packages/fontkit/src/opentype/shapers/IndicShaper.js
+index 30d6a5096..dc0daa59e 100644
+--- a/packages/fontkit/src/opentype/shapers/IndicShaper.js
++++ b/packages/fontkit/src/opentype/shapers/IndicShaper.js
+@@ -1,12 +1,13 @@
+-import fs from 'fs'
+-import unicode from '@react-pdf/unicode-properties'
+-import UnicodeTrie from 'unicode-trie'
+-import DefaultShaper from './DefaultShaper'
+-import StateMachine from 'dfa'
+-import * as Script from '../../layout/Script'
+-import GlyphInfo from '../GlyphInfo'
+-import indicMachine from './indic.json'
+-import useData from './use.json'
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
++import unicode from '@react-pdf/unicode-properties';
++import UnicodeTrie from 'unicode-trie';
++import DefaultShaper from './DefaultShaper';
++import StateMachine from 'dfa';
++import * as Script from '../../layout/Script';
++import GlyphInfo from '../GlyphInfo';
++import indicMachine from './indic.json';
++import useData from './use.json';
+ import {
+   CATEGORIES,
+   POSITIONS,
+@@ -14,51 +15,65 @@ import {
+   JOINER_FLAGS,
+   HALANT_OR_COENG_FLAGS,
+   INDIC_CONFIGS,
+-  INDIC_DECOMPOSITIONS
+-} from './indic-data'
+-import trieData from './indicTrie.json'
++  INDIC_DECOMPOSITIONS,
++} from './indic-data';
++import trieData from './indicTrie.json';
+ 
+-const { decompositions } = useData
+-const trie = new UnicodeTrie(new Uint8Array(trieData.data))
+-const stateMachine = new StateMachine(indicMachine)
++const { decompositions } = useData;
++const trie = new UnicodeTrie(new Uint8Array(trieData.data));
++const stateMachine = new StateMachine(indicMachine);
+ 
+ /**
+  * The IndicShaper supports indic scripts e.g. Devanagari, Kannada, etc.
+  * Based on code from Harfbuzz: https://github.com/behdad/harfbuzz/blob/master/src/hb-ot-shape-complex-indic.cc
+  */
+ export default class IndicShaper extends DefaultShaper {
+-  static zeroMarkWidths = 'NONE'
++  static zeroMarkWidths = 'NONE';
+   static planFeatures(plan) {
+-    plan.addStage(setupSyllables)
++    plan.addStage(setupSyllables);
+ 
+-    plan.addStage(['locl', 'ccmp'])
++    plan.addStage(['locl', 'ccmp']);
+ 
+-    plan.addStage(initialReordering)
++    plan.addStage(initialReordering);
+ 
+-    plan.addStage('nukt')
+-    plan.addStage('akhn')
+-    plan.addStage('rphf', false)
+-    plan.addStage('rkrf')
+-    plan.addStage('pref', false)
+-    plan.addStage('blwf', false)
+-    plan.addStage('abvf', false)
+-    plan.addStage('half', false)
+-    plan.addStage('pstf', false)
+-    plan.addStage('vatu')
+-    plan.addStage('cjct')
+-    plan.addStage('cfar', false)
++    plan.addStage('nukt');
++    plan.addStage('akhn');
++    plan.addStage('rphf', false);
++    plan.addStage('rkrf');
++    plan.addStage('pref', false);
++    plan.addStage('blwf', false);
++    plan.addStage('abvf', false);
++    plan.addStage('half', false);
++    plan.addStage('pstf', false);
++    plan.addStage('vatu');
++    plan.addStage('cjct');
++    plan.addStage('cfar', false);
+ 
+-    plan.addStage(finalReordering)
++    plan.addStage(finalReordering);
+ 
+     plan.addStage({
+       local: ['init'],
+-      global: ['pres', 'abvs', 'blws', 'psts', 'haln', 'dist', 'abvm', 'blwm', 'calt', 'clig']
+-    })
++      global: [
++        'pres',
++        'abvs',
++        'blws',
++        'psts',
++        'haln',
++        'dist',
++        'abvm',
++        'blwm',
++        'calt',
++        'clig',
++      ],
++    });
+ 
+     // Setup the indic config for the selected script
+-    plan.unicodeScript = Script.fromOpenType(plan.script)
+-    plan.indicConfig = INDIC_CONFIGS[plan.unicodeScript] || INDIC_CONFIGS.Default
+-    plan.isOldSpec = plan.indicConfig.hasOldSpec && plan.script[plan.script.length - 1] !== '2'
++    plan.unicodeScript = Script.fromOpenType(plan.script);
++    plan.indicConfig =
++      INDIC_CONFIGS[plan.unicodeScript] || INDIC_CONFIGS.Default;
++    plan.isOldSpec =
++      plan.indicConfig.hasOldSpec &&
++      plan.script[plan.script.length - 1] !== '2';
+ 
+     // TODO: turn off kern (Khmer) and liga features.
+   }
+@@ -67,113 +82,143 @@ export default class IndicShaper extends DefaultShaper {
+     // Decompose split matras
+     // TODO: do this in a more general unicode normalizer
+     for (let i = glyphs.length - 1; i >= 0; i--) {
+-      let codepoint = glyphs[i].codePoints[0]
+-      let d = INDIC_DECOMPOSITIONS[codepoint] || decompositions[codepoint]
++      let codepoint = glyphs[i].codePoints[0];
++      let d = INDIC_DECOMPOSITIONS[codepoint] || decompositions[codepoint];
+       if (d) {
+         let decomposed = d.map(c => {
+-          let g = plan.font.glyphForCodePoint(c)
+-          return new GlyphInfo(plan.font, g.id, [c], glyphs[i].features)
+-        })
++          let g = plan.font.glyphForCodePoint(c);
++          return new GlyphInfo(plan.font, g.id, [c], glyphs[i].features);
++        });
+ 
+-        glyphs.splice(i, 1, ...decomposed)
++        glyphs.splice(i, 1, ...decomposed);
+       }
+     }
+   }
+ }
+ 
+ function indicCategory(glyph) {
+-  return trie.get(glyph.codePoints[0]) >> 8
++  return trie.get(glyph.codePoints[0]) >> 8;
+ }
+ 
+ function indicPosition(glyph) {
+-  return 1 << (trie.get(glyph.codePoints[0]) & 0xff)
++  return 1 << (trie.get(glyph.codePoints[0]) & 0xff);
+ }
+ 
+ class IndicInfo {
+   constructor(category, position, syllableType, syllable) {
+-    this.category = category
+-    this.position = position
+-    this.syllableType = syllableType
+-    this.syllable = syllable
++    this.category = category;
++    this.position = position;
++    this.syllableType = syllableType;
++    this.syllable = syllable;
+   }
+ }
+ 
+ function setupSyllables(font, glyphs) {
+-  let syllable = 0
+-  let last = 0
+-  for (let [start, end, tags] of stateMachine.match(glyphs.map(indicCategory))) {
++  let syllable = 0;
++  let last = 0;
++  for (let [start, end, tags] of stateMachine.match(
++    glyphs.map(indicCategory),
++  )) {
+     if (start > last) {
+-      ++syllable
++      ++syllable;
+       for (let i = last; i < start; i++) {
+-        glyphs[i].shaperInfo = new IndicInfo(CATEGORIES.X, POSITIONS.End, 'non_indic_cluster', syllable)
++        glyphs[i].shaperInfo = new IndicInfo(
++          CATEGORIES.X,
++          POSITIONS.End,
++          'non_indic_cluster',
++          syllable,
++        );
+       }
+     }
+ 
+-    ++syllable
++    ++syllable;
+ 
+     // Create shaper info
+     for (let i = start; i <= end; i++) {
+-      glyphs[i].shaperInfo = new IndicInfo(1 << indicCategory(glyphs[i]), indicPosition(glyphs[i]), tags[0], syllable)
++      glyphs[i].shaperInfo = new IndicInfo(
++        1 << indicCategory(glyphs[i]),
++        indicPosition(glyphs[i]),
++        tags[0],
++        syllable,
++      );
+     }
+ 
+-    last = end + 1
++    last = end + 1;
+   }
+ 
+   if (last < glyphs.length) {
+-    ++syllable
++    ++syllable;
+     for (let i = last; i < glyphs.length; i++) {
+-      glyphs[i].shaperInfo = new IndicInfo(CATEGORIES.X, POSITIONS.End, 'non_indic_cluster', syllable)
++      glyphs[i].shaperInfo = new IndicInfo(
++        CATEGORIES.X,
++        POSITIONS.End,
++        'non_indic_cluster',
++        syllable,
++      );
+     }
+   }
+ }
+ 
+ function isConsonant(glyph) {
+-  return glyph.shaperInfo.category & CONSONANT_FLAGS
++  return glyph.shaperInfo.category & CONSONANT_FLAGS;
+ }
+ 
+ function isJoiner(glyph) {
+-  return glyph.shaperInfo.category & JOINER_FLAGS
++  return glyph.shaperInfo.category & JOINER_FLAGS;
+ }
+ 
+ function isHalantOrCoeng(glyph) {
+-  return glyph.shaperInfo.category & HALANT_OR_COENG_FLAGS
++  return glyph.shaperInfo.category & HALANT_OR_COENG_FLAGS;
+ }
+ 
+ function wouldSubstitute(glyphs, feature) {
+   for (let glyph of glyphs) {
+-    glyph.features = { [feature]: true }
++    glyph.features = { [feature]: true };
+   }
+ 
+-  let GSUB = glyphs[0]._font._layoutEngine.engine.GSUBProcessor
+-  GSUB.applyFeatures([feature], glyphs)
++  let GSUB = glyphs[0]._font._layoutEngine.engine.GSUBProcessor;
++  GSUB.applyFeatures([feature], glyphs);
+ 
+-  return glyphs.length === 1
++  return glyphs.length === 1;
+ }
+ 
+ function consonantPosition(font, consonant, virama) {
+-  let glyphs = [virama, consonant, virama]
+-  if (wouldSubstitute(glyphs.slice(0, 2), 'blwf') || wouldSubstitute(glyphs.slice(1, 3), 'blwf')) {
+-    return POSITIONS.Below_C
+-  } else if (wouldSubstitute(glyphs.slice(0, 2), 'pstf') || wouldSubstitute(glyphs.slice(1, 3), 'pstf')) {
+-    return POSITIONS.Post_C
+-  } else if (wouldSubstitute(glyphs.slice(0, 2), 'pref') || wouldSubstitute(glyphs.slice(1, 3), 'pref')) {
+-    return POSITIONS.Post_C
++  let glyphs = [virama, consonant, virama];
++  if (
++    wouldSubstitute(glyphs.slice(0, 2), 'blwf') ||
++    wouldSubstitute(glyphs.slice(1, 3), 'blwf')
++  ) {
++    return POSITIONS.Below_C;
++  } else if (
++    wouldSubstitute(glyphs.slice(0, 2), 'pstf') ||
++    wouldSubstitute(glyphs.slice(1, 3), 'pstf')
++  ) {
++    return POSITIONS.Post_C;
++  } else if (
++    wouldSubstitute(glyphs.slice(0, 2), 'pref') ||
++    wouldSubstitute(glyphs.slice(1, 3), 'pref')
++  ) {
++    return POSITIONS.Post_C;
+   }
+ 
+-  return POSITIONS.Base_C
++  return POSITIONS.Base_C;
+ }
+ 
+ function initialReordering(font, glyphs, plan) {
+-  let indicConfig = plan.indicConfig
+-  let features = font._layoutEngine.engine.GSUBProcessor.features
++  let indicConfig = plan.indicConfig;
++  let features = font._layoutEngine.engine.GSUBProcessor.features;
+ 
+-  let dottedCircle = font.glyphForCodePoint(0x25cc).id
+-  let virama = font.glyphForCodePoint(indicConfig.virama).id
++  let dottedCircle = font.glyphForCodePoint(0x25cc).id;
++  let virama = font.glyphForCodePoint(indicConfig.virama).id;
+   if (virama) {
+-    let info = new GlyphInfo(font, virama, [indicConfig.virama])
++    let info = new GlyphInfo(font, virama, [indicConfig.virama]);
+     for (let i = 0; i < glyphs.length; i++) {
+       if (glyphs[i].shaperInfo.position === POSITIONS.Base_C) {
+-        glyphs[i].shaperInfo.position = consonantPosition(font, glyphs[i].copy(), info)
++        glyphs[i].shaperInfo.position = consonantPosition(
++          font,
++          glyphs[i].copy(),
++          info,
++        );
+       }
+     }
+   }
+@@ -183,29 +228,32 @@ function initialReordering(font, glyphs, plan) {
+     start < glyphs.length;
+     start = end, end = nextSyllable(glyphs, start)
+   ) {
+-    let { category, syllableType } = glyphs[start].shaperInfo
++    let { category, syllableType } = glyphs[start].shaperInfo;
+ 
+-    if (syllableType === 'symbol_cluster' || syllableType === 'non_indic_cluster') {
+-      continue
++    if (
++      syllableType === 'symbol_cluster' ||
++      syllableType === 'non_indic_cluster'
++    ) {
++      continue;
+     }
+ 
+     if (syllableType === 'broken_cluster' && dottedCircle) {
+-      let g = new GlyphInfo(font, dottedCircle, [0x25cc])
++      let g = new GlyphInfo(font, dottedCircle, [0x25cc]);
+       g.shaperInfo = new IndicInfo(
+         1 << indicCategory(g),
+         indicPosition(g),
+         glyphs[start].shaperInfo.syllableType,
+-        glyphs[start].shaperInfo.syllable
+-      )
++        glyphs[start].shaperInfo.syllable,
++      );
+ 
+       // Insert after possible Repha.
+-      let i = start
++      let i = start;
+       while (i < end && glyphs[i].shaperInfo.category === CATEGORIES.Repha) {
+-        i++
++        i++;
+       }
+ 
+-      glyphs.splice(i++, 0, g)
+-      end++
++      glyphs.splice(i++, 0, g);
++      end++;
+     }
+ 
+     // 1. Find base consonant:
+@@ -217,9 +265,9 @@ function initialReordering(font, glyphs, plan) {
+     // pre-base reordering Ra, or arrive at the first consonant. The consonant
+     // stopped at will be the base.
+ 
+-    let base = end
+-    let limit = start
+-    let hasReph = false
++    let base = end;
++    let limit = start;
++    let hasReph = false;
+ 
+     // If the syllable starts with Ra + Halant (in a script that has Reph)
+     // and has more than one consonant, Ra is excluded from candidates for
+@@ -229,46 +277,57 @@ function initialReordering(font, glyphs, plan) {
+       features.rphf &&
+       start + 3 <= end &&
+       ((indicConfig.rephMode === 'Implicit' && !isJoiner(glyphs[start + 2])) ||
+-        (indicConfig.rephMode === 'Explicit' && glyphs[start + 2].shaperInfo.category === CATEGORIES.ZWJ))
++        (indicConfig.rephMode === 'Explicit' &&
++          glyphs[start + 2].shaperInfo.category === CATEGORIES.ZWJ))
+     ) {
+       // See if it matches the 'rphf' feature.
+-      let g = [glyphs[start].copy(), glyphs[start + 1].copy(), glyphs[start + 2].copy()]
++      let g = [
++        glyphs[start].copy(),
++        glyphs[start + 1].copy(),
++        glyphs[start + 2].copy(),
++      ];
+       if (
+         wouldSubstitute(g.slice(0, 2), 'rphf') ||
+         (indicConfig.rephMode === 'Explicit' && wouldSubstitute(g, 'rphf'))
+       ) {
+-        limit += 2
++        limit += 2;
+         while (limit < end && isJoiner(glyphs[limit])) {
+-          limit++
++          limit++;
+         }
+-        base = start
+-        hasReph = true
++        base = start;
++        hasReph = true;
+       }
+-    } else if (indicConfig.rephMode === 'Log_Repha' && glyphs[start].shaperInfo.category === CATEGORIES.Repha) {
+-      limit++
++    } else if (
++      indicConfig.rephMode === 'Log_Repha' &&
++      glyphs[start].shaperInfo.category === CATEGORIES.Repha
++    ) {
++      limit++;
+       while (limit < end && isJoiner(glyphs[limit])) {
+-        limit++
++        limit++;
+       }
+-      base = start
+-      hasReph = true
++      base = start;
++      hasReph = true;
+     }
+ 
+     switch (indicConfig.basePos) {
+       case 'Last': {
+         // starting from the end of the syllable, move backwards
+-        let i = end
+-        let seenBelow = false
++        let i = end;
++        let seenBelow = false;
+ 
+         do {
+-          let info = glyphs[--i].shaperInfo
++          let info = glyphs[--i].shaperInfo;
+ 
+           // until a consonant is found
+           if (isConsonant(glyphs[i])) {
+             // that does not have a below-base or post-base form
+             // (post-base forms have to follow below-base forms),
+-            if (info.position !== POSITIONS.Below_C && (info.position !== POSITIONS.Post_C || seenBelow)) {
+-              base = i
+-              break
++            if (
++              info.position !== POSITIONS.Below_C &&
++              (info.position !== POSITIONS.Post_C || seenBelow)
++            ) {
++              base = i;
++              break;
+             }
+ 
+             // or that is not a pre-base reordering Ra,
+@@ -282,10 +341,10 @@ function initialReordering(font, glyphs, plan) {
+             // or arrive at the first consonant. The consonant stopped at will
+             // be the base.
+             if (info.position === POSITIONS.Below_C) {
+-              seenBelow = true
++              seenBelow = true;
+             }
+ 
+-            base = i
++            base = i;
+           } else if (
+             start < i &&
+             info.category === CATEGORIES.ZWJ &&
+@@ -296,20 +355,20 @@ function initialReordering(font, glyphs, plan) {
+             // A ZWJ before a Halant, requests a subjoined form instead, and hence
+             // search continues.  This is particularly important for Bengali
+             // sequence Ra,H,Ya that should form Ya-Phalaa by subjoining Ya.
+-            break
++            break;
+           }
+-        } while (i > limit)
+-        break
++        } while (i > limit);
++        break;
+       }
+ 
+       case 'First': {
+         // The first consonant is always the base.
+-        base = start
++        base = start;
+ 
+         // Mark all subsequent consonants as below.
+         for (let i = base + 1; i < end; i++) {
+           if (isConsonant(glyphs[i])) {
+-            glyphs[i].shaperInfo.position = POSITIONS.Below_C
++            glyphs[i].shaperInfo.position = POSITIONS.Below_C;
+           }
+         }
+       }
+@@ -321,7 +380,7 @@ function initialReordering(font, glyphs, plan) {
+     //
+     //  Only do this for unforced Reph. (ie. not for Ra,H,ZWJ)
+     if (hasReph && base === start && limit - base <= 2) {
+-      hasReph = false
++      hasReph = false;
+     }
+ 
+     // 2. Decompose and reorder Matras:
+@@ -355,12 +414,12 @@ function initialReordering(font, glyphs, plan) {
+     // Reorder characters
+ 
+     for (let i = start; i < base; i++) {
+-      let info = glyphs[i].shaperInfo
+-      info.position = Math.min(POSITIONS.Pre_C, info.position)
++      let info = glyphs[i].shaperInfo;
++      info.position = Math.min(POSITIONS.Pre_C, info.position);
+     }
+ 
+     if (base < end) {
+-      glyphs[base].shaperInfo.position = POSITIONS.Base_C
++      glyphs[base].shaperInfo.position = POSITIONS.Base_C;
+     }
+ 
+     // Mark final consonants.  A final consonant is one appearing after a matra,
+@@ -369,17 +428,17 @@ function initialReordering(font, glyphs, plan) {
+       if (glyphs[i].shaperInfo.category === CATEGORIES.M) {
+         for (let j = i + 1; j < end; j++) {
+           if (isConsonant(glyphs[j])) {
+-            glyphs[j].shaperInfo.position = POSITIONS.Final_C
+-            break
++            glyphs[j].shaperInfo.position = POSITIONS.Final_C;
++            break;
+           }
+         }
+-        break
++        break;
+       }
+     }
+ 
+     // Handle beginning Ra
+     if (hasReph) {
+-      glyphs[start].shaperInfo.position = POSITIONS.Ra_To_Become_Reph
++      glyphs[start].shaperInfo.position = POSITIONS.Ra_To_Become_Reph;
+     }
+ 
+     // For old-style Indic script tags, move the first post-base Halant after
+@@ -399,38 +458,49 @@ function initialReordering(font, glyphs, plan) {
+     // U+0D38,U+0D4D,U+0D31,U+0D4D,U+0D31,U+0D4D
+     // With lohit-ttf-20121122/Lohit-Malayalam.ttf
+     if (plan.isOldSpec) {
+-      let disallowDoubleHalants = plan.unicodeScript !== 'Malayalam'
++      let disallowDoubleHalants = plan.unicodeScript !== 'Malayalam';
+       for (let i = base + 1; i < end; i++) {
+         if (glyphs[i].shaperInfo.category === CATEGORIES.H) {
+-          let j
++          let j;
+           for (j = end - 1; j > i; j--) {
+-            if (isConsonant(glyphs[j]) || (disallowDoubleHalants && glyphs[j].shaperInfo.category === CATEGORIES.H)) {
+-              break
++            if (
++              isConsonant(glyphs[j]) ||
++              (disallowDoubleHalants &&
++                glyphs[j].shaperInfo.category === CATEGORIES.H)
++            ) {
++              break;
+             }
+           }
+ 
+           if (glyphs[j].shaperInfo.category !== CATEGORIES.H && j > i) {
+             // Move Halant to after last consonant.
+-            let t = glyphs[i]
+-            glyphs.splice(i, 0, ...glyphs.splice(i + 1, j - i))
+-            glyphs[j] = t
++            let t = glyphs[i];
++            glyphs.splice(i, 0, ...glyphs.splice(i + 1, j - i));
++            glyphs[j] = t;
+           }
+ 
+-          break
++          break;
+         }
+       }
+     }
+ 
+     // Attach misc marks to previous char to move with them.
+-    let lastPos = POSITIONS.Start
++    let lastPos = POSITIONS.Start;
+     for (let i = start; i < end; i++) {
+-      let info = glyphs[i].shaperInfo
++      let info = glyphs[i].shaperInfo;
+       if (
+         info.category &
+-        (JOINER_FLAGS | CATEGORIES.N | CATEGORIES.RS | CATEGORIES.CM | (HALANT_OR_COENG_FLAGS & info.category))
++        (JOINER_FLAGS |
++          CATEGORIES.N |
++          CATEGORIES.RS |
++          CATEGORIES.CM |
++          (HALANT_OR_COENG_FLAGS & info.category))
+       ) {
+-        info.position = lastPos
+-        if (info.category === CATEGORIES.H && info.position === POSITIONS.Pre_M) {
++        info.position = lastPos;
++        if (
++          info.category === CATEGORIES.H &&
++          info.position === POSITIONS.Pre_M
++        ) {
+           // Uniscribe doesn't move the Halant with Left Matra.
+           // TEST: U+092B,U+093F,U+094DE
+           // We follow.  This is important for the Sinhala
+@@ -440,65 +510,69 @@ function initialReordering(font, glyphs, plan) {
+           // TEST: U+0D9A,U+0DDA
+           for (let j = i; j > start; j--) {
+             if (glyphs[j - 1].shaperInfo.position !== POSITIONS.Pre_M) {
+-              info.position = glyphs[j - 1].shaperInfo.position
+-              break
++              info.position = glyphs[j - 1].shaperInfo.position;
++              break;
+             }
+           }
+         }
+       } else if (info.position !== POSITIONS.SMVD) {
+-        lastPos = info.position
++        lastPos = info.position;
+       }
+     }
+ 
+     // For post-base consonants let them own anything before them
+     // since the last consonant or matra.
+-    let last = base
++    let last = base;
+     for (let i = base + 1; i < end; i++) {
+       if (isConsonant(glyphs[i])) {
+         for (let j = last + 1; j < i; j++) {
+           if (glyphs[j].shaperInfo.position < POSITIONS.SMVD) {
+-            glyphs[j].shaperInfo.position = glyphs[i].shaperInfo.position
++            glyphs[j].shaperInfo.position = glyphs[i].shaperInfo.position;
+           }
+         }
+-        last = i
++        last = i;
+       } else if (glyphs[i].shaperInfo.category === CATEGORIES.M) {
+-        last = i
++        last = i;
+       }
+     }
+ 
+-    let arr = glyphs.slice(start, end)
+-    arr.sort((a, b) => a.shaperInfo.position - b.shaperInfo.position)
+-    glyphs.splice(start, arr.length, ...arr)
++    let arr = glyphs.slice(start, end);
++    arr.sort((a, b) => a.shaperInfo.position - b.shaperInfo.position);
++    glyphs.splice(start, arr.length, ...arr);
+ 
+     // Find base again
+     for (let i = start; i < end; i++) {
+       if (glyphs[i].shaperInfo.position === POSITIONS.Base_C) {
+-        base = i
+-        break
++        base = i;
++        break;
+       }
+     }
+ 
+     // Setup features now
+ 
+     // Reph
+-    for (let i = start; i < end && glyphs[i].shaperInfo.position === POSITIONS.Ra_To_Become_Reph; i++) {
+-      glyphs[i].features.rphf = true
++    for (
++      let i = start;
++      i < end && glyphs[i].shaperInfo.position === POSITIONS.Ra_To_Become_Reph;
++      i++
++    ) {
++      glyphs[i].features.rphf = true;
+     }
+ 
+     // Pre-base
+-    let blwf = !plan.isOldSpec && indicConfig.blwfMode === 'Pre_And_Post'
++    let blwf = !plan.isOldSpec && indicConfig.blwfMode === 'Pre_And_Post';
+     for (let i = start; i < base; i++) {
+-      glyphs[i].features.half = true
++      glyphs[i].features.half = true;
+       if (blwf) {
+-        glyphs[i].features.blwf = true
++        glyphs[i].features.blwf = true;
+       }
+     }
+ 
+     // Post-base
+     for (let i = base + 1; i < end; i++) {
+-      glyphs[i].features.abvf = true
+-      glyphs[i].features.pstf = true
+-      glyphs[i].features.blwf = true
++      glyphs[i].features.abvf = true;
++      glyphs[i].features.pstf = true;
++      glyphs[i].features.blwf = true;
+     }
+ 
+     if (plan.isOldSpec && plan.unicodeScript === 'Devanagari') {
+@@ -523,22 +597,23 @@ function initialReordering(font, glyphs, plan) {
+         if (
+           glyphs[i].shaperInfo.category === CATEGORIES.Ra &&
+           glyphs[i + 1].shaperInfo.category === CATEGORIES.H &&
+-          (i + 1 === base || glyphs[i + 2].shaperInfo.category === CATEGORIES.ZWJ)
++          (i + 1 === base ||
++            glyphs[i + 2].shaperInfo.category === CATEGORIES.ZWJ)
+         ) {
+-          glyphs[i].features.blwf = true
+-          glyphs[i + 1].features.blwf = true
++          glyphs[i].features.blwf = true;
++          glyphs[i + 1].features.blwf = true;
+         }
+       }
+     }
+ 
+-    let prefLen = 2
++    let prefLen = 2;
+     if (features.pref && base + prefLen < end) {
+       // Find a Halant,Ra sequence and mark it for pre-base reordering processing.
+       for (let i = base + 1; i + prefLen - 1 < end; i++) {
+-        let g = [glyphs[i].copy(), glyphs[i + 1].copy()]
++        let g = [glyphs[i].copy(), glyphs[i + 1].copy()];
+         if (wouldSubstitute(g, 'pref')) {
+           for (let j = 0; j < prefLen; j++) {
+-            glyphs[i++].features.pref = true
++            glyphs[i++].features.pref = true;
+           }
+ 
+           // Mark the subsequent stuff with 'cfar'.  Used in Khmer.
+@@ -548,11 +623,11 @@ function initialReordering(font, glyphs, plan) {
+           // U+1784,U+17D2,U+1782,U+17D2,U+179A
+           if (features.cfar) {
+             for (; i < end; i++) {
+-              glyphs[i].features.cfar = true
++              glyphs[i].features.cfar = true;
+             }
+           }
+ 
+-          break
++          break;
+         }
+       }
+     }
+@@ -560,11 +635,11 @@ function initialReordering(font, glyphs, plan) {
+     // Apply ZWJ/ZWNJ effects
+     for (let i = start + 1; i < end; i++) {
+       if (isJoiner(glyphs[i])) {
+-        let nonJoiner = glyphs[i].shaperInfo.category === CATEGORIES.ZWNJ
+-        let j = i
++        let nonJoiner = glyphs[i].shaperInfo.category === CATEGORIES.ZWNJ;
++        let j = i;
+ 
+         do {
+-          j--
++          j--;
+ 
+           // ZWJ/ZWNJ should disable CJCT.  They do that by simply
+           // being there, since we don't skip them for the CJCT
+@@ -572,17 +647,17 @@ function initialReordering(font, glyphs, plan) {
+ 
+           // A ZWNJ disables HALF.
+           if (nonJoiner) {
+-            delete glyphs[j].features.half
++            delete glyphs[j].features.half;
+           }
+-        } while (j > start && !isConsonant(glyphs[j]))
++        } while (j > start && !isConsonant(glyphs[j]));
+       }
+     }
+   }
+ }
+ 
+ function finalReordering(font, glyphs, plan) {
+-  let indicConfig = plan.indicConfig
+-  let features = font._layoutEngine.engine.GSUBProcessor.features
++  let indicConfig = plan.indicConfig;
++  let features = font._layoutEngine.engine.GSUBProcessor.features;
+ 
+   for (
+     let start = 0, end = nextSyllable(glyphs, 0);
+@@ -596,26 +671,32 @@ function finalReordering(font, glyphs, plan) {
+     // reordering before applying all the remaining font features to the entire
+     // cluster.
+ 
+-    let tryPref = !!features.pref
++    let tryPref = !!features.pref;
+ 
+     // Find base again
+-    let base = start
++    let base = start;
+     for (; base < end; base++) {
+       if (glyphs[base].shaperInfo.position >= POSITIONS.Base_C) {
+         if (tryPref && base + 1 < end) {
+           for (let i = base + 1; i < end; i++) {
+             if (glyphs[i].features.pref) {
+-              if (!(glyphs[i].substituted && glyphs[i].isLigated && !glyphs[i].isMultiplied)) {
++              if (
++                !(
++                  glyphs[i].substituted &&
++                  glyphs[i].isLigated &&
++                  !glyphs[i].isMultiplied
++                )
++              ) {
+                 // Ok, this was a 'pref' candidate but didn't form any.
+                 // Base is around here...
+-                base = i
++                base = i;
+                 while (base < end && isHalantOrCoeng(glyphs[base])) {
+-                  base++
++                  base++;
+                 }
+-                glyphs[base].shaperInfo.position = POSITIONS.BASE_C
+-                tryPref = false
++                glyphs[base].shaperInfo.position = POSITIONS.BASE_C;
++                tryPref = false;
+               }
+-              break
++              break;
+             }
+           }
+         }
+@@ -624,39 +705,54 @@ function finalReordering(font, glyphs, plan) {
+         if (plan.unicodeScript === 'Malayalam') {
+           for (let i = base + 1; i < end; i++) {
+             while (i < end && isJoiner(glyphs[i])) {
+-              i++
++              i++;
+             }
+ 
+             if (i === end || !isHalantOrCoeng(glyphs[i])) {
+-              break
++              break;
+             }
+ 
+-            i++ // Skip halant.
++            i++; // Skip halant.
+             while (i < end && isJoiner(glyphs[i])) {
+-              i++
++              i++;
+             }
+ 
+-            if (i < end && isConsonant(glyphs[i]) && glyphs[i].shaperInfo.position === POSITIONS.Below_C) {
+-              base = i
+-              glyphs[base].shaperInfo.position = POSITIONS.Base_C
++            if (
++              i < end &&
++              isConsonant(glyphs[i]) &&
++              glyphs[i].shaperInfo.position === POSITIONS.Below_C
++            ) {
++              base = i;
++              glyphs[base].shaperInfo.position = POSITIONS.Base_C;
+             }
+           }
+         }
+ 
+-        if (start < base && glyphs[base].shaperInfo.position > POSITIONS.Base_C) {
+-          base--
++        if (
++          start < base &&
++          glyphs[base].shaperInfo.position > POSITIONS.Base_C
++        ) {
++          base--;
+         }
+-        break
++        break;
+       }
+     }
+ 
+-    if (base === end && start < base && glyphs[base - 1].shaperInfo.category === CATEGORIES.ZWJ) {
+-      base--
++    if (
++      base === end &&
++      start < base &&
++      glyphs[base - 1].shaperInfo.category === CATEGORIES.ZWJ
++    ) {
++      base--;
+     }
+ 
+     if (base < end) {
+-      while (start < base && glyphs[base].shaperInfo.category & (CATEGORIES.N | HALANT_OR_COENG_FLAGS)) {
+-        base--
++      while (
++        start < base &&
++        glyphs[base].shaperInfo.category &
++          (CATEGORIES.N | HALANT_OR_COENG_FLAGS)
++      ) {
++        base--;
+       }
+     }
+ 
+@@ -673,44 +769,63 @@ function finalReordering(font, glyphs, plan) {
+     if (start + 1 < end && start < base) {
+       // Otherwise there can't be any pre-base matra characters.
+       // If we lost track of base, alas, position before last thingy.
+-      let newPos = base === end ? base - 2 : base - 1
++      let newPos = base === end ? base - 2 : base - 1;
+ 
+       // Malayalam / Tamil do not have "half" forms or explicit virama forms.
+       // The glyphs formed by 'half' are Chillus or ligated explicit viramas.
+       // We want to position matra after them.
+-      if (plan.unicodeScript !== 'Malayalam' && plan.unicodeScript !== 'Tamil') {
+-        while (newPos > start && !(glyphs[newPos].shaperInfo.category & (CATEGORIES.M | HALANT_OR_COENG_FLAGS))) {
+-          newPos--
++      if (
++        plan.unicodeScript !== 'Malayalam' &&
++        plan.unicodeScript !== 'Tamil'
++      ) {
++        while (
++          newPos > start &&
++          !(
++            glyphs[newPos].shaperInfo.category &
++            (CATEGORIES.M | HALANT_OR_COENG_FLAGS)
++          )
++        ) {
++          newPos--;
+         }
+ 
+         // If we found no Halant we are done.
+         // Otherwise only proceed if the Halant does
+         // not belong to the Matra itself!
+-        if (isHalantOrCoeng(glyphs[newPos]) && glyphs[newPos].shaperInfo.position !== POSITIONS.Pre_M) {
++        if (
++          isHalantOrCoeng(glyphs[newPos]) &&
++          glyphs[newPos].shaperInfo.position !== POSITIONS.Pre_M
++        ) {
+           // If ZWJ or ZWNJ follow this halant, position is moved after it.
+           if (newPos + 1 < end && isJoiner(glyphs[newPos + 1])) {
+-            newPos++
++            newPos++;
+           }
+         } else {
+-          newPos = start // No move.
++          newPos = start; // No move.
+         }
+       }
+ 
+-      if (start < newPos && glyphs[newPos].shaperInfo.position !== POSITIONS.Pre_M) {
++      if (
++        start < newPos &&
++        glyphs[newPos].shaperInfo.position !== POSITIONS.Pre_M
++      ) {
+         // Now go see if there's actually any matras...
+         for (let i = newPos; i > start; i--) {
+           if (glyphs[i - 1].shaperInfo.position === POSITIONS.Pre_M) {
+-            let oldPos = i - 1
++            let oldPos = i - 1;
+             if (oldPos < base && base <= newPos) {
+               // Shouldn't actually happen.
+-              base--
++              base--;
+             }
+ 
+-            let tmp = glyphs[oldPos]
+-            glyphs.splice(oldPos, 0, ...glyphs.splice(oldPos + 1, newPos - oldPos))
+-            glyphs[newPos] = tmp
++            let tmp = glyphs[oldPos];
++            glyphs.splice(
++              oldPos,
++              0,
++              ...glyphs.splice(oldPos + 1, newPos - oldPos),
++            );
++            glyphs[newPos] = tmp;
+ 
+-            newPos--
++            newPos--;
+           }
+         }
+       }
+@@ -738,9 +853,9 @@ function finalReordering(font, glyphs, plan) {
+       (glyphs[start].shaperInfo.category === CATEGORIES.Repha) !==
+         (glyphs[start].isLigated && !glyphs[start].isMultiplied)
+     ) {
+-      let newRephPos
+-      let rephPos = indicConfig.rephPos
+-      let found = false
++      let newRephPos;
++      let rephPos = indicConfig.rephPos;
++      let found = false;
+ 
+       // 1. If reph should be positioned after post-base consonant forms,
+       //    proceed to step 5.
+@@ -755,30 +870,33 @@ function finalReordering(font, glyphs, plan) {
+         //     Note: in old-implementation fonts, where classifications were
+         //     fixed in shaping engine, there was no case where reph position
+         //     will be found on this step.
+-        newRephPos = start + 1
++        newRephPos = start + 1;
+         while (newRephPos < base && !isHalantOrCoeng(glyphs[newRephPos])) {
+-          newRephPos++
++          newRephPos++;
+         }
+ 
+         if (newRephPos < base && isHalantOrCoeng(glyphs[newRephPos])) {
+           // ->If ZWJ or ZWNJ are following this halant, position is moved after it.
+           if (newRephPos + 1 < base && isJoiner(glyphs[newRephPos + 1])) {
+-            newRephPos++
++            newRephPos++;
+           }
+ 
+-          found = true
++          found = true;
+         }
+ 
+         // 3. If reph should be repositioned after the main consonant: find the
+         //    first consonant not ligated with main, or find the first
+         //    consonant that is not a potential pre-base reordering Ra.
+         if (!found && rephPos === POSITIONS.After_Main) {
+-          newRephPos = base
+-          while (newRephPos + 1 < end && glyphs[newRephPos + 1].shaperInfo.position <= POSITIONS.After_Main) {
+-            newRephPos++
++          newRephPos = base;
++          while (
++            newRephPos + 1 < end &&
++            glyphs[newRephPos + 1].shaperInfo.position <= POSITIONS.After_Main
++          ) {
++            newRephPos++;
+           }
+ 
+-          found = newRephPos < end
++          found = newRephPos < end;
+         }
+ 
+         // 4. If reph should be positioned before post-base consonant, find
+@@ -788,15 +906,18 @@ function finalReordering(font, glyphs, plan) {
+         //
+         // This is our take on what step 4 is trying to say (and failing, BADLY).
+         if (!found && rephPos === POSITIONS.After_Sub) {
+-          newRephPos = base
++          newRephPos = base;
+           while (
+             newRephPos + 1 < end &&
+-            !(glyphs[newRephPos + 1].shaperInfo.position & (POSITIONS.Post_C | POSITIONS.After_Post | POSITIONS.SMVD))
++            !(
++              glyphs[newRephPos + 1].shaperInfo.position &
++              (POSITIONS.Post_C | POSITIONS.After_Post | POSITIONS.SMVD)
++            )
+           ) {
+-            newRephPos++
++            newRephPos++;
+           }
+ 
+-          found = newRephPos < end
++          found = newRephPos < end;
+         }
+       }
+ 
+@@ -808,26 +929,29 @@ function finalReordering(font, glyphs, plan) {
+       //     post-main position.
+       if (!found) {
+         // Copied from step 2.
+-        newRephPos = start + 1
++        newRephPos = start + 1;
+         while (newRephPos < base && !isHalantOrCoeng(glyphs[newRephPos])) {
+-          newRephPos++
++          newRephPos++;
+         }
+ 
+         if (newRephPos < base && isHalantOrCoeng(glyphs[newRephPos])) {
+           // ->If ZWJ or ZWNJ are following this halant, position is moved after it.
+           if (newRephPos + 1 < base && isJoiner(glyphs[newRephPos + 1])) {
+-            newRephPos++
++            newRephPos++;
+           }
+ 
+-          found = true
++          found = true;
+         }
+       }
+ 
+       // 6. Otherwise, reorder reph to the end of the syllable.
+       if (!found) {
+-        newRephPos = end - 1
+-        while (newRephPos > start && glyphs[newRephPos].shaperInfo.position === POSITIONS.SMVD) {
+-          newRephPos--
++        newRephPos = end - 1;
++        while (
++          newRephPos > start &&
++          glyphs[newRephPos].shaperInfo.position === POSITIONS.SMVD
++        ) {
++          newRephPos--;
+         }
+ 
+         // If the Reph is to be ending up after a Matra,Halant sequence,
+@@ -838,18 +962,18 @@ function finalReordering(font, glyphs, plan) {
+         if (isHalantOrCoeng(glyphs[newRephPos])) {
+           for (let i = base + 1; i < newRephPos; i++) {
+             if (glyphs[i].shaperInfo.category === CATEGORIES.M) {
+-              newRephPos--
++              newRephPos--;
+             }
+           }
+         }
+       }
+ 
+-      let reph = glyphs[start]
+-      glyphs.splice(start, 0, ...glyphs.splice(start + 1, newRephPos - start))
+-      glyphs[newRephPos] = reph
++      let reph = glyphs[start];
++      glyphs.splice(start, 0, ...glyphs.splice(start + 1, newRephPos - start));
++      glyphs[newRephPos] = reph;
+ 
+       if (start < base && base <= newRephPos) {
+-        base--
++        base--;
+       }
+     }
+ 
+@@ -874,27 +998,36 @@ function finalReordering(font, glyphs, plan) {
+             //
+             // 3. If position is not found, reorder immediately before main
+             //    consonant.
+-            let newPos = base
++            let newPos = base;
+ 
+             // Malayalam / Tamil do not have "half" forms or explicit virama forms.
+             // The glyphs formed by 'half' are Chillus or ligated explicit viramas.
+             // We want to position matra after them.
+-            if (plan.unicodeScript !== 'Malayalam' && plan.unicodeScript !== 'Tamil') {
++            if (
++              plan.unicodeScript !== 'Malayalam' &&
++              plan.unicodeScript !== 'Tamil'
++            ) {
+               while (
+                 newPos > start &&
+-                !(glyphs[newPos - 1].shaperInfo.category & (CATEGORIES.M | HALANT_OR_COENG_FLAGS))
++                !(
++                  glyphs[newPos - 1].shaperInfo.category &
++                  (CATEGORIES.M | HALANT_OR_COENG_FLAGS)
++                )
+               ) {
+-                newPos--
++                newPos--;
+               }
+ 
+               // In Khmer coeng model, a H,Ra can go *after* matras.  If it goes after a
+               // split matra, it should be reordered to *before* the left part of such matra.
+-              if (newPos > start && glyphs[newPos - 1].shaperInfo.category === CATEGORIES.M) {
+-                let oldPos = i
++              if (
++                newPos > start &&
++                glyphs[newPos - 1].shaperInfo.category === CATEGORIES.M
++              ) {
++                let oldPos = i;
+                 for (let j = base + 1; j < oldPos; j++) {
+                   if (glyphs[j].shaperInfo.category === CATEGORIES.M) {
+-                    newPos--
+-                    break
++                    newPos--;
++                    break;
+                   }
+                 }
+               }
+@@ -903,21 +1036,25 @@ function finalReordering(font, glyphs, plan) {
+             if (newPos > start && isHalantOrCoeng(glyphs[newPos - 1])) {
+               // -> If ZWJ or ZWNJ follow this halant, position is moved after it.
+               if (newPos < end && isJoiner(glyphs[newPos])) {
+-                newPos++
++                newPos++;
+               }
+             }
+ 
+-            let oldPos = i
+-            let tmp = glyphs[oldPos]
+-            glyphs.splice(newPos + 1, 0, ...glyphs.splice(newPos, oldPos - newPos))
+-            glyphs[newPos] = tmp
++            let oldPos = i;
++            let tmp = glyphs[oldPos];
++            glyphs.splice(
++              newPos + 1,
++              0,
++              ...glyphs.splice(newPos, oldPos - newPos),
++            );
++            glyphs[newPos] = tmp;
+ 
+             if (newPos <= base && base < oldPos) {
+-              base++
++              base++;
+             }
+           }
+ 
+-          break
++          break;
+         }
+       }
+     }
+@@ -925,16 +1062,20 @@ function finalReordering(font, glyphs, plan) {
+     // Apply 'init' to the Left Matra if it's a word start.
+     if (
+       glyphs[start].shaperInfo.position === POSITIONS.Pre_M &&
+-      (!start || !/Cf|Mn/.test(unicode.getCategory(glyphs[start - 1].codePoints[0])))
++      (!start ||
++        !/Cf|Mn/.test(unicode.getCategory(glyphs[start - 1].codePoints[0])))
+     ) {
+-      glyphs[start].features.init = true
++      glyphs[start].features.init = true;
+     }
+   }
+ }
+ 
+ function nextSyllable(glyphs, start) {
+-  if (start >= glyphs.length) return start
+-  let syllable = glyphs[start].shaperInfo.syllable
+-  while (++start < glyphs.length && glyphs[start].shaperInfo.syllable === syllable);
+-  return start
++  if (start >= glyphs.length) return start;
++  let syllable = glyphs[start].shaperInfo.syllable;
++  while (
++    ++start < glyphs.length &&
++    glyphs[start].shaperInfo.syllable === syllable
++  );
++  return start;
+ }
+diff --git a/packages/fontkit/src/opentype/shapers/UniversalShaper.js b/packages/fontkit/src/opentype/shapers/UniversalShaper.js
+index 9fb22818a..443a62b7e 100644
+--- a/packages/fontkit/src/opentype/shapers/UniversalShaper.js
++++ b/packages/fontkit/src/opentype/shapers/UniversalShaper.js
+@@ -1,13 +1,15 @@
+-import DefaultShaper from './DefaultShaper'
+-import StateMachine from 'dfa'
+-import UnicodeTrie from 'unicode-trie'
+-import GlyphInfo from '../GlyphInfo'
+-import useData from './use.json'
+-import trieData from './useTrie.json'
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
+ 
+-const { categories, decompositions } = useData
+-const trie = new UnicodeTrie(new Uint8Array(trieData.data))
+-const stateMachine = new StateMachine(useData)
++import DefaultShaper from './DefaultShaper';
++import StateMachine from 'dfa';
++import UnicodeTrie from 'unicode-trie';
++import GlyphInfo from '../GlyphInfo';
++import useData from './use.json';
++import trieData from './useTrie.json';
++
++const { categories, decompositions } = useData;
++const trie = new UnicodeTrie(new Uint8Array(trieData.data));
++const stateMachine = new StateMachine(useData);
+ 
+ /**
+  * This shaper is an implementation of the Universal Shaping Engine, which
+@@ -15,83 +17,88 @@ const stateMachine = new StateMachine(useData)
+  * See https://www.microsoft.com/typography/OpenTypeDev/USE/intro.htm.
+  */
+ export default class UniversalShaper extends DefaultShaper {
+-  static zeroMarkWidths = 'BEFORE_GPOS'
++  static zeroMarkWidths = 'BEFORE_GPOS';
+   static planFeatures(plan) {
+-    plan.addStage(setupSyllables)
++    plan.addStage(setupSyllables);
+ 
+     // Default glyph pre-processing group
+-    plan.addStage(['locl', 'ccmp', 'nukt', 'akhn'])
++    plan.addStage(['locl', 'ccmp', 'nukt', 'akhn']);
+ 
+     // Reordering group
+-    plan.addStage(clearSubstitutionFlags)
+-    plan.addStage(['rphf'], false)
+-    plan.addStage(recordRphf)
+-    plan.addStage(clearSubstitutionFlags)
+-    plan.addStage(['pref'])
+-    plan.addStage(recordPref)
++    plan.addStage(clearSubstitutionFlags);
++    plan.addStage(['rphf'], false);
++    plan.addStage(recordRphf);
++    plan.addStage(clearSubstitutionFlags);
++    plan.addStage(['pref']);
++    plan.addStage(recordPref);
+ 
+     // Orthographic unit shaping group
+-    plan.addStage(['rkrf', 'abvf', 'blwf', 'half', 'pstf', 'vatu', 'cjct'])
+-    plan.addStage(reorder)
++    plan.addStage(['rkrf', 'abvf', 'blwf', 'half', 'pstf', 'vatu', 'cjct']);
++    plan.addStage(reorder);
+ 
+     // Topographical features
+     // Scripts that need this are handled by the Arabic shaper, not implemented here for now.
+     // plan.addStage(['isol', 'init', 'medi', 'fina', 'med2', 'fin2', 'fin3'], false);
+ 
+     // Standard topographic presentation and positional feature application
+-    plan.addStage(['abvs', 'blws', 'pres', 'psts', 'dist', 'abvm', 'blwm'])
++    plan.addStage(['abvs', 'blws', 'pres', 'psts', 'dist', 'abvm', 'blwm']);
+   }
+ 
+   static assignFeatures(plan, glyphs) {
+     // Decompose split vowels
+     // TODO: do this in a more general unicode normalizer
+     for (let i = glyphs.length - 1; i >= 0; i--) {
+-      let codepoint = glyphs[i].codePoints[0]
++      let codepoint = glyphs[i].codePoints[0];
+       if (decompositions[codepoint]) {
+         let decomposed = decompositions[codepoint].map(c => {
+-          let g = plan.font.glyphForCodePoint(c)
+-          return new GlyphInfo(plan.font, g.id, [c], glyphs[i].features)
+-        })
++          let g = plan.font.glyphForCodePoint(c);
++          return new GlyphInfo(plan.font, g.id, [c], glyphs[i].features);
++        });
+ 
+-        glyphs.splice(i, 1, ...decomposed)
++        glyphs.splice(i, 1, ...decomposed);
+       }
+     }
+   }
+ }
+ 
+ function useCategory(glyph) {
+-  return trie.get(glyph.codePoints[0])
++  return trie.get(glyph.codePoints[0]);
+ }
+ 
+ class USEInfo {
+   constructor(category, syllableType, syllable) {
+-    this.category = category
+-    this.syllableType = syllableType
+-    this.syllable = syllable
++    this.category = category;
++    this.syllableType = syllableType;
++    this.syllable = syllable;
+   }
+ }
+ 
+ function setupSyllables(font, glyphs) {
+-  let syllable = 0
++  let syllable = 0;
+   for (let [start, end, tags] of stateMachine.match(glyphs.map(useCategory))) {
+-    ++syllable
++    ++syllable;
+ 
+     // Create shaper info
+     for (let i = start; i <= end; i++) {
+-      glyphs[i].shaperInfo = new USEInfo(categories[useCategory(glyphs[i])], tags[0], syllable)
++      glyphs[i].shaperInfo = new USEInfo(
++        categories[useCategory(glyphs[i])],
++        tags[0],
++        syllable,
++      );
+     }
+ 
+     // Assign rphf feature
+-    let limit = glyphs[start].shaperInfo.category === 'R' ? 1 : Math.min(3, end - start)
++    let limit =
++      glyphs[start].shaperInfo.category === 'R' ? 1 : Math.min(3, end - start);
+     for (let i = start; i < start + limit; i++) {
+-      glyphs[i].features.rphf = true
++      glyphs[i].features.rphf = true;
+     }
+   }
+ }
+ 
+ function clearSubstitutionFlags(font, glyphs) {
+   for (let glyph of glyphs) {
+-    glyph.substituted = false
++    glyph.substituted = false;
+   }
+ }
+ 
+@@ -99,7 +106,7 @@ function recordRphf(font, glyphs) {
+   for (let glyph of glyphs) {
+     if (glyph.substituted && glyph.features.rphf) {
+       // Mark a substituted repha.
+-      glyph.shaperInfo.category = 'R'
++      glyph.shaperInfo.category = 'R';
+     }
+   }
+ }
+@@ -108,82 +115,97 @@ function recordPref(font, glyphs) {
+   for (let glyph of glyphs) {
+     if (glyph.substituted) {
+       // Mark a substituted pref as VPre, as they behave the same way.
+-      glyph.shaperInfo.category = 'VPre'
++      glyph.shaperInfo.category = 'VPre';
+     }
+   }
+ }
+ 
+ function reorder(font, glyphs) {
+-  let dottedCircle = font.glyphForCodePoint(0x25cc).id
++  let dottedCircle = font.glyphForCodePoint(0x25cc).id;
+ 
+   for (
+     let start = 0, end = nextSyllable(glyphs, 0);
+     start < glyphs.length;
+     start = end, end = nextSyllable(glyphs, start)
+   ) {
+-    let i, j
+-    let info = glyphs[start].shaperInfo
+-    let type = info.syllableType
++    let i, j;
++    let info = glyphs[start].shaperInfo;
++    let type = info.syllableType;
+ 
+     // Only a few syllable types need reordering.
+-    if (type !== 'virama_terminated_cluster' && type !== 'standard_cluster' && type !== 'broken_cluster') {
+-      continue
++    if (
++      type !== 'virama_terminated_cluster' &&
++      type !== 'standard_cluster' &&
++      type !== 'broken_cluster'
++    ) {
++      continue;
+     }
+ 
+     // Insert a dotted circle glyph in broken clusters.
+     if (type === 'broken_cluster' && dottedCircle) {
+-      let g = new GlyphInfo(font, dottedCircle, [0x25cc])
+-      g.shaperInfo = info
++      let g = new GlyphInfo(font, dottedCircle, [0x25cc]);
++      g.shaperInfo = info;
+ 
+       // Insert after possible Repha.
+       for (i = start; i < end && glyphs[i].shaperInfo.category === 'R'; i++);
+-      glyphs.splice(++i, 0, g)
+-      end++
++      glyphs.splice(++i, 0, g);
++      end++;
+     }
+ 
+     // Move things forward.
+     if (info.category === 'R' && end - start > 1) {
+       // Got a repha. Reorder it to after first base, before first halant.
+       for (i = start + 1; i < end; i++) {
+-        info = glyphs[i].shaperInfo
++        info = glyphs[i].shaperInfo;
+         if (isBase(info) || isHalant(glyphs[i])) {
+           // If we hit a halant, move before it; otherwise it's a base: move to it's
+           // place, and shift things in between backward.
+           if (isHalant(glyphs[i])) {
+-            i--
++            i--;
+           }
+ 
+-          glyphs.splice(start, 0, ...glyphs.splice(start + 1, i - start), glyphs[i])
+-          break
++          glyphs.splice(
++            start,
++            0,
++            ...glyphs.splice(start + 1, i - start),
++            glyphs[i],
++          );
++          break;
+         }
+       }
+     }
+ 
+     // Move things back.
+     for (i = start, j = end; i < end; i++) {
+-      info = glyphs[i].shaperInfo
++      info = glyphs[i].shaperInfo;
+       if (isBase(info) || isHalant(glyphs[i])) {
+         // If we hit a halant, move after it; otherwise it's a base: move to it's
+         // place, and shift things in between backward.
+-        j = isHalant(glyphs[i]) ? i + 1 : i
+-      } else if ((info.category === 'VPre' || info.category === 'VMPre') && j < i) {
+-        glyphs.splice(j, 1, glyphs[i], ...glyphs.splice(j, i - j))
++        j = isHalant(glyphs[i]) ? i + 1 : i;
++      } else if (
++        (info.category === 'VPre' || info.category === 'VMPre') &&
++        j < i
++      ) {
++        glyphs.splice(j, 1, glyphs[i], ...glyphs.splice(j, i - j));
+       }
+     }
+   }
+ }
+ 
+ function nextSyllable(glyphs, start) {
+-  if (start >= glyphs.length) return start
+-  let syllable = glyphs[start].shaperInfo.syllable
+-  while (++start < glyphs.length && glyphs[start].shaperInfo.syllable === syllable);
+-  return start
++  if (start >= glyphs.length) return start;
++  let syllable = glyphs[start].shaperInfo.syllable;
++  while (
++    ++start < glyphs.length &&
++    glyphs[start].shaperInfo.syllable === syllable
++  );
++  return start;
+ }
+ 
+ function isHalant(glyph) {
+-  return glyph.shaperInfo.category === 'H' && !glyph.isLigated
++  return glyph.shaperInfo.category === 'H' && !glyph.isLigated;
+ }
+ 
+ function isBase(info) {
+-  return info.category === 'B' || info.category === 'GB'
++  return info.category === 'B' || info.category === 'GB';
+ }
+diff --git a/packages/fontkit/src/opentype/shapers/gen-indic.js b/packages/fontkit/src/opentype/shapers/gen-indic.js
+index eb20c7fd4..ae79c26b6 100644
+--- a/packages/fontkit/src/opentype/shapers/gen-indic.js
++++ b/packages/fontkit/src/opentype/shapers/gen-indic.js
+@@ -1,3 +1,5 @@
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ import codepoints from 'codepoints';
+ import fs from 'fs';
+ import UnicodeTrieBuilder from 'unicode-trie/builder';
+diff --git a/packages/fontkit/src/opentype/shapers/gen-use.js b/packages/fontkit/src/opentype/shapers/gen-use.js
+index 467090cd9..a32a3a54b 100644
+--- a/packages/fontkit/src/opentype/shapers/gen-use.js
++++ b/packages/fontkit/src/opentype/shapers/gen-use.js
+@@ -1,3 +1,5 @@
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ import codepoints from 'codepoints';
+ import fs from 'fs';
+ import UnicodeTrieBuilder from 'unicode-trie/builder';
+diff --git a/packages/fontkit/src/opentype/shapers/generate-data.js b/packages/fontkit/src/opentype/shapers/generate-data.js
+index b4540e457..6d0903420 100644
+--- a/packages/fontkit/src/opentype/shapers/generate-data.js
++++ b/packages/fontkit/src/opentype/shapers/generate-data.js
+@@ -1,3 +1,5 @@
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ //
+ // This script generates a UnicodeTrie containing shaping data derived
+ // from Unicode properties (currently just for the Arabic shaper).
+diff --git a/packages/fontkit/src/opentype/shapers/index.js b/packages/fontkit/src/opentype/shapers/index.js
+index 2375ae1d2..588867608 100644
+--- a/packages/fontkit/src/opentype/shapers/index.js
++++ b/packages/fontkit/src/opentype/shapers/index.js
+@@ -1,3 +1,5 @@
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ import DefaultShaper from './DefaultShaper';
+ import ArabicShaper from './ArabicShaper';
+ import HangulShaper from './HangulShaper';
+diff --git a/packages/fontkit/src/opentype/shapers/indic-data.js b/packages/fontkit/src/opentype/shapers/indic-data.js
+index 30feff2b8..f00e04746 100644
+--- a/packages/fontkit/src/opentype/shapers/indic-data.js
++++ b/packages/fontkit/src/opentype/shapers/indic-data.js
+@@ -1,3 +1,5 @@
++// Updated: 417af0c79c5664271a07a783574ec7fac7ebad0c
++
+ // Cateories used in the OpenType spec:
+ // https://www.microsoft.com/typography/otfntdev/devanot/shaping.aspx
+ export const CATEGORIES = {
+diff --git a/packages/fontkit/src/subset/CFFSubset.js b/packages/fontkit/src/subset/CFFSubset.js
+index c5c9d35c4..5c9751124 100644
+--- a/packages/fontkit/src/subset/CFFSubset.js
++++ b/packages/fontkit/src/subset/CFFSubset.js
+@@ -156,7 +156,7 @@ export default class CFFSubset extends Subset {
+     let top = {
+       version: 1,
+       hdrSize: this.cff.hdrSize,
+-      offSize: this.cff.length,
++      offSize: 4,
+       header: this.cff.header,
+       nameIndex: [this.cff.postscriptName],
+       topDictIndex: [topDict],
+diff --git a/packages/fontkit/src/subset/Subset.js b/packages/fontkit/src/subset/Subset.js
+index ca396a873..f44658644 100644
+--- a/packages/fontkit/src/subset/Subset.js
++++ b/packages/fontkit/src/subset/Subset.js
+@@ -1,5 +1,7 @@
+ import r from 'restructure';
+ 
++const resolved = Promise.resolve();
++
+ export default class Subset {
+   constructor(font) {
+     this.font = font;
+@@ -26,7 +28,7 @@ export default class Subset {
+   encodeStream() {
+     let s = new r.EncodeStream();
+ 
+-    process.nextTick(() => {
++    resolved.then(() => {
+       this.encode(s);
+       return s.end();
+     });
+diff --git a/packages/fontkit/src/subset/TTFSubset.js b/packages/fontkit/src/subset/TTFSubset.js
+index aa286499c..8068d2e2c 100644
+--- a/packages/fontkit/src/subset/TTFSubset.js
++++ b/packages/fontkit/src/subset/TTFSubset.js
+@@ -9,7 +9,7 @@ export default class TTFSubset extends Subset {
+     super(font);
+     this.glyphEncoder = new TTFGlyphEncoder;
+   }
+-  
++
+   _addGlyph(gid) {
+     let glyph = this.font.getGlyph(gid);
+     let glyf = glyph._decode();
+@@ -37,7 +37,7 @@ export default class TTFSubset extends Subset {
+ 
+     this.glyf.push(buffer);
+     this.loca.offsets.push(this.offset);
+-    
++
+     this.hmtx.metrics.push({
+       advance: glyph.advanceWidth,
+       bearing: glyph._getMetrics().leftBearing
+@@ -57,7 +57,8 @@ export default class TTFSubset extends Subset {
+     this.glyf = [];
+     this.offset = 0;
+     this.loca = {
+-      offsets: []
++      offsets: [],
++      version: this.font.loca.version
+     };
+ 
+     this.hmtx = {
+@@ -77,7 +78,6 @@ export default class TTFSubset extends Subset {
+     maxp.numGlyphs = this.glyf.length;
+ 
+     this.loca.offsets.push(this.offset);
+-    Tables.loca.preEncode.call(this.loca);
+ 
+     let head = cloneDeep(this.font.head);
+     head.indexToLocFormat = this.loca.version;
+diff --git a/packages/fontkit/src/tables/GPOS.js b/packages/fontkit/src/tables/GPOS.js
+index 35c07647b..0e4fde183 100644
+--- a/packages/fontkit/src/tables/GPOS.js
++++ b/packages/fontkit/src/tables/GPOS.js
+@@ -185,7 +185,7 @@ let GPOSLookup = new r.VersionedStruct('lookupType', {
+   9: { // Extension Positioning
+     posFormat:   r.uint16,
+     lookupType:  r.uint16,   // cannot also be 9
+-    extension:   new r.Pointer(r.uint32, undefined)
++    extension:   new r.Pointer(r.uint32, GPOSLookup)
+   }
+ });
+ 
+diff --git a/packages/fontkit/src/tables/GSUB.js b/packages/fontkit/src/tables/GSUB.js
+index 7228a1eca..38d575fdc 100644
+--- a/packages/fontkit/src/tables/GSUB.js
++++ b/packages/fontkit/src/tables/GSUB.js
+@@ -53,7 +53,7 @@ let GSUBLookup = new r.VersionedStruct('lookupType', {
+   7: { // Extension Substitution
+     substFormat:   r.uint16,
+     lookupType:    r.uint16,   // cannot also be 7
+-    extension:     new r.Pointer(r.uint32, undefined)
++    extension:     new r.Pointer(r.uint32, GSUBLookup)
+   },
+ 
+   8: { // Reverse Chaining Contextual Single Substitution
+diff --git a/packages/fontkit/src/tables/directory.js b/packages/fontkit/src/tables/directory.js
+index 1e62df270..dbe69270d 100644
+--- a/packages/fontkit/src/tables/directory.js
++++ b/packages/fontkit/src/tables/directory.js
+@@ -44,8 +44,11 @@ Directory.preEncode = function(stream) {
+   this.numTables = tables.length;
+   this.tables = tables;
+ 
+-  this.searchRange = Math.floor(Math.log(this.numTables) / Math.LN2) * 16;
+-  this.entrySelector = Math.floor(this.searchRange / Math.LN2);
++  let maxExponentFor2 = Math.floor((Math.log(this.numTables) / Math.LN2));
++  let maxPowerOf2 = Math.pow(2, maxExponentFor2);
++
++  this.searchRange =  maxPowerOf2 * 16;
++  this.entrySelector = Math.log(maxPowerOf2) / Math.LN2;
+   this.rangeShift = this.numTables * 16 - this.searchRange;
+ };
+ 
+diff --git a/packages/fontkit/src/tables/loca.js b/packages/fontkit/src/tables/loca.js
+index 80d2e1b78..c191983f8 100644
+--- a/packages/fontkit/src/tables/loca.js
++++ b/packages/fontkit/src/tables/loca.js
+@@ -18,11 +18,6 @@ loca.process = function() {
+ };
+ 
+ loca.preEncode = function() {
+-  if (this.version != null) return;
+-
+-  // assume this.offsets is a sorted array
+-  this.version = this.offsets[this.offsets.length - 1] > 0xffff ? 1 : 0;
+-
+   if (this.version === 0) {
+     for (let i = 0; i < this.offsets.length; i++) {
+       this.offsets[i] >>>= 1;
+diff --git a/packages/textkit/src/indices/resolve.js b/packages/textkit/src/indices/resolve.js
+index 33e47961b..87e2244be 100644
+--- a/packages/textkit/src/indices/resolve.js
++++ b/packages/textkit/src/indices/resolve.js
+@@ -1,40 +1,22 @@
+-import * as R from 'ramda';
+-
+-import isNumber from '../utils/isNumber';
++const DUMMY_CODEPOINT = 123
+ 
+ /**
+- * Generate glyphs indices from string indices
+- *
+- * ex. resolve([[0, 1, 2, 4]]) => [0, 1, 2, 2, 3]
++ * Resolve string indices based on glyphs code points
+  *
+- * @param  {String}  string
+- * @param  {Array}  string indices
++ * @param  {Array}  glyphs
+  * @return {Array} glyph indices
+  */
+-const resolve = (string, stringIndices = []) => {
+-  let counter = 0;
+-  const glyphIndices = [];
+-
+-  for (let i = 0; i < stringIndices.length; i += 1) {
+-    const current = stringIndices[i];
+-    const prevValue = stringIndices[i - 1];
+-    const stringIndex = isNumber(current) ? current : prevValue + 1 || 0;
+-    const nextValue = stringIndices[i + 1] || stringIndex + 1;
+-    const diff = Math.abs(nextValue - stringIndex);
+-
+-    glyphIndices.push(...R.repeat(counter, diff));
+-    counter += 1;
+-  }
++const resolve = (glyphs = []) => {
++  return glyphs.reduce((acc, glyph) => {
++    const codePoints = glyph?.codePoints || [DUMMY_CODEPOINT];
+ 
+-  // Append ending ligature glyph indices
+-  if (string.length !== glyphIndices.length) {
+-    const diff = Math.max(0, string.length - glyphIndices.length);
+-    const lastValue = R.last(glyphIndices);
++    if (acc.length === 0) return codePoints.map(() => 0);
+ 
+-    glyphIndices.push(...R.repeat(lastValue, diff));
+-  }
++    const last = acc[acc.length - 1];
++    const next = codePoints.map(() => last + 1);
+ 
+-  return glyphIndices;
++    return [...acc, ...next]
++  }, []);
+ };
+ 
+ export default resolve;
+diff --git a/packages/textkit/src/layout/generateGlyphs.js b/packages/textkit/src/layout/generateGlyphs.js
+index a5fabd166..430269bbf 100644
+--- a/packages/textkit/src/layout/generateGlyphs.js
++++ b/packages/textkit/src/layout/generateGlyphs.js
+@@ -49,10 +49,7 @@ const layoutRun = string => run => {
+   const runString = string.slice(start, end);
+   const glyphRun = font.layout(runString);
+   const positions = scalePositions(run, glyphRun.positions);
+-  const glyphIndices = resolveGlyphIndices(
+-    runString,
+-    glyphRun.stringIndices || [],
+-  );
++  const glyphIndices = resolveGlyphIndices(glyphRun.glyphs);
+ 
+   return {
+     ...run,
+diff --git a/yarn.lock b/yarn.lock
+index efa9544ae..b79d1e510 100644
+--- a/yarn.lock
++++ b/yarn.lock
+@@ -2669,6 +2669,14 @@ babel-preset-jest@^24.9.0:
+     "@babel/plugin-syntax-object-rest-spread" "^7.0.0"
+     babel-plugin-jest-hoist "^24.9.0"
+ 
++babel-runtime@^6.11.6:
++  version "6.26.0"
++  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-6.26.0.tgz#965c7058668e82b55d7bfe04ff2337bc8b5647fe"
++  integrity sha1-llxwWGaOgrVde/4E/yM3vItWR/4=
++  dependencies:
++    core-js "^2.4.0"
++    regenerator-runtime "^0.11.0"
++
+ balanced-match@^1.0.0:
+   version "1.0.2"
+   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
+@@ -3099,7 +3107,7 @@ clone-deep@^4.0.1:
+     kind-of "^6.0.2"
+     shallow-clone "^3.0.0"
+ 
+-clone@^1.0.1, clone@^1.0.2:
++clone@^1.0.2, clone@^1.0.4:
+   version "1.0.4"
+   resolved "https://registry.yarnpkg.com/clone/-/clone-1.0.4.tgz#da309cc263df15994c688ca902179ca3c7cd7c7e"
+   integrity sha1-2jCcwmPfFZlMaIypAheco8fNfH4=
+@@ -3375,6 +3383,11 @@ core-js-pure@^3.0.0:
+   resolved "https://registry.yarnpkg.com/core-js-pure/-/core-js-pure-3.10.0.tgz#dab9d6b141779b622b40567e7a536d2276646c15"
+   integrity sha512-CC582enhrFZStO4F8lGI7QL3SYx7/AIRc+IdSi3btrQGrVsTawo5K/crmKbRrQ+MOMhNX4v+PATn0k2NN6wI7A==
+ 
++core-js@^2.4.0:
++  version "2.6.12"
++  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
++  integrity sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==
++
+ core-js@^3.2.1:
+   version "3.10.0"
+   resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.10.0.tgz#9a020547c8b6879f929306949e31496bbe2ae9b3"
+@@ -3642,10 +3655,12 @@ dezalgo@^1.0.0:
+     asap "^2.0.0"
+     wrappy "1"
+ 
+-dfa@^1.0.0:
+-  version "1.2.0"
+-  resolved "https://registry.yarnpkg.com/dfa/-/dfa-1.2.0.tgz#96ac3204e2d29c49ea5b57af8d92c2ae12790657"
+-  integrity sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==
++dfa@1.1.0:
++  version "1.1.0"
++  resolved "https://registry.yarnpkg.com/dfa/-/dfa-1.1.0.tgz#d30218bd10d030fa421df3ebbc82285463a31781"
++  integrity sha1-0wIYvRDQMPpCHfPrvIIoVGOjF4E=
++  dependencies:
++    babel-runtime "^6.11.6"
+ 
+ diff-sequences@^24.9.0:
+   version "24.9.0"
+@@ -7911,6 +7926,11 @@ regenerate@^1.4.0:
+   resolved "https://registry.yarnpkg.com/regenerate/-/regenerate-1.4.2.tgz#b9346d8827e8f5a32f7ba29637d398b69014848a"
+   integrity sha512-zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A==
+ 
++regenerator-runtime@^0.11.0:
++  version "0.11.1"
++  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.11.1.tgz#be05ad7f9bf7d22e056f9726cee5017fbf19e2e9"
++  integrity sha512-MguG95oij0fC3QV3URf4V2SDYGJhJnJGqvIIgdECeODCT98wSWDAJ94SSuVpYQUoTcGUIL6L4yNB7j1DFFHSBg==
++
+ regenerator-runtime@^0.13.4:
+   version "0.13.7"
+   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.7.tgz#cac2dacc8a1ea675feaabaeb8ae833898ae46f55"

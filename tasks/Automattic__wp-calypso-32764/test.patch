@@ -1,0 +1,31 @@
+diff --git a/client/me/pending-payments/test/index.js b/client/me/pending-payments/test/index.js
+index 54ab098378f16..9fa744a59f2fe 100644
+--- a/client/me/pending-payments/test/index.js
++++ b/client/me/pending-payments/test/index.js
+@@ -41,7 +41,7 @@ describe( 'PendingPayments', () => {
+ 
+ 		const rules = [
+ 			'Main.pending-payments Localized(MeSidebarNavigation)',
+-			'Main.pending-payments PurchasesHeader[section="pending"]',
++			'Main.pending-payments Connect(Localized(PurchasesHeader))[section="pending"]',
+ 			'Connect(PurchasesSite)[isPlaceholder=true]',
+ 		];
+ 
+@@ -59,7 +59,7 @@ describe( 'PendingPayments', () => {
+ 
+ 		const rules = [
+ 			'Main.pending-payments Localized(MeSidebarNavigation)',
+-			'Main.pending-payments PurchasesHeader[section="pending"]',
++			'Main.pending-payments Connect(Localized(PurchasesHeader))[section="pending"]',
+ 			'.pending-payments .pending-payments__no-content EmptyContent',
+ 		];
+ 
+@@ -84,7 +84,7 @@ describe( 'PendingPayments', () => {
+ 
+ 		const rules = [
+ 			'Main.pending-payments Localized(MeSidebarNavigation)',
+-			'Main.pending-payments PurchasesHeader[section="pending"]',
++			'Main.pending-payments Connect(Localized(PurchasesHeader))[section="pending"]',
+ 			'Main.pending-payments Connect(Localized(PendingListItem))',
+ 		];
+ 

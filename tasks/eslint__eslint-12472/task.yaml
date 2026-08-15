@@ -1,0 +1,19 @@
+base_commit: 990065e5f58b6cc6922ab6cee5b97bfc56a6237a
+created_at: '2019-10-21T13:36:33Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.eslint_1776_eslint-12472:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/6201068/53028310-b097c600-3477-11e9-9fe3-2a222df69e10.png
+  - https://user-images.githubusercontent.com/6201068/53029220-6c0d2a00-3479-11e9-877c-b001a7c6ed44.png
+  - https://user-images.githubusercontent.com/6201068/53028310-b097c600-3477-11e9-9fe3-2a222df69e10.png
+  - https://user-images.githubusercontent.com/6201068/53029220-6c0d2a00-3479-11e9-877c-b001a7c6ed44.png
+  test_patch: []
+instance_id: eslint__eslint-12472
+log_parser: parse_log_eslint
+repo: eslint/eslint
+split: test
+version: '6.6'

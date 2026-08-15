@@ -1,0 +1,17 @@
+base_commit: 7c1df60d0646fc6a0e1528ed357fdcfca6f521ce
+created_at: '2019-04-01T14:00:02Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-9389:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: rendering/cases/layer-tile-render-listener/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/94edf325404ac51504a9038884c9c7d95e2c22a3/rendering/cases/layer-tile-render-listener/expected.png
+instance_id: openlayers__openlayers-9389
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: deprecated
+version: '5.3'

@@ -1,0 +1,16 @@
+base_commit: 2c9728da0c36ba30ac91362bdcd93bdc63a1bd35
+created_at: '2022-10-27T03:00:25Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.markedjs_1776_marked-2627:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/8930952/141372010-ef8bf7de-dff7-4c55-94f7-18357e69acf4.png
+  test_patch: []
+instance_id: markedjs__marked-2627
+log_parser: parse_log_marked
+repo: markedjs/marked
+split: dev
+version: '4.1'

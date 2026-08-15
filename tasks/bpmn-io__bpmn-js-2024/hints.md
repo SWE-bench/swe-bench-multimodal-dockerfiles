@@ -1,0 +1,1 @@
+We will not support vertical pools unless we receive a contribution for it, cf. [this comment](https://github.com/bpmn-io/bpmn-js/issues/507#issuecomment-366646134).

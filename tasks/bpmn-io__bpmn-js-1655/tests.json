@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - set color execute setting stroke + fill color on external label "
+  ],
+  "PASS_TO_PASS": []
+}

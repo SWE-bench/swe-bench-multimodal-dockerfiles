@@ -1,0 +1,1 @@
+Huh, some credit cards may have up to 19 digits. I think the grouping for these is 4-4-4-remaining digits. I couldn't verify what the grouping is for diners with 14 digits. I'll assume 4-4-4-2 unless folks know otherwise.

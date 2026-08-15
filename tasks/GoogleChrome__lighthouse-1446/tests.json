@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "asset-saver helper saves files trace file saved to disk with data",
+    "metrics events class generates fake trace events",
+    "asset-saver helper generates filename prefixes",
+    "metrics events class exposes metric definitions",
+    "metrics events class generates fake trace events that are valid",
+    "asset-saver helper saves files screenshots file saved to disk with data",
+    "asset-saver helper generates HTML"
+  ],
+  "PASS_TO_PASS": []
+}

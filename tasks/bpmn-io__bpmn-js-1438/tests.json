@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "draw - bpmn renderer should render message label "
+  ],
+  "PASS_TO_PASS": []
+}

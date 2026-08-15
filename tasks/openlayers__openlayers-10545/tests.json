@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.format.KML without parameters #readFeatures styles can create text style for named point placemarks (including html character codes)"
+  ],
+  "PASS_TO_PASS": []
+}

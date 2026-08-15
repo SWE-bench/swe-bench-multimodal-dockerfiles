@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.renderer.Map #forEachFeatureAtCoordinate works with negative image scale"
+  ],
+  "PASS_TO_PASS": []
+}

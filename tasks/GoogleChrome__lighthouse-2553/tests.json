@@ -1,0 +1,21 @@
+{
+  "FAIL_TO_PASS": [
+    "Performance: user-timings audit evaluates valid input correctly",
+    "Byte efficiency base audit should populate KB",
+    "Byte efficiency base audit should populate Ms",
+    "Link Block First Paint audit fails when there are links found which block first paint",
+    "Script Block First Paint audit fails when there are scripts found which block first paint",
+    "Byte efficiency base audit should create a display value",
+    "Byte efficiency base audit should populate potential savings"
+  ],
+  "PASS_TO_PASS": [
+    "Byte efficiency base audit should set the rawValue",
+    "Byte efficiency base audit should throw on invalid network throughput",
+    "Link Block First Paint audit passes when there are no links found which block first paint",
+    "Byte efficiency base audit should score the wastedMs",
+    "Script Block First Paint audit passes when there are no scripts found which block first paint",
+    "Performance: user-timings audit doesn't throw when user_timing events have a colon",
+    "Byte efficiency base audit should sort on wastedBytes",
+    "Byte efficiency base audit should format as extendedInfo"
+  ]
+}

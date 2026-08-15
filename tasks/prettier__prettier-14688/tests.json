@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/format/typescript/tsx/comma/jsfmt.spec.js"
+  ],
+  "PASS_TO_PASS": [
+    "tests/format/misc/errors/typescript/modifiers/jsfmt.spec.js",
+    "tests/format/misc/errors/typescript/babel-ts/jsfmt.spec.js",
+    "tests/format/misc/errors/typescript/import-reflection/jsfmt.spec.js",
+    "tests/format/misc/errors/typescript/interface/jsfmt.spec.js",
+    "tests/format/misc/errors/typescript/module-declaration/jsfmt.spec.js",
+    "tests/integration/__tests__/format.js",
+    "tests/format/typescript/last-argument-expansion/jsfmt.spec.js",
+    "tests/format/typescript/comments/jsfmt.spec.js",
+    "tests/format/misc/errors/typescript/jsfmt.spec.js",
+    "tests/format/typescript/typeparams/print-width-120/jsfmt.spec.js",
+    "tests/format/misc/errors/typescript/tuple/jsfmt.spec.js"
+  ]
+}

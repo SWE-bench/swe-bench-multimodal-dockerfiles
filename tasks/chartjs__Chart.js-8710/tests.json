@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "Linear Scale Should correctly use the locale setting when getting a label ",
+    "Logarithmic Scale tests should correctly use the locale when generating the label "
+  ],
+  "PASS_TO_PASS": []
+}

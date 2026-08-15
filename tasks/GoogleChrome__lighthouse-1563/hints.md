@@ -1,0 +1,1 @@
+We talked to the team behind this yesterday and it looks like this is the start of a few major players using usertiming. Everyone was on board with user-side filtering of these.. aka `str.startsWith('goog_')`

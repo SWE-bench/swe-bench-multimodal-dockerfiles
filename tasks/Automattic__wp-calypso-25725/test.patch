@@ -1,0 +1,25 @@
+diff --git a/client/state/data-layer/wpcom/sites/plan-transfer/test/index.js b/client/state/data-layer/wpcom/sites/plan-transfer/test/index.js
+index 721f23a365e14..f6d08b02557ac 100644
+--- a/client/state/data-layer/wpcom/sites/plan-transfer/test/index.js
++++ b/client/state/data-layer/wpcom/sites/plan-transfer/test/index.js
+@@ -33,15 +33,17 @@ describe( 'requestPlanOwnershipTransfer()', () => {
+ } );
+ 
+ describe( 'handleTransferSuccess()', () => {
+-	test( 'should return a success notice action', () => {
+-		const action = handleTransferSuccess( { siteId } );
++	test( 'should return a success notice action and a function', () => {
++		const actions = handleTransferSuccess( { siteId } );
+ 
+-		expect( action ).toMatchObject(
++		expect( actions ).toHaveLength( 2 );
++		expect( actions[ 0 ] ).toMatchObject(
+ 			successNotice( 'Plan purchaser has been changed successfully.', {
+ 				duration: 8000,
+ 				id: `sites-plan-transfer-notice-${ siteId }`,
+ 			} )
+ 		);
++		expect( actions[ 1 ] ).toBeInstanceOf( Function );
+ 	} );
+ } );
+ 

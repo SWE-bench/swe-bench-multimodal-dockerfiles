@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'vbnet' – should pass test case 'punctuation_feature'",
+    "Testing language 'vbnet' – should pass test case 'string_feature'",
+    "Testing language 'vbnet' – should pass test case 'issue2781'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'vbnet!+xml-doc' – should pass test case 'inclusion'",
+    "Testing language 'vbnet' – should pass test case 'comment_feature'",
+    "Testing language 'vbnet' – should pass test case 'keyword_feature'"
+  ]
+}

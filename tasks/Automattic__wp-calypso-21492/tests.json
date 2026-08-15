@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "getRoleFromScope - should return null if scope is malformed",
+    "getRoleFromScope - should return role from scope",
+    "getRoleFromScope - should return null if no role is found",
+    "getRoleFromScope - should return null if no hash is found"
+  ],
+  "PASS_TO_PASS": [
+    "addCalypsoEnvQueryArg - should add config env_id as calypso_env"
+  ]
+}

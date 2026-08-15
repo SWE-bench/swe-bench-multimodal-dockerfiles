@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.interaction.Draw createRegularPolygon creates a regular polygon in Circle mode in a user projection",
+    "ol.interaction.Draw drawing circles draws circle with clicks in a user projection, finishing on second point along y axis",
+    "ol.interaction.Draw createBox creates a box-shaped polygon in Circle mode in a user projection"
+  ],
+  "PASS_TO_PASS": []
+}

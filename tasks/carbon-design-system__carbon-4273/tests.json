@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/Accordion/__tests__/Accordion.Skeleton-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+    "packages/react/src/components/Accordion/__tests__/AccordionItem-test.js"
+  ]
+}

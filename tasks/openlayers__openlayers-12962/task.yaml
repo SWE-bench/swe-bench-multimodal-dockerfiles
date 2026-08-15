@@ -1,0 +1,27 @@
+base_commit: 6e5e94a447210bb76071d8bb6574e93a0cb82e43
+created_at: '2021-11-05T10:35:52Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-12962:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/7988400/140408422-57c01614-d893-48f7-9664-70271842de15.png
+  - https://user-images.githubusercontent.com/7988400/140408509-050a203f-ec05-4491-b10a-931f86d4cea0.png
+  test_patch:
+  - path: test/rendering/cases/layer-tile-stack-opacity/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/cases/layer-tile-stack-opacity/expected.png
+  - path: test/rendering/data/tiles/south-carolina/11/566/1-828.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/data/tiles/south-carolina/11/566/1-828.png
+  - path: test/rendering/data/tiles/south-carolina/11/566/2-828.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/data/tiles/south-carolina/11/566/2-828.png
+  - path: test/rendering/data/tiles/south-carolina/11/566/3-828.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/data/tiles/south-carolina/11/566/3-828.png
+  - path: test/rendering/data/tiles/south-carolina/11/566/4-828.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/data/tiles/south-carolina/11/566/4-828.png
+instance_id: openlayers__openlayers-12962
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.9'

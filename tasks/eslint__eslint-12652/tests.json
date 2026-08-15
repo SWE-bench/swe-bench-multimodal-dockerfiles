@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "key-spacing valid var obj = { foo: 1, 'bar': 2, baz: 3 }:",
+    "key-spacing valid var obj = { foo : 1, 'bar' : 2, baz : 3, longlonglong : 4 }:",
+    "key-spacing invalid var obj = { foo : 1, 'bar' : 2, baz : 3, longlonglong : 4 }:",
+    "key-spacing invalid var obj = { foo:1, 'bar':2, baz:3 }:"
+  ],
+  "PASS_TO_PASS": []
+}

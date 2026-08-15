@@ -1,0 +1,10 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/layer-vector-extent-rotation/main.js'",
+    "./cases/linestring-style-rotation/main.js'",
+    "./cases/full-build/main.js'",
+    "./cases/text-style/main.js'",
+    "./cases/text-style-linestring-nice/main.js'"
+  ],
+  "PASS_TO_PASS": []
+}

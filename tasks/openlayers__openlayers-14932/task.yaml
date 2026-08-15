@@ -1,0 +1,17 @@
+base_commit: 0b90e813b8800cf8902b15edeebbdf48704d1a64
+created_at: '2023-07-21T09:42:42Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14932:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/text-style-linestring-nice/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/1280ef38d998a97b6563f0cf2ed894b651afc500/test/rendering/cases/text-style-linestring-nice/expected.png
+instance_id: openlayers__openlayers-14932
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.4'

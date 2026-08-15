@@ -1,0 +1,17 @@
+{
+  "FAIL_TO_PASS": [
+    "CascaderSelect - should support popup v2"
+  ],
+  "PASS_TO_PASS": [
+    "CascaderSelect - should support searching when it is a single cascader select",
+    "CascaderSelect - should render multiple cascader",
+    "CascaderSelect - should render multiple cascader when set checkStrictly to true",
+    "CascaderSelect - should show dropdown when click select box",
+    "CascaderSelect - should change select box display when expand item if set changeOnSelect to true",
+    "CascaderSelect - should show dropdown when set defaultVisible to true",
+    "CascaderSelect - should render single cascader under control",
+    "CascaderSelect - should ignore case when searching",
+    "CascaderSelect - should support searching when it is a multiple cascader select",
+    "CascaderSelect - should render single cascader select"
+  ]
+}

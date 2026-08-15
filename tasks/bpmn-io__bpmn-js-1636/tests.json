@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/behavior - subprocess start event replace call activity -> expanded subprocess should add start event child to subprocess ",
+    "features/modeling/behavior - subprocess start event replace call activity -> expanded subprocess should wire startEvent di correctly "
+  ],
+  "PASS_TO_PASS": []
+}

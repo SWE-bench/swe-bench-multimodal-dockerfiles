@@ -1,0 +1,39 @@
+{
+  "FAIL_TO_PASS": [
+    "selectors - #getCountriesWithStates - should return the countries with states, sorted",
+    "selectors - #getCountriesWithStates - should return an empty list if the locations are not loaded",
+    "selectors - #getCountriesWithStates - should return an empty list if the locations are being loaded"
+  ],
+  "PASS_TO_PASS": [
+    "selectors - #hasStates - should return true if the country has states",
+    "selectors - #areLocationsLoaded - should return true when locations are loaded.",
+    "selectors - #getStates - should return an empty list if the locations are being loaded",
+    "selectors - #getCountryName - should fallback to the country code if the locations are not loaded",
+    "selectors - #getStates - should return an empty list if the country does not exist",
+    "selectors - #hasStates - should return false if the locations are not loaded",
+    "selectors - #hasStates - should return false if the country does not exist",
+    "selectors - #getCountries - should return an empty list if the locations are being loaded",
+    "selectors - #getCountries - should return an empty list if the locations are not loaded",
+    "selectors - #areLocationsLoading - should return false when locations are loaded.",
+    "selectors - #hasStates - should return false if the country does not have states",
+    "selectors - #areLocationsLoaded - should return false when locations are loaded only for a different site.",
+    "selectors - #hasStates - should return false if the locations are being loaded",
+    "selectors - #areLocationsLoaded - should return false when locations are currently being fetched.",
+    "selectors - #areLocationsLoaded - should get the siteId from the UI tree if not provided.",
+    "selectors - #areLocationsLoading - should get the siteId from the UI tree if not provided.",
+    "selectors - #getContinents - should return the continents, sorted by name",
+    "selectors - #getCountryName - should fallback to the country code if the country does not exist",
+    "selectors - #getContinents - should return an empty list if the locations are being loaded",
+    "selectors - #areLocationsLoading - should return true when locations are currently being fetched.",
+    "selectors - #getCountryName - should return the country name",
+    "selectors - #getContinents - should return an empty list if the locations are not loaded",
+    "selectors - #getStates - should return the states from a country, sorted by name",
+    "selectors - #getCountries - should return an empty list if the continent does not exist",
+    "selectors - #getStates - should return an empty list if the locations are not loaded",
+    "selectors - #areLocationsLoading - should return false when locations are loaded only for a different site.",
+    "selectors - #areLocationsLoading - should return false when woocommerce state is not available.",
+    "selectors - #areLocationsLoaded - should return false when woocommerce state is not available.",
+    "selectors - #getCountries - should return the countries from a continent, sorted by name",
+    "selectors - #getStates - should return an empty list if the country does not have states"
+  ]
+}

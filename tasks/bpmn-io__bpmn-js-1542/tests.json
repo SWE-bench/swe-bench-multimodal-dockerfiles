@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "modeling/behavior - drop on connection execution create should connect start -> target -> end close to target ",
+    "modeling/behavior - drop on connection execution create should connect start -> target -> end close to source "
+  ],
+  "PASS_TO_PASS": []
+}

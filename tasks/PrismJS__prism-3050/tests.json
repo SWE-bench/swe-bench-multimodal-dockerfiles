@@ -1,0 +1,14 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'mermaid' – should pass test case 'operator_feature'",
+    "Testing language 'mermaid' – should pass test case 'full_sequencediagram'",
+    "Testing language 'mermaid' – should pass test case 'full_erdiagram'",
+    "Testing language 'mermaid' – should pass test case 'inter-arrow-label_feature'",
+    "Testing language 'mermaid' – should pass test case 'comment_feature'",
+    "Testing language 'mermaid' – should pass test case 'full_classdiagram'",
+    "Testing language 'mermaid' – should pass test case 'full_statediagram'",
+    "Testing language 'mermaid' – should pass test case 'arrow_feature'",
+    "Testing language 'mermaid' – should pass test case 'full_flowchart'"
+  ],
+  "PASS_TO_PASS": []
+}

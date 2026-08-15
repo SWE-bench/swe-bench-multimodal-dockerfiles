@@ -1,0 +1,16 @@
+base_commit: f6f6f2e2eaa8d784ddb54e9219416e37cc3b94ec
+created_at: '2018-03-07T04:34:05Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.prettier_1776_prettier-4115:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/25302911/37053023-4a36a348-2138-11e8-9f2a-af057a9998e7.gif
+  test_patch: []
+instance_id: prettier__prettier-4115
+log_parser: parse_log_carbon
+repo: prettier/prettier
+split: test
+version: '1.11'

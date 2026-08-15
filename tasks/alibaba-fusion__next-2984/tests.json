@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "Cascader - support immutable data source",
+    "CascaderSelect - should support immutable data",
+    "Cascader - should support rtl"
+  ],
+  "PASS_TO_PASS": []
+}

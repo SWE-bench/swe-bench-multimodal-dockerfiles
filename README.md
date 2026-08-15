@@ -6,18 +6,18 @@ Dockerfile generator for SWE-bench Multimodal benchmark.
 
 ```bash
 # From HuggingFace dataset
-sb-dockerfile-gen-multimodal SWE-bench/SWE-bench_Multimodal --output_dir src/dockerfiles
+dockerfile-gen
 
 # From local JSON/JSONL file
-sb-dockerfile-gen-multimodal instances.jsonl --output_dir src/dockerfiles
+dockerfile-gen
 
 # Specific instances
-sb-dockerfile-gen-multimodal SWE-bench/SWE-bench_Multimodal --instance_ids some_instance --output_dir src/dockerfiles
+dockerfile-gen
 ```
 
 ## Output
 
-Generated Dockerfiles are written to `src/dockerfiles/<instance_id>.Dockerfile`.
+`Dockerfile` and `eval.sh` are regenerated in place under `tasks/<instance_id>/`, from that task's `task.yaml`.
 
 ## Install
 

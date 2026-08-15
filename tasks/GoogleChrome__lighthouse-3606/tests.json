@@ -1,0 +1,11 @@
+{
+  "FAIL_TO_PASS": [
+    "Optimized responses computes sizes",
+    "Optimized responses returns only text and non encoded responses",
+    "Page uses optimized responses passes when all responses are sufficiently optimized"
+  ],
+  "PASS_TO_PASS": [
+    "Page uses optimized responses fails when responses are collectively unoptimized",
+    "Optimized responses ignores responses from installed Chrome extensions"
+  ]
+}

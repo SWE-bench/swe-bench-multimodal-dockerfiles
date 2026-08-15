@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/replace - bpmn replace position and size should assign default size when replacing task with expanded sub process "
+  ],
+  "PASS_TO_PASS": []
+}

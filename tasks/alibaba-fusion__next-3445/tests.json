@@ -1,0 +1,38 @@
+{
+  "FAIL_TO_PASS": [
+    "TreeSelect - should support single line display"
+  ],
+  "PASS_TO_PASS": [
+    "TreeSelect - should support multiple with hasClear",
+    "TreeSelect - should trigger onChange when check node and enable treeCheckStrictly",
+    "TreeSelect - should render by defaultValue",
+    "TreeSelect - should render by dataSource",
+    "TreeSelect - should support search well when use virtual",
+    "TreeSelect - should only show matched node and its parent node when search some keyword",
+    "TreeSelect - should render by value",
+    "TreeSelect - should render child tag when set treeCheckedStrategy to all",
+    "TreeSelect - should trigger onChange when check node",
+    "TreeSelect - should render by loop TreeNode",
+    "TreeSelect - should support immutable ",
+    "TreeSelect - should render parent tag when set treeCheckedStrategy to all",
+    "TreeSelect - should not trigger onChange but close dropdown when select selected node",
+    "TreeSelect - should render not found if dataSource is empty or there is no search result",
+    "TreeSelect - should trigger onChange when remove tag",
+    "TreeSelect - should support keyboard",
+    "TreeSelect - should trigger onChange but not close dropdown when select node and enable multiple",
+    "TreeSelect - should trigger onChange and close dropdown when select tree node",
+    "TreeSelect - should render tag when defaultValue [{ label, value}]",
+    "TreeSelect - should render by value when enable treeCheckable",
+    "TreeSelect - should render by defaultValue when enable treeCheckable",
+    "TreeSelect - should trigger onSearch when search some keyword",
+    "TreeSelect - fix bug after setState onSearch",
+    "TreeSelect - should render all tag when set treeCheckedStrategy to all",
+    "TreeSelect - should hightlight matched node when search some keyword",
+    "TreeSelect - should show dropdown when set defaultVisible to true",
+    "TreeSelect - fix issues use isPreview when value is empty",
+    "TreeSelect - fix search bug when useVirtual",
+    "TreeSelect - should ignore case when search",
+    "TreeSelect - should show dropdown when click select box",
+    "TreeSelect - should support preview mode render"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features - label-editing basics should cancel on selected element deletion "
+  ],
+  "PASS_TO_PASS": []
+}

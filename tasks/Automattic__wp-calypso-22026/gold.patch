@@ -1,0 +1,302 @@
+diff --git a/client/extensions/woocommerce/app/dashboard/setup-tasks.js b/client/extensions/woocommerce/app/dashboard/setup-tasks.js
+index ec7c56a84e5c7..ec0a5e66e6845 100644
+--- a/client/extensions/woocommerce/app/dashboard/setup-tasks.js
++++ b/client/extensions/woocommerce/app/dashboard/setup-tasks.js
+@@ -25,7 +25,6 @@ import { fetchPaymentMethods } from 'woocommerce/state/sites/payment-methods/act
+ import {
+ 	setOptedOutOfShippingSetup,
+ 	setTriedCustomizerDuringInitialSetup,
+-	setCheckedTaxSetup,
+ } from 'woocommerce/state/sites/setup-choices/actions';
+ import QuerySettingsGeneral from 'woocommerce/components/query-settings-general';
+ import { arePaymentsSetup } from 'woocommerce/state/ui/payments/methods/selectors';
+@@ -81,10 +80,6 @@ class SetupTasks extends Component {
+ 		this.props.setOptedOutOfShippingSetup( this.props.site.ID, true );
+ 	};
+ 
+-	onClickTaxSettings = () => {
+-		this.props.setCheckedTaxSetup( this.props.site.ID, true );
+-	};
+-
+ 	onClickOpenCustomizer = () => {
+ 		this.props.setTriedCustomizerDuringInitialSetup( this.props.site.ID, true );
+ 	};
+@@ -165,7 +160,6 @@ class SetupTasks extends Component {
+ 					{
+ 						label: translate( 'Review taxes' ),
+ 						path: getLink( '/store/settings/taxes/:site', site ),
+-						onClick: this.onClickTaxSettings,
+ 						analyticsProp: 'set-up-taxes',
+ 					},
+ 				],
+@@ -234,7 +228,6 @@ function mapDispatchToProps( dispatch ) {
+ 			fetchPaymentMethods,
+ 			fetchProducts,
+ 			setOptedOutOfShippingSetup,
+-			setCheckedTaxSetup,
+ 			setTriedCustomizerDuringInitialSetup,
+ 		},
+ 		dispatch
+diff --git a/client/extensions/woocommerce/app/settings/email/mailchimp/sync_tab.js b/client/extensions/woocommerce/app/settings/email/mailchimp/sync_tab.js
+index efac4ea787890..d9afbfea097a2 100644
+--- a/client/extensions/woocommerce/app/settings/email/mailchimp/sync_tab.js
++++ b/client/extensions/woocommerce/app/settings/email/mailchimp/sync_tab.js
+@@ -55,9 +55,9 @@ const SyncTab = localize( ( { siteId, translate, syncState, resync, isRequesting
+ 	const { account_name, store_syncing, product_count, mailchimp_total_products,
+ 		mailchimp_total_orders, order_count } = syncState;
+ 	const hasProductInfo = ( undefined !== product_count ) && ( undefined !== mailchimp_total_products );
+-	const products = hasProductInfo ? ( product_count + '/' + mailchimp_total_products ) : '';
++	const products = hasProductInfo ? ( mailchimp_total_products + '/' + product_count ) : '';
+ 	const hasOrdersInfo = ( undefined !== order_count ) && ( undefined !== mailchimp_total_orders );
+-	const orders = hasOrdersInfo ? ( order_count + '/' + mailchimp_total_orders ) : '';
++	const orders = hasOrdersInfo ? ( mailchimp_total_orders + '/' + order_count ) : '';
+ 
+ 	const synced = () => (
+ 		<Notice
+diff --git a/client/extensions/woocommerce/app/settings/payments/style.scss b/client/extensions/woocommerce/app/settings/payments/style.scss
+index d318e33efb117..57ca482fb3983 100644
+--- a/client/extensions/woocommerce/app/settings/payments/style.scss
++++ b/client/extensions/woocommerce/app/settings/payments/style.scss
+@@ -1,6 +1,7 @@
+ &.payments__dialog {
++	min-width: 90%;
+ 	@include breakpoint( ">660px" ) {
+-		width: 660px;
++		min-width: 660px;
+ 	}
+ 
+ 	.dialog__content {
+@@ -51,6 +52,7 @@
+ 		margin: 0;
+ 		padding: 0;
+ 		box-shadow: none;
++		padding-right: 24px;
+ 	}
+ }
+ 
+@@ -61,7 +63,6 @@
+ 	padding-top: 24px;
+ 
+ 	@include breakpoint( ">960px" ) {
+-		padding-left: 24px;
+ 		padding-top: 0;
+ 	}
+ }
+diff --git a/client/extensions/woocommerce/app/settings/shipping/style.scss b/client/extensions/woocommerce/app/settings/shipping/style.scss
+index 244e8d108149f..9aae838ca9a6a 100644
+--- a/client/extensions/woocommerce/app/settings/shipping/style.scss
++++ b/client/extensions/woocommerce/app/settings/shipping/style.scss
+@@ -21,6 +21,7 @@
+ 		padding: 0;
+ 		box-shadow: none;
+ 		flex-shrink: 1;
++		padding-right: 24px;
+ 	}
+ 
+ 	@include breakpoint( '>960px' ) {
+diff --git a/client/extensions/woocommerce/app/settings/taxes/index.js b/client/extensions/woocommerce/app/settings/taxes/index.js
+index 11fb19dc716a0..270a24b35637c 100644
+--- a/client/extensions/woocommerce/app/settings/taxes/index.js
++++ b/client/extensions/woocommerce/app/settings/taxes/index.js
+@@ -22,6 +22,11 @@ import Main from 'components/main';
+ import SettingsTaxesPlaceholder from './taxes-placeholder';
+ import SettingsTaxesTaxJar from './taxes-taxjar';
+ import SettingsTaxesWooCommerceServices from './taxes-wcs';
++import {
++	areSetupChoicesLoaded,
++	getCheckedTaxSetup,
++} from 'woocommerce/state/sites/setup-choices/selectors';
++import { setCheckedTaxSetup } from 'woocommerce/state/sites/setup-choices/actions';
+ 
+ class SettingsTaxes extends Component {
+ 	static propTypes = {
+@@ -31,6 +36,9 @@ class SettingsTaxes extends Component {
+ 		sitePluginsLoaded: PropTypes.bool,
+ 		siteSlug: PropTypes.string,
+ 		taxJarPluginActive: PropTypes.bool,
++		setupChoicesLoaded: PropTypes.bool,
++		taxesAreSetUp: PropTypes.bool,
++		setCheckedTaxSetup: PropTypes.func,
+ 	};
+ 
+ 	maybeFetchPlugins = ( props, force = false ) => {
+@@ -45,12 +53,30 @@ class SettingsTaxes extends Component {
+ 
+ 	componentDidMount = () => {
+ 		this.maybeFetchPlugins( this.props, true );
++
++		if ( this.props.setupChoicesLoaded ) {
++			this.maybeSetCheckedTaxSetup();
++		}
+ 	};
+ 
+ 	componentWillReceiveProps = newProps => {
+ 		this.maybeFetchPlugins( newProps );
+ 	};
+ 
++	componentDidUpdate = prevProps => {
++		if ( this.props.setupChoicesLoaded && ! prevProps.setupChoicesLoaded ) {
++			this.maybeSetCheckedTaxSetup();
++		}
++	};
++
++	maybeSetCheckedTaxSetup = () => {
++		const { taxesAreSetUp, siteId } = this.props;
++		if ( taxesAreSetUp ) {
++			return;
++		}
++		this.props.setCheckedTaxSetup( siteId, true );
++	};
++
+ 	render = () => {
+ 		const { className, site, siteId, sitePluginsLoaded, siteSlug, taxJarPluginActive } = this.props;
+ 
+@@ -83,6 +109,9 @@ function mapStateToProps( state ) {
+ 		active: true,
+ 	} );
+ 
++	const setupChoicesLoaded = areSetupChoicesLoaded( state, siteId );
++	const taxesAreSetUp = getCheckedTaxSetup( state, siteId );
++
+ 	return {
+ 		isRequestingSitePlugins,
+ 		site,
+@@ -90,6 +119,8 @@ function mapStateToProps( state ) {
+ 		sitePluginsLoaded,
+ 		siteSlug,
+ 		taxJarPluginActive,
++		setupChoicesLoaded,
++		taxesAreSetUp,
+ 	};
+ }
+ 
+@@ -97,6 +128,7 @@ function mapDispatchToProps( dispatch ) {
+ 	return bindActionCreators(
+ 		{
+ 			fetchPlugins,
++			setCheckedTaxSetup,
+ 		},
+ 		dispatch
+ 	);
+diff --git a/client/extensions/woocommerce/app/settings/taxes/taxes-options.js b/client/extensions/woocommerce/app/settings/taxes/taxes-options.js
+index b5a972ebe6d6f..386f061f4372f 100644
+--- a/client/extensions/woocommerce/app/settings/taxes/taxes-options.js
++++ b/client/extensions/woocommerce/app/settings/taxes/taxes-options.js
+@@ -16,16 +16,36 @@ import ExtendedHeader from 'woocommerce/components/extended-header';
+ import FormCheckbox from 'components/forms/form-checkbox';
+ import FormFieldset from 'components/forms/form-fieldset';
+ import FormLabel from 'components/forms/form-label';
++import FormSettingExplanation from 'components/forms/form-setting-explanation';
+ 
+ class TaxesOptions extends Component {
+ 	static propTypes = {
+ 		onCheckboxChange: PropTypes.func.isRequired,
+ 		pricesIncludeTaxes: PropTypes.bool,
+ 		shippingIsTaxable: PropTypes.bool,
++		shipToCountry: PropTypes.shape( {
++			value: PropTypes.string,
++		} ),
+ 	};
+ 
+ 	render = () => {
+-		const { onCheckboxChange, pricesIncludeTaxes, shippingIsTaxable, translate } = this.props;
++		const {
++			onCheckboxChange,
++			pricesIncludeTaxes,
++			shippingIsTaxable,
++			shipToCountry,
++			translate,
++		} = this.props;
++
++		const shippingDisabled =
++			( shipToCountry && shipToCountry.value && 'disabled' === shipToCountry.value ) || false;
++		const shippingDisabledMessage =
++			( shippingDisabled && (
++				<FormSettingExplanation>
++					{ translate( 'Shipping has been disabled for this site.' ) }
++				</FormSettingExplanation>
++			) ) ||
++			null;
+ 
+ 		return (
+ 			<div className="taxes__taxes-options">
+@@ -48,8 +68,10 @@ class TaxesOptions extends Component {
+ 								checked={ shippingIsTaxable || false }
+ 								name="shippingIsTaxable"
+ 								onChange={ onCheckboxChange }
++								disabled={ shippingDisabled }
+ 							/>
+ 							<span>{ translate( 'Charge taxes on shipping costs' ) }</span>
++							{ shippingDisabledMessage }
+ 						</FormLabel>
+ 					</FormFieldset>
+ 				</Card>
+diff --git a/client/extensions/woocommerce/app/settings/taxes/taxes-wcs.js b/client/extensions/woocommerce/app/settings/taxes/taxes-wcs.js
+index 76a772a1f8c70..25147affa497e 100644
+--- a/client/extensions/woocommerce/app/settings/taxes/taxes-wcs.js
++++ b/client/extensions/woocommerce/app/settings/taxes/taxes-wcs.js
+@@ -18,6 +18,7 @@ import ActionHeader from 'woocommerce/components/action-header';
+ import {
+ 	areSettingsGeneralLoaded,
+ 	areTaxCalculationsEnabled,
++	getShipToCountrySetting,
+ } from 'woocommerce/state/sites/settings/general/selectors';
+ import {
+ 	areTaxSettingsLoaded,
+@@ -59,6 +60,9 @@ class SettingsTaxesWooCommerceServices extends Component {
+ 		siteSlug: PropTypes.string.isRequired,
+ 		siteId: PropTypes.number.isRequired,
+ 		taxesEnabled: PropTypes.bool,
++		shipToCountry: PropTypes.shape( {
++			value: PropTypes.string,
++		} ),
+ 	};
+ 
+ 	componentDidMount = () => {
+@@ -174,6 +178,7 @@ class SettingsTaxesWooCommerceServices extends Component {
+ 				onCheckboxChange={ this.onCheckboxChange }
+ 				pricesIncludeTaxes={ this.state.pricesIncludeTaxes }
+ 				shippingIsTaxable={ this.state.shippingIsTaxable }
++				shipToCountry={ this.props.shipToCountry }
+ 			/>
+ 		);
+ 	};
+@@ -207,12 +212,14 @@ class SettingsTaxesWooCommerceServices extends Component {
+ function mapStateToProps( state ) {
+ 	const loaded = areTaxSettingsLoaded( state ) && areSettingsGeneralLoaded( state );
+ 	const pricesIncludeTaxes = getPricesIncludeTax( state );
++	const shipToCountry = getShipToCountrySetting( state );
+ 	const shippingIsTaxable = ! getShippingIsTaxFree( state ); // note the inversion
+ 	const taxesEnabled = areTaxCalculationsEnabled( state );
+ 
+ 	return {
+ 		loaded,
+ 		pricesIncludeTaxes,
++		shipToCountry,
+ 		shippingIsTaxable,
+ 		taxesEnabled,
+ 	};
+diff --git a/client/extensions/woocommerce/state/sites/settings/general/selectors.js b/client/extensions/woocommerce/state/sites/settings/general/selectors.js
+index a343a7acf5499..e0fb69907bfb5 100644
+--- a/client/extensions/woocommerce/state/sites/settings/general/selectors.js
++++ b/client/extensions/woocommerce/state/sites/settings/general/selectors.js
+@@ -56,6 +56,19 @@ export function getPaymentCurrencySettings( state, siteId = getSelectedSiteId( s
+ 	return currency || {};
+ }
+ 
++/**
++ * Gets ship to country setting from API data.
++ *
++ * @param {Object} state Global state tree
++ * @param {Number} siteId wpcom site id. If not provided, the Site ID selected in the UI will be used
++ * @return {Object} Value of the "Shipping location(s)" Setting
++ */
++export function getShipToCountrySetting( state, siteId = getSelectedSiteId( state ) ) {
++	const generalSettings = getRawGeneralSettings( state, siteId );
++	const setting = find( generalSettings, item => item.id === 'woocommerce_ship_to_countries' );
++	return setting || {};
++}
++
+ export const getStoreLocation = ( state, siteId = getSelectedSiteId( state ) ) => {
+ 	const defaultLocation = {
+ 		street: '',

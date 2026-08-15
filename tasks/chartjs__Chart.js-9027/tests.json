@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Linear Scale should not throw errors when chart size is negative "
+  ],
+  "PASS_TO_PASS": []
+}

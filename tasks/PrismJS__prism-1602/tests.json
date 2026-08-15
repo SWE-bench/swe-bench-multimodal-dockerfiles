@@ -1,0 +1,17 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'yaml' – should pass test case 'string_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'yaml' – should pass test case 'key_feature'",
+    "Testing language 'yaml' – should pass test case 'important_feature'",
+    "Testing language 'yaml' – should pass test case 'directive_feature'",
+    "Testing language 'yaml' – should pass test case 'tag_feature'",
+    "Testing language 'yaml' – should pass test case 'null_feature'",
+    "Testing language 'yaml' – should pass test case 'boolean_feature'",
+    "Testing language 'yaml' – should pass test case 'datetime_feature'",
+    "Testing language 'yaml' – should pass test case 'comment_feature'",
+    "Testing language 'yaml' – should pass test case 'scalar_feature'",
+    "Testing language 'yaml' – should pass test case 'number_feature'"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/rules - BpmnRules boundary events connect Task_in_OtherProcess -> MessageBoundaryEvent_onSubProcess "
+  ],
+  "PASS_TO_PASS": []
+}

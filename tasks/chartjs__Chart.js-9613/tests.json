@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Chart.plugins config.options.plugins should filter event callbacks by plugin events array "
+  ],
+  "PASS_TO_PASS": []
+}

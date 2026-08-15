@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "OffscreenImages audit finds images with 0 area"
+  ],
+  "PASS_TO_PASS": [
+    "OffscreenImages audit disregards images loaded after TTI",
+    "OffscreenImages audit does not find used images",
+    "OffscreenImages audit finds unused images",
+    "OffscreenImages audit handles images without network record",
+    "OffscreenImages audit de-dupes images"
+  ]
+}

@@ -1,0 +1,17 @@
+base_commit: d4ce437830efcfe44b57a1fac53b727a1eed2f0e
+created_at: '2023-09-11T14:49:49Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15114:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-holes/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/1361a79076732ef8243cdf0419c2d4351f7906fb/test/rendering/cases/webgl-holes/expected.png
+instance_id: openlayers__openlayers-15114
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '8.1'

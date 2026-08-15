@@ -1,0 +1,19 @@
+{
+  "FAIL_TO_PASS": [
+    "Processor #process() calls callback with processed image data",
+    "ol.source.Raster constructor disposes the processor when disposed",
+    "Processor #process() - faux worker calls operation with input pixels",
+    "Processor constructor creates a new processor",
+    "ol.source.Raster #setOperation() disposes the previous processor",
+    "Processor #process() - faux worker passes meta object to operations",
+    "ol.Disposable #disposed is initially false",
+    "Processor #process() calls operation with input pixels",
+    "ol.Disposable #disposed is true after a call to dispose",
+    "Processor #process() calls callbacks for each call",
+    "Processor #dispose() - faux worker stops callbacks from being called",
+    "Processor #process() allows library functions to be called",
+    "Processor #process() respects max queue length",
+    "Processor #dispose() stops callbacks from being called"
+  ],
+  "PASS_TO_PASS": []
+}

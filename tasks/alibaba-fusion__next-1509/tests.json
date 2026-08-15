@@ -1,0 +1,43 @@
+{
+  "FAIL_TO_PASS": [
+    "Dialog A11y - Show - should work when set <ConfigProvider popupContainer/> "
+  ],
+  "PASS_TO_PASS": [
+    "Quick - should support message title",
+    "Quick - should support custom prefix",
+    "Dialog A11y - Show - should hide close link if set closeable to false",
+    "Dialog A11y - Show - quick-calling should should support set prefix for dialog",
+    "Dialog A11y - Show - should support confirm",
+    "Dialog A11y - Show - should support custom footer",
+    "Dialog A11y - Basic - should have accessible close button",
+    "Dialog A11y - Show - should throw error (async)",
+    "Dialog A11y - Show - should support footerActions",
+    "Quick - should support alert message",
+    "Dialog A11y - Show - should show and hide",
+    "Dialog A11y - Basic - should have accessible header",
+    "Dialog A11y - Show - should adjust position and size if not use css to position",
+    "Dialog A11y - Show - should support footerAlign",
+    "Quick - should support default prefix",
+    "Dialog A11y - Show - should not close dialog immediately if onOk return promise and resolve true",
+    "Quick - should support messageProps",
+    "Dialog A11y - Show - should support custom footer button text",
+    "Dialog A11y - Show - should have role `alertdialog` for confirm dialog",
+    "Dialog A11y - Show - should not close dialog if onOk return promise and resolve false",
+    "Dialog A11y - Show - should use css to position dialog if set isFullScreen to true and align to 'cc cc'",
+    "Dialog A11y - Show - should close dialog if click the ok button",
+    "Quick - should pass content as child",
+    "Dialog A11y - Show - should support show",
+    "Dialog A11y - Show - should have role `alertdialog` for show dialog",
+    "Dialog A11y - Show - should support alert",
+    "Dialog A11y - Show - quick-calling should use root context's state if its exists",
+    "Dialog A11y - Show - should not close dialog if onOk return false",
+    "Dialog A11y - Show - should throw error",
+    "Dialog A11y - Show - should not have any violations",
+    "Dialog A11y - Show - should have role `alertdialog` for alert dialog",
+    "Dialog A11y - Show - should support height",
+    "Dialog A11y - Show - should obey: self.locale > nearest ConfigProvider.locale > further ConfigProvider.locale",
+    "Dialog A11y - Basic - should not have any violations",
+    "Dialog A11y - Show - should not close dialog if onOk return promise and reject",
+    "Quick - should support confirm message"
+  ]
+}

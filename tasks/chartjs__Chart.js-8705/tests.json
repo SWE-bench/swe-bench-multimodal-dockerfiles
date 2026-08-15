@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Test tick generators formatters.numeric should not fail on empty or 1 item array "
+  ],
+  "PASS_TO_PASS": []
+}

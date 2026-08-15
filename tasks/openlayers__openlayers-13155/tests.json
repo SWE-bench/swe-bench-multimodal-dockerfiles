@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/icon-opacity/main.js'",
+    "ol.reproj.Image has uniform color"
+  ],
+  "PASS_TO_PASS": []
+}

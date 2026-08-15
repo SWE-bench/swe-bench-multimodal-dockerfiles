@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/ComposedModal/ComposedModal-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

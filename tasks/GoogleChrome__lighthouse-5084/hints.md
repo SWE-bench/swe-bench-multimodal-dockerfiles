@@ -1,0 +1,1 @@
+Yeah I think we decided after the original change that we're just trying to report "load"ish savings rathe than on specific metrics anyhow, it seems like savings on load instead of TTI is what we want in most cases (except offscreen images, render-blocking, etc where we're telling folks to "defer" rather than "eliminate")

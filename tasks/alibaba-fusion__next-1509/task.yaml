@@ -1,0 +1,16 @@
+base_commit: 2471fee5c1fbf3d6172ae699f1d33a28ddf74892
+created_at: '2020-01-08T14:45:51Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.alibaba-fusion_1776_next-1509:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/10049465/71986887-31b2a400-3268-11ea-9b5b-d121dbb4cf3a.png
+  test_patch: []
+instance_id: alibaba-fusion__next-1509
+log_parser: parse_log_next
+repo: alibaba-fusion/next
+split: test
+version: '1.19'

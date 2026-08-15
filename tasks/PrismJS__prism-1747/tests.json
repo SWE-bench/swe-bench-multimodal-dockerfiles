@@ -1,0 +1,15 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'smalltalk' – should pass test case 'comment_feature'",
+    "Testing language 'smalltalk' – should pass test case 'string_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'smalltalk' – should pass test case 'symbol_feature'",
+    "Testing language 'smalltalk' – should pass test case 'character_feature'",
+    "Testing language 'smalltalk' – should pass test case 'temporary-variables_feature'",
+    "Testing language 'smalltalk' – should pass test case 'operator_feature'",
+    "Testing language 'smalltalk' – should pass test case 'number_feature'",
+    "Testing language 'smalltalk' – should pass test case 'keyword_feature'",
+    "Testing language 'smalltalk' – should pass test case 'block-arguments_feature'"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/audits/byte-efficiency/uses-responsive-images-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

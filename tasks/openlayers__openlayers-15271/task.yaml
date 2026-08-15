@@ -1,0 +1,17 @@
+base_commit: 58fbe6f122cf9e77d11e9587a9f075a06645d412
+created_at: '2023-10-24T16:35:10Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15271:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/vector-id/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/1313916226a7bf40109d06dee33914cb1b9ff37d/test/rendering/cases/vector-id/expected.png
+instance_id: openlayers__openlayers-15271
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '8.1'

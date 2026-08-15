@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/postrender-immediate/main.js'",
+    "./cases/image-stretched-interpolate-false/main.js'",
+    "./cases/icon-opacity/main.js'",
+    "./cases/image-no-stretch-interpolate-false/main.js'"
+  ],
+  "PASS_TO_PASS": []
+}

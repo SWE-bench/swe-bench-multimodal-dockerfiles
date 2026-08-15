@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "ReportGeneratorV2 #replaceStrings should not replace serial occurences",
+    "ReportGeneratorV2 #replaceStrings should replace all occurrences",
+    "ReportGeneratorV2 #generateHtmlReport should inject the report renderer javascript"
+  ],
+  "PASS_TO_PASS": [
+    "ReportGeneratorV2 #generateReportJson should return categories",
+    "ReportGeneratorV2 #arithmeticMean should work for equal weights",
+    "ReportGeneratorV2 #generateHtmlReport should inject the report JSON",
+    "ReportGeneratorV2 #generateReportJson should score the categories",
+    "ReportGeneratorV2 #arithmeticMean should work for empty list",
+    "ReportGeneratorV2 #arithmeticMean should work for varying weights",
+    "ReportGeneratorV2 #generateHtmlReport should return html",
+    "ReportGeneratorV2 #arithmeticMean should work for missing values",
+    "ReportGeneratorV2 #generateReportJson should return a score"
+  ]
+}

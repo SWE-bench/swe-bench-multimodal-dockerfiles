@@ -1,0 +1,17 @@
+base_commit: 1f761d943fe2c92a63d38d5e305fa2c11fe3ff48
+created_at: '2022-01-11T19:50:08Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-13226:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-tile-no-wrap/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/647a0d8ece9b8885172ef3d37686636a193cb881/test/rendering/cases/webgl-tile-no-wrap/expected.png
+instance_id: openlayers__openlayers-13226
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '6.11'

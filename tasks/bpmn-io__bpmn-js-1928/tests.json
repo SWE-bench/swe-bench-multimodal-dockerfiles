@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/space-tool - BpmnSpaceTool participants should not resize an empty pool vertically "
+  ],
+  "PASS_TO_PASS": []
+}

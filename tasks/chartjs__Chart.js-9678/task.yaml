@@ -1,0 +1,63 @@
+base_commit: 8e68481ec4e29599660332f58967f439fb2ef17c
+created_at: '2021-09-24T19:29:16Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.chartjs_1776_chart.js-9678:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/fixtures/controller.bar/bar-base-value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-base-value.png
+  - path: test/fixtures/controller.bar/bar-thickness-flex-offset.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-flex-offset.png
+  - path: test/fixtures/controller.bar/bar-thickness-flex.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-flex.png
+  - path: test/fixtures/controller.bar/bar-thickness-offset.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-offset.png
+  - path: test/fixtures/controller.bar/bar-thickness-reverse.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-reverse.png
+  - path: test/fixtures/controller.bar/bar-thickness-stacked.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/bar-thickness-stacked.png
+  - path: test/fixtures/controller.bar/baseLine/bottom.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/bottom.png
+  - path: test/fixtures/controller.bar/baseLine/left.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/left.png
+  - path: test/fixtures/controller.bar/baseLine/mid-x.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/mid-x.png
+  - path: test/fixtures/controller.bar/baseLine/mid-y.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/mid-y.png
+  - path: test/fixtures/controller.bar/baseLine/right.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/right.png
+  - path: test/fixtures/controller.bar/baseLine/top.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/top.png
+  - path: test/fixtures/controller.bar/baseLine/value-x.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/value-x.png
+  - path: test/fixtures/controller.bar/baseLine/value-y.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/baseLine/value-y.png
+  - path: test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-mixed-chart.png
+  - path: test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number-with-order.png
+  - path: test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius-stacked-number.png
+  - path: test/fixtures/controller.bar/borderRadius/border-radius.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderRadius/border-radius.png
+  - path: test/fixtures/controller.bar/borderSkipped/middle.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderSkipped/middle.png
+  - path: test/fixtures/controller.bar/borderWidth/indexable.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderWidth/indexable.png
+  - path: test/fixtures/controller.bar/borderWidth/object.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderWidth/object.png
+  - path: test/fixtures/controller.bar/borderWidth/value.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/borderWidth/value.png
+  - path: test/fixtures/controller.bar/horizontal-borders.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/horizontal-borders.png
+  - path: test/fixtures/controller.bar/minBarLength/vertical.png
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/2502cd581070c91d080a4c6d042b3fa7ce90d2f7/test/fixtures/controller.bar/minBarLength/vertical.png
+instance_id: chartjs__Chart.js-9678
+log_parser: parse_log_chart_js
+repo: chartjs/Chart.js
+split: dev
+version: '3.5'

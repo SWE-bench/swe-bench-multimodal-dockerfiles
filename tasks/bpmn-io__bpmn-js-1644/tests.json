@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/behavior - subprocess start event replace call activity -> expanded subprocess should add start event child to subprocess ",
+    "features/modeling/behavior - subprocess start event replace call activity -> expanded subprocess should wire startEvent di correctly ",
+    "features/popup-menu - replace menu provider toggle parallel toggle button should keep sequential properties ",
+    "features/popup-menu - replace menu provider toggle sequential toggle button should keep parallel properties "
+  ],
+  "PASS_TO_PASS": []
+}

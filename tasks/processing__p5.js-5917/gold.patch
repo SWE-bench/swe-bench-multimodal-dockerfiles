@@ -1,0 +1,230 @@
+diff --git a/src/webgl/material.js b/src/webgl/material.js
+index 52b05bcc1d..bbec1650ad 100644
+--- a/src/webgl/material.js
++++ b/src/webgl/material.js
+@@ -1086,28 +1086,23 @@ p5.RendererGL.prototype._applyBlendMode = function() {
+   switch (this.curBlendMode) {
+     case constants.BLEND:
+       gl.blendEquation(gl.FUNC_ADD);
+-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
++      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+       break;
+     case constants.ADD:
+       gl.blendEquation(gl.FUNC_ADD);
+-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
++      gl.blendFunc(gl.ONE, gl.ONE);
+       break;
+     case constants.REMOVE:
+-      gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+-      gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA);
++      gl.blendEquation(gl.FUNC_ADD);
++      gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
+       break;
+     case constants.MULTIPLY:
+-      gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
+-      gl.blendFuncSeparate(
+-        gl.DST_COLOR,
+-        gl.ONE_MINUS_SRC_ALPHA,
+-        gl.ONE,
+-        gl.ONE_MINUS_SRC_ALPHA
+-      );
++      gl.blendEquation(gl.FUNC_ADD);
++      gl.blendFunc(gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA);
+       break;
+     case constants.SCREEN:
+-      gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
+-      gl.blendFuncSeparate(gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ONE, gl.ONE);
++      gl.blendEquation(gl.FUNC_ADD);
++      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
+       break;
+     case constants.EXCLUSION:
+       gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
+@@ -1124,7 +1119,7 @@ p5.RendererGL.prototype._applyBlendMode = function() {
+       break;
+     case constants.SUBTRACT:
+       gl.blendEquationSeparate(gl.FUNC_REVERSE_SUBTRACT, gl.FUNC_ADD);
+-      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
++      gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+       break;
+     case constants.DARKEST:
+       if (this.blendExt) {
+diff --git a/src/webgl/p5.RendererGL.js b/src/webgl/p5.RendererGL.js
+index 43f194c2fe..46cfc4c18c 100755
+--- a/src/webgl/p5.RendererGL.js
++++ b/src/webgl/p5.RendererGL.js
+@@ -235,11 +235,11 @@ p5.RendererGL.prototype._setAttributeDefaults = function(pInst) {
+   // See issue #3850, safer to enable AA in Safari
+   const applyAA = navigator.userAgent.toLowerCase().includes('safari');
+   const defaults = {
+-    alpha: false,
++    alpha: true,
+     depth: true,
+     stencil: true,
+     antialias: applyAA,
+-    premultipliedAlpha: false,
++    premultipliedAlpha: true,
+     preserveDrawingBuffer: true,
+     perPixelLighting: true
+   };
+@@ -342,7 +342,7 @@ p5.RendererGL.prototype._resetContext = function(options, callback) {
+  * The available attributes are:
+  * <br>
+  * alpha - indicates if the canvas contains an alpha buffer
+- * default is false
++ * default is true
+  *
+  * depth - indicates whether the drawing buffer has a depth buffer
+  * of at least 16 bits - default is true
+@@ -355,7 +355,7 @@ p5.RendererGL.prototype._resetContext = function(options, callback) {
+  *
+  * premultipliedAlpha - indicates that the page compositor will assume
+  * the drawing buffer contains colors with pre-multiplied alpha
+- * default is false
++ * default is true
+  *
+  * preserveDrawingBuffer - if true the buffers will not be cleared and
+  * and will preserve their values until cleared or overwritten by author
+@@ -895,7 +895,7 @@ p5.RendererGL.prototype.clear = function(...args) {
+   const _b = args[2] || 0;
+   const _a = args[3] || 0;
+ 
+-  this.GL.clearColor(_r, _g, _b, _a);
++  this.GL.clearColor(_r * _a, _g * _a, _b * _a, _a);
+   this.GL.clearDepth(1);
+   this.GL.clear(this.GL.COLOR_BUFFER_BIT | this.GL.DEPTH_BUFFER_BIT);
+ };
+diff --git a/src/webgl/shaders/basic.frag b/src/webgl/shaders/basic.frag
+index c79663ae6b..fa6646fa2a 100644
+--- a/src/webgl/shaders/basic.frag
++++ b/src/webgl/shaders/basic.frag
+@@ -1,5 +1,5 @@
+ precision mediump float;
+ uniform vec4 uMaterialColor;
+ void main(void) {
+-  gl_FragColor = uMaterialColor;
+-}
+\ No newline at end of file
++  gl_FragColor = vec4(uMaterialColor.rgb, 1.) * uMaterialColor.a;
++}
+diff --git a/src/webgl/shaders/font.frag b/src/webgl/shaders/font.frag
+index 7d4f0f98e0..a011973c96 100644
+--- a/src/webgl/shaders/font.frag
++++ b/src/webgl/shaders/font.frag
+@@ -210,6 +210,6 @@ void main() {
+   float distance = max(weight.x + weight.y, minDistance); // manhattan approx.
+   float antialias = abs(dot(coverage, weight) / distance);
+   float cover = min(abs(coverage.x), abs(coverage.y));
+-  gl_FragColor = uMaterialColor;
+-  gl_FragColor.a *= saturate(max(antialias, cover));
+-}
+\ No newline at end of file
++  gl_FragColor = vec4(uMaterialColor.rgb, 1.) * uMaterialColor.a;
++  gl_FragColor *= saturate(max(antialias, cover));
++}
+diff --git a/src/webgl/shaders/light_texture.frag b/src/webgl/shaders/light_texture.frag
+index 1526641ef8..11e5db5520 100644
+--- a/src/webgl/shaders/light_texture.frag
++++ b/src/webgl/shaders/light_texture.frag
+@@ -15,7 +15,7 @@ void main(void) {
+     gl_FragColor = uMaterialColor;
+   }
+   else {
+-    gl_FragColor = isTexture ? texture2D(uSampler, vVertTexCoord) * (uTint / vec4(255, 255, 255, 255)) : uMaterialColor;
+-    gl_FragColor.rgb = gl_FragColor.rgb * vDiffuseColor + vSpecularColor;
++    vec4 baseColor = isTexture ? texture2D(uSampler, vVertTexCoord) * (uTint / vec4(255, 255, 255, 255)) : uMaterialColor;
++    gl_FragColor = vec4(gl_FragColor.rgb * vDiffuseColor + vSpecularColor, 1.) * baseColor.a;
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/webgl/shaders/line.frag b/src/webgl/shaders/line.frag
+index 47812beb8d..2a8434c90c 100644
+--- a/src/webgl/shaders/line.frag
++++ b/src/webgl/shaders/line.frag
+@@ -4,5 +4,5 @@ precision mediump int;
+ uniform vec4 uMaterialColor;
+ 
+ void main() {
+-  gl_FragColor = uMaterialColor;
+-}
+\ No newline at end of file
++  gl_FragColor = vec4(uMaterialColor.rgb, 1.) * uMaterialColor.a;
++}
+diff --git a/src/webgl/shaders/phong.frag b/src/webgl/shaders/phong.frag
+index 5e5ba763e1..6f848f861c 100644
+--- a/src/webgl/shaders/phong.frag
++++ b/src/webgl/shaders/phong.frag
+@@ -24,9 +24,9 @@ void main(void) {
+ 
+   // Calculating final color as result of all lights (plus emissive term).
+ 
+-  gl_FragColor = isTexture ? texture2D(uSampler, vTexCoord) * (uTint / vec4(255, 255, 255, 255)) : uMaterialColor;
+-  gl_FragColor.rgb = diffuse * gl_FragColor.rgb + 
++  vec4 baseColor = isTexture ? texture2D(uSampler, vTexCoord) * (uTint / vec4(255, 255, 255, 255)) : uMaterialColor;
++  gl_FragColor = vec4(diffuse * baseColor.rgb + 
+                     vAmbientColor * uAmbientMatColor.rgb + 
+                     specular * uSpecularMatColor.rgb + 
+-                    uEmissiveMatColor.rgb;
+-}
+\ No newline at end of file
++                    uEmissiveMatColor.rgb, 1.) * baseColor.a;
++}
+diff --git a/src/webgl/shaders/point.frag b/src/webgl/shaders/point.frag
+index 0797e425aa..eeafb4ef83 100644
+--- a/src/webgl/shaders/point.frag
++++ b/src/webgl/shaders/point.frag
+@@ -4,25 +4,25 @@ uniform vec4 uMaterialColor;
+ varying float vStrokeWeight;
+ 
+ void main(){
+-	float mask = 0.0;
++  float mask = 0.0;
+ 
+-	// make a circular mask using the gl_PointCoord (goes from 0 - 1 on a point)
+-    // might be able to get a nicer edge on big strokeweights with smoothstep but slightly less performant
++  // make a circular mask using the gl_PointCoord (goes from 0 - 1 on a point)
++  // might be able to get a nicer edge on big strokeweights with smoothstep but slightly less performant
+ 
+-	mask = step(0.98, length(gl_PointCoord * 2.0 - 1.0));
++  mask = step(0.98, length(gl_PointCoord * 2.0 - 1.0));
+ 
+-	// if strokeWeight is 1 or less lets just draw a square
+-	// this prevents weird artifacting from carving circles when our points are really small
+-	// if strokeWeight is larger than 1, we just use it as is
++  // if strokeWeight is 1 or less lets just draw a square
++  // this prevents weird artifacting from carving circles when our points are really small
++  // if strokeWeight is larger than 1, we just use it as is
+ 
+-	mask = mix(0.0, mask, clamp(floor(vStrokeWeight - 0.5),0.0,1.0));
++  mask = mix(0.0, mask, clamp(floor(vStrokeWeight - 0.5),0.0,1.0));
+ 
+-	// throw away the borders of the mask
+-    // otherwise we get weird alpha blending issues
++  // throw away the borders of the mask
++  // otherwise we get weird alpha blending issues
+ 
+-	if(mask > 0.98){
+-      discard;
+-  	}
++  if(mask > 0.98){
++    discard;
++  }
+ 
+-  	gl_FragColor = vec4(uMaterialColor.rgb * (1.0 - mask), uMaterialColor.a) ;
+-}
+\ No newline at end of file
++  gl_FragColor = vec4(uMaterialColor.rgb, 1.) * uMaterialColor.a;
++}
+diff --git a/src/webgl/shaders/vertexColor.frag b/src/webgl/shaders/vertexColor.frag
+index 13c20b257c..be191e1c34 100644
+--- a/src/webgl/shaders/vertexColor.frag
++++ b/src/webgl/shaders/vertexColor.frag
+@@ -1,5 +1,5 @@
+ precision mediump float;
+ varying vec4 vColor;
+ void main(void) {
+-  gl_FragColor = vColor;
+-}
+\ No newline at end of file
++  gl_FragColor = vec4(vColor.rgb, 1.) * vColor.a;
++}

@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.render.canvas.BuilderGroup #replay omits lineTo for repeated coordinates",
+    "ol.render.canvas.BuilderGroup #replay calls the renderer function configured for the style"
+  ],
+  "PASS_TO_PASS": []
+}

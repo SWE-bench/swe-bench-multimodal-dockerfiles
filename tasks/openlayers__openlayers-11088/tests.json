@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.proj ol.proj.transform() does not flip axis order"
+  ],
+  "PASS_TO_PASS": []
+}

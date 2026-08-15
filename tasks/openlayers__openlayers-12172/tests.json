@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.style.Icon #getAnchor uses a top right anchor origin + displacement",
+    "ol.style.Icon #getAnchor uses displacement"
+  ],
+  "PASS_TO_PASS": []
+}

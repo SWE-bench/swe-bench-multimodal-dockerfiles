@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "./cases/icon-opacity/main.js'",
+    "./cases/reproj-image-stretched-disable-smoothing/main.js'",
+    "./cases/image-stretched-disable-smoothing/main.js'"
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,3 @@
+This was caused by https://github.com/grommet/grommet/commit/9de09e47dd0f912b76c7f2308ef71b3b0408a639
+![image](https://user-images.githubusercontent.com/12054362/186022392-132c7550-9657-4fa1-86bb-9ad5ff43c4cc.png)
+Basically if the data values add up to something near or larger than the scaling factor (10000) Then then `anglePer` comes out to 0. We can probably make this a little more scalable by dynamically calculating the scaling factor based on `max`. In this example, a scaling factor of 1000000000 works (and is still safely below Number.MAX_SAFE_INTEGER)

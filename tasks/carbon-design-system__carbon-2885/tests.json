@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/Toggle/Toggle-test.js",
+    "packages/react/src/components/ToggleSmall/ToggleSmall-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

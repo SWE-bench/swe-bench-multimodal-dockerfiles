@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/lib/network-recorder-test.js",
+    "lighthouse-core/test/gather/driver/wait-for-condition-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

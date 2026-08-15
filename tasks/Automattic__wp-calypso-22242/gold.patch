@@ -1,0 +1,12 @@
+diff --git a/client/jetpack-connect/main.jsx b/client/jetpack-connect/main.jsx
+index 14c44f93e5a5d6..96880e040dc6e0 100644
+--- a/client/jetpack-connect/main.jsx
++++ b/client/jetpack-connect/main.jsx
+@@ -211,6 +211,7 @@ export class JetpackConnectMain extends Component {
+ 		if ( url && url.substr( 0, 4 ) !== 'http' ) {
+ 			url = 'http://' + url;
+ 		}
++		url = url.replace( /wp-admin\/?$/, '' );
+ 		return untrailingslashit( url );
+ 	}
+ 

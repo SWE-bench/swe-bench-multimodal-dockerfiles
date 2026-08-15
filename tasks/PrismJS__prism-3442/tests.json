@@ -1,0 +1,35 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'markup' – should pass test case 'issue3441'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'markup' – should pass test case 'tag_attribute_feature'",
+    "Testing language 'markup+haml' – should pass test case 'markup_feature'",
+    "Testing language 'markup+http' – should pass test case 'issue2733'",
+    "Testing language 'markup' – should pass test case 'comment_feature'",
+    "Testing language 'markup!+css' – should pass test case 'css_inclusion'",
+    "Testing language 'markup' – should pass test case 'issue888'",
+    "Testing language 'markup' – should pass test case 'cdata_feature'",
+    "Testing language 'markup!+css+javascript' – should pass test case 'issue1240'",
+    "Testing language 'markup' – should pass test case 'prolog_feature'",
+    "Testing language 'markup' – should pass test case 'tag_feature'",
+    "Testing language 'markup+css+wiki' – should pass test case 'table-tag_feature'",
+    "Testing language 'javascript!+markup+js-templates' – should pass test case 'markup_inclusion'",
+    "Testing language 'markup+tt2' – should pass test case 'tt2_in_markup_feature'",
+    "Testing language 'markup+pug' – should pass test case 'markup_feature'",
+    "Testing language 'markup+http' – should pass test case 'xml-suffix_inclusion'",
+    "Testing language 'markup+http' – should pass test case 'html_inclusion'",
+    "Testing language 'markup+http' – should pass test case 'text-xml_inclusion'",
+    "Testing language 'markup+javascript+csharp+aspnet' – should pass test case 'script_feature'",
+    "Testing language 'dot!+markup' – should pass test case 'attribute_feature'",
+    "Testing language 'markup+php' – should pass test case 'issue1582'",
+    "Testing language 'markup+actionscript' – should pass test case 'xml_feature'",
+    "Testing language 'markup+http' – should pass test case 'xml_inclusion'",
+    "Testing language 'markup' – should pass test case 'issue585'",
+    "Testing language 'markup+php' – should pass test case 'php_with_closing_tag_in_markup_feature'",
+    "Testing language 'markup' – should pass test case 'entity_feature.html'",
+    "Testing language 'arturo!+markup' – should pass test case 'html-string_feature'",
+    "Testing language 'markup' – should pass test case 'doctype_feature'",
+    "Testing language 'markup+php' – should pass test case 'php_in_markup_feature'"
+  ]
+}

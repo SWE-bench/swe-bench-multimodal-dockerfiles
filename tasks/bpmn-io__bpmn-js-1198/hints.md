@@ -1,0 +1,1 @@
+I was also able to reproduce it with the `bpmn-js` version used in Camunda Modeler@2.2.4. So this is an old issue.

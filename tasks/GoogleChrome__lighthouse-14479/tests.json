@@ -1,0 +1,9 @@
+{
+  "FAIL_TO_PASS": [
+    "calculates score hitting mid distribution"
+  ],
+  "PASS_TO_PASS": [
+    "calculates score hitting top distribution",
+    "calculates score hitting bottom of distribution"
+  ]
+}

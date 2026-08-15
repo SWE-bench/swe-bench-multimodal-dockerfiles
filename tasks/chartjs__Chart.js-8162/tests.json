@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Chart.plugins config.options.plugins should not restart plugins when a double register occurs "
+  ],
+  "PASS_TO_PASS": []
+}

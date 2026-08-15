@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.renderer.Map #forEachFeatureAtCoordinate only draws features that intersect the hit detection viewport"
+  ],
+  "PASS_TO_PASS": []
+}

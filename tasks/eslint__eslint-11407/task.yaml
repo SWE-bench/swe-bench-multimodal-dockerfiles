@@ -1,0 +1,16 @@
+base_commit: af9688b7c4f6a3afe1b0ca5ba2f475c545e0309b
+created_at: '2019-02-16T19:34:05Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.eslint_1776_eslint-11407:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/15365418/51068445-e0c78b80-15d2-11e9-865d-17659d123e3e.png
+  test_patch: []
+instance_id: eslint__eslint-11407
+log_parser: parse_log_eslint
+repo: eslint/eslint
+split: test
+version: '5.14'

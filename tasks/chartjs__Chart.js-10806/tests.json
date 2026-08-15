@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Chart.controllers.doughnut auto /base/test/fixtures/controller.doughnut/single-slice-circumference-405.js "
+  ],
+  "PASS_TO_PASS": []
+}

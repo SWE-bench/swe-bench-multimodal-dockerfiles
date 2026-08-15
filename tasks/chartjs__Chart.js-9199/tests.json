@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "Legend block tests auto /base/test/fixtures/plugin.legend/label-textAlign/rtl-right.js ",
+    "Legend block tests auto /base/test/fixtures/plugin.legend/label-textAlign/rtl-left.js "
+  ],
+  "PASS_TO_PASS": []
+}

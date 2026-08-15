@@ -1,0 +1,17 @@
+base_commit: 63c189e531ac5a5a17bbae959eb1048ae425b6ac
+created_at: '2018-08-03T13:34:31Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.scratchfoundation_1776_scratch-gui-2778:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/19343/42785885-e32d7cec-8908-11e8-8141-156876cc296b.png
+  - https://user-images.githubusercontent.com/19343/42785885-e32d7cec-8908-11e8-8141-156876cc296b.png
+  test_patch: []
+instance_id: scratchfoundation__scratch-gui-2778
+log_parser: parse_log_carbon
+repo: scratchfoundation/scratch-gui
+split: test
+version: '2'

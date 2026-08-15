@@ -1,0 +1,20 @@
+{
+  "FAIL_TO_PASS": [
+    "Byte efficiency base audit should allow overriding of computeWasteWithTTIGraph",
+    "Byte efficiency base audit should create load simulator with the specified settings"
+  ],
+  "PASS_TO_PASS": [
+    "Byte efficiency base audit should format details",
+    "Byte efficiency base audit should populate KB",
+    "Byte efficiency base audit should set the rawValue",
+    "Byte efficiency base audit should work on real graphs",
+    "Byte efficiency base audit #estimateTransferSize should not error when missing resource size",
+    "Byte efficiency base audit should score the wastedMs",
+    "Byte efficiency base audit #estimateTransferSize should estimate by network compression ratio when asset does not match",
+    "Byte efficiency base audit should sort on wastedBytes",
+    "Byte efficiency base audit should create a display value",
+    "Byte efficiency base audit should throw on invalid graph",
+    "Byte efficiency base audit #estimateTransferSize should estimate by compression ratio when no network record available",
+    "Byte efficiency base audit #estimateTransferSize should return transferSize when asset matches"
+  ]
+}

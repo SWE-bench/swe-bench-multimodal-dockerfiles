@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Legend block tests callbacks should call onLeave when the mouse leaves the canvas "
+  ],
+  "PASS_TO_PASS": []
+}

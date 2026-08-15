@@ -1,0 +1,24 @@
+diff --git a/client/blocks/plan-storage/test/plan-storage.jsx b/client/blocks/plan-storage/test/plan-storage.jsx
+index 6c5dd301fc10b5..d2f1b6bbdd242a 100644
+--- a/client/blocks/plan-storage/test/plan-storage.jsx
++++ b/client/blocks/plan-storage/test/plan-storage.jsx
+@@ -29,6 +29,7 @@ import { PlanStorage } from '../index';
+ 
+ describe( 'PlanStorage basic tests', () => {
+ 	const props = {
++		canViewBar: true,
+ 		mediaStorage: {
+ 			max_storage_bytes: 1000,
+ 		},
+@@ -90,6 +91,11 @@ describe( 'PlanStorage basic tests', () => {
+ 		const storage = shallow( <PlanStorage { ...props } jetpackSite={ true } /> );
+ 		assert.lengthOf( storage.find( '.plan-storage' ), 0 );
+ 	} );
++	
++	test( 'should not render for contributors', () => {
++		const storage = shallow( <PlanStorage { ...props } canViewBar={ false } /> );
++		assert.lengthOf( storage.find( '.plan-storage' ), 0 );
++	} );
+ 
+ 	test( 'should not render when site plan slug is empty', () => {
+ 		const storage = shallow( <PlanStorage { ...props } sitePlanSlug={ null } /> );

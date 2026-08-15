@@ -1,0 +1,118 @@
+diff --git a/client/lib/purchases/index.js b/client/lib/purchases/index.js
+index 7679ad22d2f87..2f5725865ab11 100644
+--- a/client/lib/purchases/index.js
++++ b/client/lib/purchases/index.js
+@@ -134,6 +134,10 @@ function isPaidWithPaypal( purchase ) {
+ 	return 'paypal' === purchase.payment.type;
+ }
+ 
++function isPaidWithCredits( purchase ) {
++	return 'undefined' !== typeof purchase.payment && 'credits' === purchase.payment.type;
++}
++
+ function isPendingTransfer( purchase ) {
+ 	return purchase.pendingTransfer;
+ }
+@@ -260,6 +264,14 @@ function monthsUntilCardExpires( purchase ) {
+ 	return purchase.payment.creditCard.expiryMoment.diff( moment(), 'months' );
+ }
+ 
++function subscribedWithinPastWeek( purchase ) {
++	// Subscribed date should always be in the past. One week ago would be -7 days.
++	return (
++		'undefined' !== typeof purchase.subscribedDate &&
++		moment( purchase.subscribedDate ).diff( moment(), 'days' ) >= -7
++	);
++}
++
+ /**
+  * Returns the payment logo to display based on the payment method
+  *
+@@ -320,6 +332,7 @@ export {
+ 	isPaidWithCreditCard,
+ 	isPaidWithPayPalDirect,
+ 	isPaidWithPaypal,
++	isPaidWithCredits,
+ 	isExpired,
+ 	isExpiring,
+ 	isIncludedWithPlan,
+@@ -334,4 +347,5 @@ export {
+ 	purchaseType,
+ 	cardProcessorSupportsUpdates,
+ 	showCreditCardExpiringWarning,
++	subscribedWithinPastWeek,
+ };
+diff --git a/client/me/purchases/manage-purchase/notices.jsx b/client/me/purchases/manage-purchase/notices.jsx
+index c09e524b2c1ef..7da6f78a41cc9 100644
+--- a/client/me/purchases/manage-purchase/notices.jsx
++++ b/client/me/purchases/manage-purchase/notices.jsx
+@@ -24,6 +24,8 @@ import {
+ 	isOneTimePurchase,
+ 	isRenewable,
+ 	showCreditCardExpiringWarning,
++	isPaidWithCredits,
++	subscribedWithinPastWeek,
+ } from 'lib/purchases';
+ import { isDomainTransfer } from 'lib/products-values';
+ import { getPurchase, getSelectedSite } from '../utils';
+@@ -45,10 +47,24 @@ class PurchaseNotice extends Component {
+ 
+ 	getExpiringText( purchase ) {
+ 		const { translate, moment, selectedSite } = this.props;
++
+ 		if ( selectedSite && purchase.expiryStatus === 'manualRenew' ) {
++			if ( isPaidWithCredits( purchase ) ) {
++				return translate(
++					'You purchased %(purchaseName)s with credits. Please add a credit card before your ' +
++						"plan expires %(expiry)s so that you don't lose out on your paid features!",
++					{
++						args: {
++							purchaseName: getName( purchase ),
++							expiry: moment( purchase.expiryMoment ).fromNow(),
++						},
++					}
++				);
++			}
++
+ 			return translate(
+ 				'%(purchaseName)s will expire and be removed from your site %(expiry)s. ' +
+-					'Please, add a credit card if you want it to autorenew. ',
++					"Add a credit card so you don't lose out on your paid features!",
+ 				{
+ 					args: {
+ 						purchaseName: getName( purchase ),
+@@ -130,7 +146,10 @@ class PurchaseNotice extends Component {
+ 			return null;
+ 		}
+ 
+-		if ( purchase.expiryMoment < moment().add( 90, 'days' ) ) {
++		if (
++			! subscribedWithinPastWeek( purchase ) &&
++			purchase.expiryMoment < moment().add( 90, 'days' )
++		) {
+ 			noticeStatus = 'is-error';
+ 		}
+ 
+diff --git a/client/me/purchases/purchase-item/index.jsx b/client/me/purchases/purchase-item/index.jsx
+index d97f4b04fd1f6..ffbf083e48185 100644
+--- a/client/me/purchases/purchase-item/index.jsx
++++ b/client/me/purchases/purchase-item/index.jsx
+@@ -20,6 +20,7 @@ import {
+ 	isRenewing,
+ 	purchaseType,
+ 	showCreditCardExpiringWarning,
++	subscribedWithinPastWeek,
+ } from 'lib/purchases';
+ import {
+ 	isDomainProduct,
+@@ -66,8 +67,9 @@ class PurchaseItem extends Component {
+ 
+ 		if ( isExpiring( purchase ) ) {
+ 			if ( purchase.expiryMoment < moment().add( 30, 'days' ) ) {
++				const status = subscribedWithinPastWeek( purchase ) ? 'is-info' : 'is-error';
+ 				return (
+-					<Notice isCompact status="is-error" icon="notice">
++					<Notice isCompact status={ status } icon="notice">
+ 						{ translate( 'Expires %(timeUntilExpiry)s', {
+ 							args: {
+ 								timeUntilExpiry: purchase.expiryMoment.fromNow(),

@@ -1,0 +1,35 @@
+{
+  "FAIL_TO_PASS": [
+    "Search - behavior - should support disable enter key",
+    "Search - CombobBox - should support dataSource value click ",
+    "Search - behavior - act in controlled way",
+    "Search - behavior - should support filter ",
+    "Search - CombobBox - should support dataSource filter ",
+    "Search - behavior - should support filterValue",
+    "Search - behavior - should support onChange/onSearch ",
+    "Search - behavior - should support disabled",
+    "Search - behavior - should support enter key",
+    "Search - CombobBox - should support DataSource "
+  ],
+  "PASS_TO_PASS": [
+    "Search - render - should override aria-label with prop",
+    "Search A11y - should not have any violations for undefined value",
+    "Search - render - should accept search text",
+    "Search A11y - should not have any violations for secondary",
+    "Search - render - should accept no-icon",
+    "Search - render - should support icons",
+    "Search - render - should accept type ",
+    "Search - behavior - should support defaultValue ",
+    "Search - render - should accept value ",
+    "Search A11y - should not have any violations for search text",
+    "Search - behavior - simulates onChange/onSearch/onBlur events",
+    "Search A11y - should not have any violations for simple shape",
+    "Search - behavior - should support onSearch ",
+    "Search - render - should set aria-label to locale.buttonText",
+    "Search - render - should accept value=undefind ",
+    "Search A11y - should not have any violations for no icon",
+    "Search - render - should set default aria-label to locale.buttonText",
+    "Search A11y - should not have any violations for number value",
+    "Search - render - should accept simple icon "
+  ]
+}

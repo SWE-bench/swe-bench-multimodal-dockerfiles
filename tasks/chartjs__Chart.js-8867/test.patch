@@ -1,0 +1,43 @@
+diff --git a/test/fixtures/core.scale/ticks-mirror-x.js b/test/fixtures/core.scale/ticks-mirror-x.js
+new file mode 100644
+index 00000000000..ec151e58031
+--- /dev/null
++++ b/test/fixtures/core.scale/ticks-mirror-x.js
+@@ -0,0 +1,30 @@
++module.exports = {
++  config: {
++    type: 'line',
++    data: {
++      datasets: [{
++        data: [1, -1, 3],
++      }],
++      labels: ['Label1', 'Label2', 'Label3']
++    },
++    options: {
++      scales: {
++        x: {
++          ticks: {
++            mirror: true
++          }
++        },
++        y: {
++          display: false
++        }
++      }
++    }
++  },
++  options: {
++    spriteText: true,
++    canvas: {
++      height: 256,
++      width: 512
++    }
++  }
++};
+diff --git a/test/fixtures/core.scale/ticks-mirror-x.png b/test/fixtures/core.scale/ticks-mirror-x.png
+new file mode 100644
+index 00000000000..e9fe6537c47
+Binary files /dev/null and b/test/fixtures/core.scale/ticks-mirror-x.png differ
+diff --git a/test/fixtures/core.scale/ticks-mirror.png b/test/fixtures/core.scale/ticks-mirror.png
+index dc483b51637..35fba6e5218 100644
+Binary files a/test/fixtures/core.scale/ticks-mirror.png and b/test/fixtures/core.scale/ticks-mirror.png differ

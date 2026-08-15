@@ -1,0 +1,111 @@
+diff --git a/client/blocks/plan-storage/bar.jsx b/client/blocks/plan-storage/bar.jsx
+index 996d04f1f8bd59..7f2f2311a4670a 100644
+--- a/client/blocks/plan-storage/bar.jsx
++++ b/client/blocks/plan-storage/bar.jsx
+@@ -1,9 +1,6 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+-
+ import PropTypes from 'prop-types';
+ import React, { Component } from 'react';
+ import { localize } from 'i18n-calypso';
+@@ -24,6 +21,7 @@ export class PlanStorageBar extends Component {
+ 	static propTypes = {
+ 		className: PropTypes.string,
+ 		mediaStorage: PropTypes.object,
++		displayUpgradeLink: PropTypes.bool,
+ 		siteSlug: PropTypes.string.isRequired,
+ 		sitePlanSlug: PropTypes.string.isRequired,
+ 	};
+@@ -33,7 +31,14 @@ export class PlanStorageBar extends Component {
+ 	};
+ 
+ 	render() {
+-		const { className, mediaStorage, sitePlanSlug, siteSlug, translate } = this.props;
++		const {
++			className,
++			displayUpgradeLink,
++			mediaStorage,
++			sitePlanSlug,
++			siteSlug,
++			translate,
++		} = this.props;
+ 
+ 		if ( planHasFeature( sitePlanSlug, FEATURE_UNLIMITED_STORAGE ) ) {
+ 			return null;
+@@ -69,9 +74,11 @@ export class PlanStorageBar extends Component {
+ 					} ) }
+ 				</span>
+ 
+-				<a className="plan-storage__storage-link" href={ `/plans/${ siteSlug }` }>
+-					{ translate( 'Upgrade' ) }
+-				</a>
++				{ displayUpgradeLink && (
++					<a className="plan-storage__storage-link" href={ `/plans/${ siteSlug }` }>
++						{ translate( 'Upgrade' ) }
++					</a>
++				) }
+ 
+ 				{ this.props.children }
+ 			</div>
+diff --git a/client/blocks/plan-storage/index.jsx b/client/blocks/plan-storage/index.jsx
+index 4eb399e21e4cdc..0521736840eed2 100644
+--- a/client/blocks/plan-storage/index.jsx
++++ b/client/blocks/plan-storage/index.jsx
+@@ -1,9 +1,6 @@
+-/** @format */
+-
+ /**
+  * External dependencies
+  */
+-
+ import classNames from 'classnames';
+ import PropTypes from 'prop-types';
+ import React, { Component } from 'react';
+@@ -15,6 +12,7 @@ import { connect } from 'react-redux';
+ import QueryMediaStorage from 'components/data/query-media-storage';
+ import { getMediaStorage } from 'state/sites/media-storage/selectors';
+ import { getSitePlanSlug, getSiteSlug, isJetpackSite } from 'state/sites/selectors';
++import canCurrentUser from 'state/selectors/can-current-user';
+ import { planHasFeature } from 'lib/plans';
+ import { FEATURE_UNLIMITED_STORAGE } from 'lib/plans/constants';
+ import PlanStorageBar from './bar';
+@@ -34,9 +32,17 @@ export class PlanStorage extends Component {
+ 	};
+ 
+ 	render() {
+-		const { className, jetpackSite, siteId, sitePlanSlug, siteSlug } = this.props;
++		const {
++			canUserUpgrade,
++			canViewBar,
++			className,
++			jetpackSite,
++			siteId,
++			sitePlanSlug,
++			siteSlug,
++		} = this.props;
+ 
+-		if ( jetpackSite || ! sitePlanSlug ) {
++		if ( jetpackSite || ! canViewBar || ! sitePlanSlug ) {
+ 			return null;
+ 		}
+ 
+@@ -51,6 +57,7 @@ export class PlanStorage extends Component {
+ 					siteSlug={ siteSlug }
+ 					sitePlanSlug={ sitePlanSlug }
+ 					mediaStorage={ this.props.mediaStorage }
++					displayUpgradeLink={ canUserUpgrade }
+ 				>
+ 					{ this.props.children }
+ 				</PlanStorageBar>
+@@ -66,5 +73,7 @@ export default connect( ( state, ownProps ) => {
+ 		jetpackSite: isJetpackSite( state, siteId ),
+ 		sitePlanSlug: getSitePlanSlug( state, siteId ),
+ 		siteSlug: getSiteSlug( state, siteId ),
++		canUserUpgrade: canCurrentUser( state, siteId, 'manage_options' ),
++		canViewBar: canCurrentUser( state, siteId, 'publish_posts' ),
+ 	};
+ } )( PlanStorage );

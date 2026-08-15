@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Plugin.decimation lttb should not crash with uneven points "
+  ],
+  "PASS_TO_PASS": []
+}

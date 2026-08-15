@@ -1,0 +1,8 @@
+{
+  "FAIL_TO_PASS": [
+    "lighthouse-core/test/lib/i18n/i18n-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "lighthouse-core/test/gather/gather-runner-test.js"
+  ]
+}

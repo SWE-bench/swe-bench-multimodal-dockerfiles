@@ -1,0 +1,183 @@
+diff --git a/client/my-sites/site-settings/manage-connection/site-ownership.jsx b/client/my-sites/site-settings/manage-connection/site-ownership.jsx
+index fcba64b277f48..da2a460d9dece 100644
+--- a/client/my-sites/site-settings/manage-connection/site-ownership.jsx
++++ b/client/my-sites/site-settings/manage-connection/site-ownership.jsx
+@@ -17,7 +17,7 @@ import AuthorSelector from 'blocks/author-selector';
+ import Card from 'components/card';
+ import config from 'config';
+ import FormFieldset from 'components/forms/form-fieldset';
+-import FormLegend from 'components/forms/form-legend';
++import FormLabel from 'components/forms/form-label';
+ import FormSettingExplanation from 'components/forms/form-setting-explanation';
+ import Gravatar from 'components/gravatar';
+ import isJetpackSiteConnected from 'state/selectors/is-jetpack-site-connected';
+@@ -29,8 +29,10 @@ import SectionHeader from 'components/section-header';
+ import { changeOwner } from 'state/jetpack/connection/actions';
+ import { getCurrentUser } from 'state/current-user/selectors';
+ import { getSelectedSiteId } from 'state/ui/selectors';
+-import { isJetpackMinimumVersion, isJetpackSite } from 'state/sites/selectors';
++import { isCurrentUserCurrentPlanOwner } from 'state/sites/plans/selectors';
++import { isCurrentPlanPaid, isJetpackMinimumVersion, isJetpackSite } from 'state/sites/selectors';
+ import { recordTracksEvent } from 'state/analytics/actions';
++import { transferPlanOwnership } from 'state/sites/plans/actions';
+ 
+ class SiteOwnership extends Component {
+ 	renderPlaceholder() {
+@@ -54,7 +56,7 @@ class SiteOwnership extends Component {
+ 		return { ...user.linked_user_info, ...{ ID: user.ID } };
+ 	}
+ 
+-	onSelect = user => {
++	onSelectConnectionOwner = user => {
+ 		const { translate } = this.props;
+ 
+ 		accept(
+@@ -75,6 +77,30 @@ class SiteOwnership extends Component {
+ 		);
+ 	};
+ 
++	onSelectPlanOwner = user => {
++		const { translate } = this.props;
++
++		accept(
++			translate(
++				'Are you absolutely sure you want to change the plan purchaser for this site to {{user /}}?',
++				{
++					components: {
++						user: <strong>{ user.display_name || user.name }</strong>,
++					},
++				}
++			),
++			accepted => {
++				if ( accepted ) {
++					this.props.transferPlanOwnership( this.props.siteId, user.linked_user_ID );
++					this.props.recordTracksEvent( 'calypso_jetpack_plan_ownership_changed' );
++				}
++			},
++			translate( 'Yes, change the plan purchaser' ),
++			translate( 'Cancel' ),
++			{ isScary: true }
++		);
++	};
++
+ 	renderCurrentUser() {
+ 		const { currentUser } = this.props;
+ 
+@@ -103,7 +129,7 @@ class SiteOwnership extends Component {
+ 					exclude={ this.isUserExcludedFromSelector }
+ 					transformAuthor={ this.transformUser }
+ 					allowSingleUser
+-					onSelect={ this.onSelect }
++					onSelect={ this.onSelectConnectionOwner }
+ 				>
+ 					{ this.renderCurrentUser() }
+ 				</AuthorSelector>
+@@ -142,15 +168,55 @@ class SiteOwnership extends Component {
+ 		);
+ 	}
+ 
++	renderPlanOwnerDropdown() {
++		const { siteId } = this.props;
++
++		return (
++			<div className="manage-connection__user-dropdown">
++				<AuthorSelector
++					siteId={ siteId }
++					exclude={ this.isUserExcludedFromSelector }
++					allowSingleUser
++					onSelect={ this.onSelectPlanOwner }
++				>
++					{ this.renderCurrentUser() }
++				</AuthorSelector>
++			</div>
++		);
++	}
++
++	renderPlanDetails() {
++		const { currentUser, isCurrentPlanOwner, translate } = this.props;
++		if ( ! currentUser ) {
++			return;
++		}
++
++		return isCurrentPlanOwner ? (
++			this.renderPlanOwnerDropdown()
++		) : (
++			<FormSettingExplanation>
++				{ translate( 'Somebody else is the plan purchaser for this site.' ) }
++			</FormSettingExplanation>
++		);
++	}
++
+ 	renderCardContent() {
+-		const { translate } = this.props;
++		const { isPaidPlan, translate } = this.props;
++		const showPlanSection = config.isEnabled( 'jetpack/ownership-change' ) && isPaidPlan;
+ 
+ 		return (
+ 			<Card>
+-				<FormFieldset>
+-					<FormLegend>{ translate( 'Site owner' ) }</FormLegend>
++				<FormFieldset className="manage-connection__formfieldset">
++					<FormLabel>{ translate( 'Site owner' ) }</FormLabel>
+ 					{ this.renderConnectionDetails() }
+ 				</FormFieldset>
++
++				{ showPlanSection && (
++					<FormFieldset className="manage-connection__formfieldset has-divider is-top-only">
++						<FormLabel>{ translate( 'Plan purchaser' ) }</FormLabel>
++						{ this.renderPlanDetails() }
++					</FormFieldset>
++				) }
+ 			</Card>
+ 		);
+ 	}
+@@ -174,10 +240,14 @@ class SiteOwnership extends Component {
+ export default connect(
+ 	state => {
+ 		const siteId = getSelectedSiteId( state );
++		const isPaidPlan = isCurrentPlanPaid( state, siteId );
++		const isCurrentPlanOwner = isPaidPlan && isCurrentUserCurrentPlanOwner( state, siteId );
+ 
+ 		return {
+ 			currentUser: getCurrentUser( state ),
+ 			isConnectionTransferSupported: isJetpackMinimumVersion( state, siteId, '6.2' ),
++			isCurrentPlanOwner,
++			isPaidPlan,
+ 			siteId,
+ 			siteIsConnected: isJetpackSiteConnected( state, siteId ),
+ 			siteIsJetpack: isJetpackSite( state, siteId ),
+@@ -185,5 +255,5 @@ export default connect(
+ 			userIsMaster: isJetpackUserMaster( state, siteId ),
+ 		};
+ 	},
+-	{ changeOwner, recordTracksEvent }
++	{ changeOwner, recordTracksEvent, transferPlanOwnership }
+ )( localize( SiteOwnership ) );
+diff --git a/client/state/data-layer/wpcom/sites/plan-transfer/index.js b/client/state/data-layer/wpcom/sites/plan-transfer/index.js
+index 446890e9bf271..6e59d64aa12e4 100644
+--- a/client/state/data-layer/wpcom/sites/plan-transfer/index.js
++++ b/client/state/data-layer/wpcom/sites/plan-transfer/index.js
+@@ -11,6 +11,7 @@ import { translate } from 'i18n-calypso';
+ import { dispatchRequestEx } from 'state/data-layer/wpcom-http/utils';
+ import { errorNotice, successNotice } from 'state/notices/actions';
+ import { http } from 'state/data-layer/wpcom-http/actions';
++import { refreshSitePlans } from 'state/sites/plans/actions';
+ import { SITE_PLAN_OWNERSHIP_TRANSFER } from 'state/action-types';
+ 
+ const noticeOptions = siteId => ( {
+@@ -43,11 +44,13 @@ export const requestPlanOwnershipTransfer = action =>
+  * @param   {Object} action Redux action
+  * @returns {Object} Success notice action
+  */
+-export const handleTransferSuccess = ( { siteId } ) =>
++export const handleTransferSuccess = ( { siteId } ) => [
+ 	successNotice(
+ 		translate( 'Plan purchaser has been changed successfully.' ),
+ 		noticeOptions( siteId )
+-	);
++	),
++	refreshSitePlans( siteId ),
++];
+ 
+ /**
+  * Dispatches an error notice when the request failed.

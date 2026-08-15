@@ -1,0 +1,25 @@
+diff --git a/packages/stylesheet/src/expand.js b/packages/stylesheet/src/expand.js
+index 7e973deb8..5a948d112 100644
+--- a/packages/stylesheet/src/expand.js
++++ b/packages/stylesheet/src/expand.js
+@@ -82,6 +82,8 @@ const processBorders = (key, value) => {
+ };
+ 
+ const processBoxModel = (key, value) => {
++  if (value === 'auto') return value;
++
+   const match = matchBoxModel(value);
+ 
+   if (match) {
+diff --git a/packages/stylesheet/src/resolve.js b/packages/stylesheet/src/resolve.js
+index 4f197af5f..d38734815 100644
+--- a/packages/stylesheet/src/resolve.js
++++ b/packages/stylesheet/src/resolve.js
+@@ -25,7 +25,6 @@ const resolveStyles = (container, style) =>
+   R.compose(
+     transformUnits(container),
+     transformColors,
+-    // R.tap(console.log),
+     expandStyles,
+     resolveMediaQueries(container),
+     filterNoneValues,

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - update label should not create label on empty text "
+  ],
+  "PASS_TO_PASS": []
+}

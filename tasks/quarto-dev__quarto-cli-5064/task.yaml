@@ -1,0 +1,17 @@
+base_commit: 45f6955378250e8288a79cd176c2dce92b279d2b
+created_at: '2023-04-01T19:50:47Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.quarto-dev_1776_quarto-cli-5064:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/41155337/229271001-5e3efe1a-ba79-46f9-94f7-04042da80b8e.png
+  - https://user-images.githubusercontent.com/41155337/229271022-43acaebb-cf41-46fd-93d8-01138d1b66d4.png
+  test_patch: []
+instance_id: quarto-dev__quarto-cli-5064
+log_parser: parse_log_quarto_cli
+repo: quarto-dev/quarto-cli
+split: deprecated
+version: ''

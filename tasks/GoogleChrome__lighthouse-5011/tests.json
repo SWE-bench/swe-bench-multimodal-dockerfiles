@@ -1,0 +1,20 @@
+{
+  "FAIL_TO_PASS": [
+    "CriticalRequestChain gatherer: extractChain function returns correct data for chain with preload"
+  ],
+  "PASS_TO_PASS": [
+    "CriticalRequestChain gatherer: extractChain function returns empty chain list when no request whatsoever",
+    "CriticalRequestChain gatherer: extractChain function returns two single node chains for two independent requests",
+    "CriticalRequestChain gatherer: extractChain function returns correct data for chain of four critical requests",
+    "CriticalRequestChain gatherer: extractChain function returns correct data for chain interleaved with non-critical requests",
+    "CriticalRequestChain gatherer: extractChain function returns correct data for fork at non root",
+    "CriticalRequestChain gatherer: extractChain function returns empty chain list when no critical request",
+    "CriticalRequestChain gatherer: extractChain function handles redirects",
+    "CriticalRequestChain gatherer: extractChain function discards favicons as non-critical",
+    "CriticalRequestChain gatherer: extractChain function returns correct data for two parallel chains",
+    "CriticalRequestChain gatherer: extractChain function returns correct data on a random big graph",
+    "CriticalRequestChain gatherer: extractChain function discards iframes as non-critical",
+    "CriticalRequestChain gatherer: extractChain function handles non-existent nodes when building the tree",
+    "CriticalRequestChain gatherer: extractChain function returns correct data for chain from a devtoolsLog"
+  ]
+}

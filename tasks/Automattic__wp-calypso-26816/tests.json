@@ -1,0 +1,22 @@
+{
+  "FAIL_TO_PASS": [
+    "reducer - should export expected reducer keys",
+    "isGutenbergOptInDialogShowing() - should return false if the isGutenbergOptInDialogShowing reducer is false",
+    "actions - showGutenbergOptInDialog() - should return an action object",
+    "actions - hideGutenbergOptInDialog() - should return an action object",
+    "isGutenbergOptInDialogShowing() - should return true if the isGutenbergOptInDialogShowing reducer is true",
+    "isGutenbergOptInDialogShowing() - should return false if the value is not known"
+  ],
+  "PASS_TO_PASS": [
+    "reducer - #siteSelectionInitialized() - should be true if siteId is null",
+    "reducer - #isNotificationsOpen() - should toggle open when closed",
+    "reducer - #siteSelectionInitialized() - should be true when a site is selected",
+    "reducer - #selectedSiteId() - should set to null if siteId is undefined",
+    "reducer - #selectedSiteId() - should set the selected site ID",
+    "reducer - #isNotificationsOpen() - should default to false",
+    "reducer - #siteSelectionInitialized() - should be true if siteId is undefined",
+    "reducer - #siteSelectionInitialized() - should default to false",
+    "reducer - #selectedSiteId() - should default to null",
+    "reducer - #isNotificationsOpen() - should toggle closed when open"
+  ]
+}

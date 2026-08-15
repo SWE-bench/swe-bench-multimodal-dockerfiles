@@ -1,0 +1,13 @@
+{
+  "FAIL_TO_PASS": [
+    "event helpers addFormattedCodeSnippet() normalizes document and window objects",
+    "Page uses passive events listeners where applicable fails when scroll blocking listeners should be passive",
+    "event helpers addFormattedCodeSnippet() adds label and code snippet and returns new object"
+  ],
+  "PASS_TO_PASS": [
+    "Page uses passive events listeners where applicable passes scroll blocking listeners should be passive",
+    "Page uses passive events listeners where applicable fails when listener has a bad url property",
+    "Page uses passive events listeners where applicable fails when listener is missing a url property",
+    "event helpers groupCodeSnippetsByLocation() has no duplicate line/col violations"
+  ]
+}

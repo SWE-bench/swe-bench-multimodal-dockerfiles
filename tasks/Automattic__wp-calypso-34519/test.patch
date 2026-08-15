@@ -1,0 +1,8 @@
+diff --git a/client/me/get-apps/test/__snapshots__/apps-badge.js.snap b/client/blocks/get-apps/test/__snapshots__/apps-badge.js.snap
+similarity index 100%
+rename from client/me/get-apps/test/__snapshots__/apps-badge.js.snap
+rename to client/blocks/get-apps/test/__snapshots__/apps-badge.js.snap
+diff --git a/client/me/get-apps/test/apps-badge.js b/client/blocks/get-apps/test/apps-badge.js
+similarity index 100%
+rename from client/me/get-apps/test/apps-badge.js
+rename to client/blocks/get-apps/test/apps-badge.js

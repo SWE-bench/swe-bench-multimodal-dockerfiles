@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "ReportRenderer V2 grouping passed/failed doesnt create a pased section if there were 0 passed"
+  ],
+  "PASS_TO_PASS": [
+    "ReportRenderer V2 renderReport renders an audit",
+    "ReportRenderer V2 can set a custom templateContext",
+    "ReportRenderer V2 renderReport should render a report",
+    "ReportRenderer V2 renderReport should render an exception for invalid input",
+    "ReportRenderer V2 grouping passed/failed separates audits in the DOM"
+  ]
+}

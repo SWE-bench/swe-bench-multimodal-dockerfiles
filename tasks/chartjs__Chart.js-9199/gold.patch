@@ -1,0 +1,47 @@
+diff --git a/src/helpers/helpers.extras.js b/src/helpers/helpers.extras.js
+index 89ffa418c57..09739ce8671 100644
+--- a/src/helpers/helpers.extras.js
++++ b/src/helpers/helpers.extras.js
+@@ -81,6 +81,10 @@ export const _alignStartEnd = (align, start, end) => align === 'start' ? start :
+  * @param {string} align start, end, center
+  * @param {number} left value for start
+  * @param {number} right value for end
++ * @param {boolean} rtl Is this an RTL draw
+  * @private
+  */
+-export const _textX = (align, left, right) => align === 'right' ? right : align === 'center' ? (left + right) / 2 : left;
++export const _textX = (align, left, right, rtl) => {
++  const check = rtl ? 'left' : 'right';
++  return align === check ? right : align === 'center' ? (left + right) / 2 : left;
++};
+diff --git a/src/plugins/plugin.legend.js b/src/plugins/plugin.legend.js
+index b30ba41d301..206f1add94f 100644
+--- a/src/plugins/plugin.legend.js
++++ b/src/plugins/plugin.legend.js
+@@ -371,7 +371,7 @@ export class Legend extends Element {
+     const fillText = function(x, y, legendItem) {
+       renderText(ctx, legendItem.text, x, y + (itemHeight / 2), labelFont, {
+         strikethrough: legendItem.hidden,
+-        textAlign: legendItem.textAlign
++        textAlign: rtlHelper.textAlign(legendItem.textAlign)
+       });
+     };
+ 
+@@ -402,7 +402,7 @@ export class Legend extends Element {
+ 
+       const textWidth = ctx.measureText(legendItem.text).width;
+       const textAlign = rtlHelper.textAlign(legendItem.textAlign || (legendItem.textAlign = labelOpts.textAlign));
+-      const width = boxWidth + (fontSize / 2) + textWidth;
++      const width = boxWidth + halfFontSize + textWidth;
+       let x = cursor.x;
+       let y = cursor.y;
+ 
+@@ -424,7 +424,7 @@ export class Legend extends Element {
+ 
+       drawLegendBox(realX, y, legendItem);
+ 
+-      x = _textX(textAlign, x + boxWidth + halfFontSize, me.right);
++      x = _textX(textAlign, x + boxWidth + halfFontSize, isHorizontal ? x + width : me.right, opts.rtl);
+ 
+       // Fill the actual label
+       fillText(rtlHelper.x(x), y, legendItem);

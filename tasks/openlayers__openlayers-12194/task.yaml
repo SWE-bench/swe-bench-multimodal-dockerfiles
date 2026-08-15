@@ -1,0 +1,17 @@
+base_commit: 9afc294d57eb304da711dfe8aa211d26b72ce471
+created_at: '2021-04-09T19:30:05Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-12194:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/immediate-pixel-ratio/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/74db0e7d21d7ef8b4995f9a0fbaba083e40ec4ba/test/rendering/cases/immediate-pixel-ratio/expected.png
+instance_id: openlayers__openlayers-12194
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: 6.5.1

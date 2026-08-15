@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.render.canvas measureTextHeight respects line-height"
+  ],
+  "PASS_TO_PASS": []
+}

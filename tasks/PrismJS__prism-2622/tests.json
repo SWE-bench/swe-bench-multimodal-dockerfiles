@@ -1,0 +1,15 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'apex' – should pass test case 'boolean_feature'",
+    "Testing language 'apex' – should pass test case 'operator_feature'",
+    "Testing language 'apex' – should pass test case 'sql_feature'",
+    "Testing language 'apex' – should pass test case 'annotation_feature'",
+    "Testing language 'apex' – should pass test case 'number_feature'",
+    "Testing language 'apex' – should pass test case 'string_feature'",
+    "Testing language 'apex' – should pass test case 'class-name_feature'",
+    "Testing language 'apex' – should pass test case 'trigger_feature'",
+    "Testing language 'apex' – should pass test case 'comment_feature'",
+    "Testing language 'apex' – should pass test case 'punctuation_feature'"
+  ],
+  "PASS_TO_PASS": []
+}

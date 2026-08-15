@@ -1,0 +1,17 @@
+base_commit: 1f9250c0f7223dbf7c4f128d28649a9c534fbf33
+created_at: '2023-10-09T14:59:11Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15229:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/webgl-points-rotation/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/f663eb601c50fc1c70968895e16404d411fb58f6/test/rendering/cases/webgl-points-rotation/expected.png
+instance_id: openlayers__openlayers-15229
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '8.1'

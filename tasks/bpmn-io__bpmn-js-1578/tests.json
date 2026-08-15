@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/copy-paste basic diagram integration should wire DIs correctly "
+  ],
+  "PASS_TO_PASS": []
+}

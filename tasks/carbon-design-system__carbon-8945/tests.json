@@ -1,0 +1,12 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/FileUploader/__tests__/FileUploaderDropContainer-test.js"
+  ],
+  "PASS_TO_PASS": [
+    "packages/react/src/components/FileUploader/__tests__/FileUploader-test.js",
+    "packages/react/src/components/FileUploader/__tests__/FileUploaderItem-test.js",
+    "packages/react/src/components/FileUploader/__tests__/FileUploaderButton-test.js",
+    "packages/react/src/components/FileUploader/__tests__/Filename-test.js",
+    "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js"
+  ]
+}

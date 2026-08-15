@@ -1,0 +1,1 @@
+Also need to update and enable the test skipped here: https://github.com/GoogleChrome/lighthouse/blob/0f680b36490e8963fa1c5b88b8a5f9218e72e690/lighthouse-core/test/report/html/renderer/category-renderer-test.js#L195 (or replace it with a new one or whatever...either way the skipped one just needs to go :)

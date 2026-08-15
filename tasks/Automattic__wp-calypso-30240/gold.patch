@@ -1,0 +1,168 @@
+diff --git a/client/components/site-verticals-suggestion-search/index.jsx b/client/components/site-verticals-suggestion-search/index.jsx
+index 9e14b4dd9fa1a..515b5b99ddfd6 100644
+--- a/client/components/site-verticals-suggestion-search/index.jsx
++++ b/client/components/site-verticals-suggestion-search/index.jsx
+@@ -102,9 +102,7 @@ export class SiteVerticalsSuggestionSearch extends Component {
+ 		return (
+ 			<SuggestionSearch
+ 				id="siteTopic"
+-				placeholder={
+-					placeholder || translate( 'e.g. Fashion, travel, design, plumber, electrician' )
+-				}
++				placeholder={ placeholder || translate( 'e.g. Fashion, travel, design, plumber' ) }
+ 				onChange={ this.onSiteTopicChange }
+ 				suggestions={ this.getSuggestions() }
+ 				value={ this.state.searchValue }
+diff --git a/client/lib/signup/site-type.js b/client/lib/signup/site-type.js
+index cb6136396004c..c002f044b6933 100644
+--- a/client/lib/signup/site-type.js
++++ b/client/lib/signup/site-type.js
+@@ -23,7 +23,7 @@ export const allSiteTypes = [
+ 		theme: 'pub/independent-publisher-2',
+ 		designType: 'blog',
+ 		siteTitleLabel: i18n.translate( 'What would you like to call your blog?' ),
+-		siteTitlePlaceholder: i18n.translate( "E.g. Stevie's blog " ),
++		siteTitlePlaceholder: i18n.translate( "E.g., Stevie's blog " ),
+ 		siteTopicHeader: i18n.translate( 'Tell us about your blog' ),
+ 		siteTopicLabel: i18n.translate( 'What will your blog be about?' ),
+ 	},
+@@ -35,7 +35,7 @@ export const allSiteTypes = [
+ 		theme: 'pub/radcliffe-2',
+ 		designType: 'page',
+ 		siteTitleLabel: i18n.translate( 'What is the name of your business?' ),
+-		siteTitlePlaceholder: i18n.translate( 'E.g. Vail Renovations' ),
++		siteTitlePlaceholder: i18n.translate( 'E.g., Vail Renovations' ),
+ 		siteTopicHeader: i18n.translate( 'Tell us about your business' ),
+ 		siteTopicLabel: i18n.translate( 'What type of business do you have?' ),
+ 		customerType: 'business',
+@@ -48,7 +48,7 @@ export const allSiteTypes = [
+ 		theme: 'pub/altofocus',
+ 		designType: 'portfolio',
+ 		siteTitleLabel: i18n.translate( 'What is your name?' ),
+-		siteTitlePlaceholder: i18n.translate( 'E.g. John Appleseed' ),
++		siteTitlePlaceholder: i18n.translate( 'E.g., John Appleseed' ),
+ 		siteTopicHeader: i18n.translate( 'Tell us about your website' ),
+ 		siteTopicLabel: i18n.translate( 'What type of work do you do?' ),
+ 	},
+@@ -60,7 +60,7 @@ export const allSiteTypes = [
+ 		theme: 'pub/twentyfifteen',
+ 		designType: 'blog',
+ 		siteTitleLabel: i18n.translate( 'What is the name of your site?' ),
+-		siteTitlePlaceholder: i18n.translate( 'E.g. My class' ),
++		siteTitlePlaceholder: i18n.translate( 'E.g., My class' ),
+ 		siteTopicHeader: i18n.translate( 'Tell us about your website' ),
+ 		siteTopicLabel: i18n.translate( 'What will your site be about?' ),
+ 	},
+@@ -72,7 +72,7 @@ export const allSiteTypes = [
+ 		theme: 'pub/dara',
+ 		designType: 'store',
+ 		siteTitleLabel: i18n.translate( 'What is the name of your store?' ),
+-		siteTitlePlaceholder: i18n.translate( "E.g. Mel's Diner" ),
++		siteTitlePlaceholder: i18n.translate( "E.g., Mel's Diner" ),
+ 		siteTopicHeader: i18n.translate( 'Tell us about your website' ),
+ 		siteTopicLabel: i18n.translate( 'What type of products do you sell?' ),
+ 		customerType: 'business',
+diff --git a/client/signup/steps/about/index.jsx b/client/signup/steps/about/index.jsx
+index 3fe7b4edf28e1..11a806fa66088 100644
+--- a/client/signup/steps/about/index.jsx
++++ b/client/signup/steps/about/index.jsx
+@@ -503,7 +503,9 @@ class AboutStep extends Component {
+ 									<FormTextInput
+ 										id="siteTitle"
+ 										name="siteTitle"
+-										placeholder={ translate( "e.g. Mel's Diner, Stevie’s Blog, Vail Renovations" ) }
++										placeholder={ translate(
++											"E.g., Mel's Diner, Stevie’s Blog, Vail Renovations"
++										) }
+ 										defaultValue={ siteTitle }
+ 										onChange={ this.handleChangeEvent }
+ 									/>
+diff --git a/client/signup/steps/site-information/index.jsx b/client/signup/steps/site-information/index.jsx
+index 1b9af339b66c1..3454d4ea0bf48 100644
+--- a/client/signup/steps/site-information/index.jsx
++++ b/client/signup/steps/site-information/index.jsx
+@@ -92,13 +92,13 @@ export class SiteInformation extends Component {
+ 				return {
+ 					fieldLabel: translate( 'Address' ),
+ 					fieldDescription: translate( 'Where can people find your business?' ),
+-					fieldPlaceholder: 'E.g., 60 29th Street #343, San Francisco, CA 94110',
++					fieldPlaceholder: 'E.g., 60 29th St, San Francisco, CA 94110',
+ 				};
+ 			case 'phone':
+ 				return {
+ 					fieldLabel: translate( 'Phone number' ),
+ 					fieldDescription: translate( 'How can people contact you?' ),
+-					fieldPlaceholder: translate( 'E.g. (555) 555-5555' ),
++					fieldPlaceholder: translate( 'E.g., (555) 555-5555' ),
+ 				};
+ 			case 'title':
+ 				return {
+diff --git a/client/signup/steps/site-information/style.scss b/client/signup/steps/site-information/style.scss
+index 819c1b86dc79f..9c4a5a6d36b3c 100644
+--- a/client/signup/steps/site-information/style.scss
++++ b/client/signup/steps/site-information/style.scss
+@@ -1,19 +1,20 @@
+ .site-information__wrapper {
+ 	position: relative;
+ 	display: flex;
++
+ 	.button {
+ 		margin: 0 auto;
+ 		display: block;
+ 		width: 200px;
+ 	}
++
+ 	.card {
+-		width: 500px;
++		width: 480px;
+ 		padding: 16px;
+ 	}
+ }
+ 
+ .site-information__field-control {
+-	max-width: 450px;
+ 	margin: 0 auto 20px;
+ 	filter: blur( 0 );
+ 	transform: translateZ( 0 ) translateX( 0 );
+@@ -39,12 +40,10 @@
+ 	.site-information__field-control {
+ 		margin: 0 auto;
+ 	}
+-	.site-information__email,
+-	.site-information__phone {
+-		max-width: 400px;
+-	}
++
+ 	input {
+ 		padding: 10px 100px 10px 10px;
++
+ 		// Since there's a 1px padding on the container, and
+ 		// inputs use actual borders (unlike cards, which
+ 		// use box-shadow), we need to adjust.
+@@ -58,6 +57,7 @@
+ 			padding-bottom: 15px;
+ 		}
+ 	}
++
+ 	.card {
+ 		margin: 0 auto;
+ 		background: transparent;
+@@ -69,6 +69,7 @@
+ 
+ .site-information__info-popover {
+ 	margin-left: 5px;
++
+ 	.gridicon {
+ 		color: $gray;
+ 		margin-bottom: -3px;
+diff --git a/client/signup/steps/site-topic/style.scss b/client/signup/steps/site-topic/style.scss
+index 0c07fd434bf09..c599edaf7baf0 100644
+--- a/client/signup/steps/site-topic/style.scss
++++ b/client/signup/steps/site-topic/style.scss
+@@ -1,5 +1,5 @@
+ .step-wrapper .site-topic__content {
+-	max-width: 660px;
++	max-width: 480px;
+ 	margin: 0 auto;
+ 
+ 	.form-fieldset {

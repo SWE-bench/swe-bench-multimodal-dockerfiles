@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/copy-paste basic diagram integration should copy name property "
+  ],
+  "PASS_TO_PASS": []
+}

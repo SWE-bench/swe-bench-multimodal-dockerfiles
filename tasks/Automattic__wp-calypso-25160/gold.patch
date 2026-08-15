@@ -1,0 +1,2834 @@
+diff --git a/client/components/tinymce/plugins/contact-form/dialog/index.jsx b/client/components/tinymce/plugins/contact-form/dialog/index.jsx
+index 1a0c7fdb156c2..b45f0b192d9d9 100644
+--- a/client/components/tinymce/plugins/contact-form/dialog/index.jsx
++++ b/client/components/tinymce/plugins/contact-form/dialog/index.jsx
+@@ -8,6 +8,7 @@ import PropTypes from 'prop-types';
+ import { localize } from 'i18n-calypso';
+ import React from 'react';
+ import { connect } from 'react-redux';
++import { get } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+@@ -17,8 +18,10 @@ import FormButton from 'components/forms/form-button';
+ import FormSettings from './settings';
+ import Navigation from './navigation';
+ import FieldList from './field-list';
++import { getSelectedSiteId } from 'state/ui/selectors';
++import { getEditorPostId } from 'state/ui/editor/selectors';
++import { getEditedPost } from 'state/posts/selectors';
+ import { getCurrentUser } from 'state/current-user/selectors';
+-import PostEditStore from 'lib/posts/post-edit-store';
+ import { validateFormFields, validateSettingsToEmail } from './validations';
+ 
+ class ContactFormDialog extends React.Component {
+@@ -88,7 +91,7 @@ class ContactFormDialog extends React.Component {
+ 		const {
+ 			activeTab,
+ 			currentUser: { email },
+-			post: { title, type: postType },
++			post,
+ 			contactForm: { to, subject, fields },
+ 			showDialog,
+ 			onChangeTabs,
+@@ -99,6 +102,9 @@ class ContactFormDialog extends React.Component {
+ 			onSettingsUpdate,
+ 		} = this.props;
+ 
++		const title = get( post, 'title', null );
++		const postType = get( post, 'type', null );
++
+ 		const content =
+ 			activeTab === 'fields' ? (
+ 				<FieldList { ...{ fields, onFieldAdd, onFieldRemove, onFieldUpdate } } />
+@@ -121,8 +127,11 @@ class ContactFormDialog extends React.Component {
+ }
+ 
+ export default connect( state => {
++	const siteId = getSelectedSiteId( state );
++	const postId = getEditorPostId( state );
++
+ 	return {
+-		post: PostEditStore.get() || {},
++		post: getEditedPost( state, siteId, postId ),
+ 		currentUser: getCurrentUser( state ),
+ 		contactForm: state.ui.editor.contactForm,
+ 	};
+diff --git a/client/components/tinymce/plugins/embed-reversal/plugin.js b/client/components/tinymce/plugins/embed-reversal/plugin.js
+index 62fa3415d9043..bc075d95277c6 100644
+--- a/client/components/tinymce/plugins/embed-reversal/plugin.js
++++ b/client/components/tinymce/plugins/embed-reversal/plugin.js
+@@ -10,9 +10,9 @@ import { includes, partial } from 'lodash';
+ /**
+  * Internal dependencies
+  */
+-import PostEditStore from 'lib/posts/post-edit-store';
+ import wpcom from 'lib/wp';
+ import { getSelectedSiteId } from 'state/ui/selectors';
++import { getEditorRawContent } from 'state/ui/editor/selectors';
+ 
+ function embedReversal( editor ) {
+ 	const store = editor.getParam( 'redux_store' );
+@@ -38,7 +38,7 @@ function embedReversal( editor ) {
+ 			}
+ 		} else {
+ 			// Else set the textarea content from store raw content
+-			let content = PostEditStore.getRawContent();
++			let content = getEditorRawContent( store.getState() );
+ 			if ( ! includes( content, markup ) ) {
+ 				return;
+ 			}
+diff --git a/client/components/tinymce/plugins/media/plugin.jsx b/client/components/tinymce/plugins/media/plugin.jsx
+index f9e5b958236e2..195f2012e68e6 100644
+--- a/client/components/tinymce/plugins/media/plugin.jsx
++++ b/client/components/tinymce/plugins/media/plugin.jsx
+@@ -15,7 +15,6 @@ import Gridicon from 'gridicons';
+ /**
+  * Internal dependencies
+  */
+-import PostEditStore from 'lib/posts/post-edit-store';
+ import * as MediaConstants from 'lib/media/constants';
+ import MediaActions from 'lib/media/actions';
+ import { getThumbnailSizeDimensions } from 'lib/media/utils';
+@@ -31,7 +30,7 @@ import config from 'config';
+ import { getSelectedSite } from 'state/ui/selectors';
+ import { setEditorMediaModalView } from 'state/ui/editor/actions';
+ import { unblockSave } from 'state/ui/editor/save-blockers/actions';
+-import { isEditorSaveBlocked } from 'state/ui/editor/selectors';
++import { getEditorRawContent, isEditorSaveBlocked } from 'state/ui/editor/selectors';
+ import { ModalViews } from 'state/ui/media-modal/constants';
+ import { renderWithReduxStore } from 'lib/react-helpers';
+ 
+@@ -163,7 +162,7 @@ function mediaButton( editor ) {
+ 		} else {
+ 			// Attempt to pull the post from the edit store so that the post
+ 			// contents can be analyzed for images.
+-			content = PostEditStore.getRawContent();
++			content = getEditorRawContent( getState() );
+ 			if ( ! content ) {
+ 				return;
+ 			}
+diff --git a/client/components/tinymce/plugins/simple-payments/dialog/product-image-picker.jsx b/client/components/tinymce/plugins/simple-payments/dialog/product-image-picker.jsx
+index 14fc991953da7..4c0e4f5c4ef0e 100644
+--- a/client/components/tinymce/plugins/simple-payments/dialog/product-image-picker.jsx
++++ b/client/components/tinymce/plugins/simple-payments/dialog/product-image-picker.jsx
+@@ -20,6 +20,7 @@ import MediaLibrarySelectedData from 'components/data/media-library-selected-dat
+ import EditorFeaturedImagePreviewContainer from 'post-editor/editor-featured-image/preview-container';
+ import RemoveButton from 'components/remove-button';
+ import { requestMediaItem } from 'state/media/actions';
++import MediaActions from 'lib/media/actions';
+ 
+ class ProductImagePicker extends Component {
+ 	static propTypes = {
+@@ -61,6 +62,12 @@ class ProductImagePicker extends Component {
+ 		this.props.input.onChange( false );
+ 	};
+ 
++	onImageChange = imageId => {
++		this.props.input.onChange( imageId );
++		// the action cares only about the ID -- that allows us to construct a 'valid' item
++		MediaActions.setLibrarySelectedItems( this.props.siteId, [ { ID: imageId } ] );
++	};
++
+ 	getImagePlaceholder() {
+ 		return (
+ 			<div
+@@ -90,7 +97,7 @@ class ProductImagePicker extends Component {
+ 				<EditorFeaturedImagePreviewContainer
+ 					siteId={ siteId }
+ 					itemId={ this.props.input.value }
+-					onImageChange={ this.props.input.onChange }
++					onImageChange={ this.onImageChange }
+ 					showEditIcon
+ 				/>
+ 				<RemoveButton onRemove={ this.removeCurrentImage } />
+diff --git a/client/lib/media/actions.js b/client/lib/media/actions.js
+index c2e58394db9aa..2fcdd405adacc 100644
+--- a/client/lib/media/actions.js
++++ b/client/lib/media/actions.js
+@@ -13,8 +13,9 @@ const debug = debugFactory( 'calypso:media' );
+  */
+ import Dispatcher from 'dispatcher';
+ import wpcom from 'lib/wp';
++import { reduxGetState } from 'lib/redux-bridge';
++import { getEditorPostId } from 'state/ui/editor/selectors';
+ import { createTransientMedia } from './utils';
+-import PostEditStore from 'lib/posts/post-edit-store';
+ import MediaStore from './store';
+ import MediaListStore from './list-store';
+ import MediaValidationStore from './validation-store';
+@@ -110,11 +111,11 @@ const getFileUploader = () => ( file, siteId ) => {
+ 	const isUrl = 'string' === typeof file;
+ 
+ 	// Assign parent ID if currently editing post
+-	const post = PostEditStore.get();
++	const postId = getEditorPostId( reduxGetState() );
+ 	const title = file.title;
+-	if ( post && post.ID ) {
++	if ( postId ) {
+ 		file = {
+-			parent_id: post.ID,
++			parent_id: postId,
+ 			[ isUrl ? 'url' : 'file' ]: file,
+ 		};
+ 	} else if ( file.fileContents ) {
+diff --git a/client/lib/posts/README.md b/client/lib/posts/README.md
+deleted file mode 100644
+index b974370843011..0000000000000
+--- a/client/lib/posts/README.md
++++ /dev/null
+@@ -1,8 +0,0 @@
+-Posts
+-=======
+-
+-## actions.js
+-Flux action creators related to posts
+-
+-## post-edit-store.js
+-Keeps track of the post that is currently being edited.
+diff --git a/client/lib/posts/actions.js b/client/lib/posts/actions.js
+index 1c1a95b729f09..11750c71868e7 100644
+--- a/client/lib/posts/actions.js
++++ b/client/lib/posts/actions.js
+@@ -5,25 +5,69 @@
+  */
+ 
+ import store from 'store';
+-import { assign, clone } from 'lodash';
++import { assign, clone, includes, isEmpty, pick, reduce } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+  */
+ import wpcom from 'lib/wp';
+-import PostEditStore from './post-edit-store';
++import { decodeEntities } from 'lib/formatting';
+ import PreferencesStore from 'lib/preferences/store';
+ import * as utils from './utils';
+-import Dispatcher from 'dispatcher';
+ import { recordSaveEvent } from './stats';
+ import { normalizeTermsForApi } from 'state/posts/utils';
+-import { reduxDispatch, reduxGetState } from 'lib/redux-bridge';
+-import { isEditorSaveBlocked } from 'state/ui/editor/selectors';
+-import { editorAutosave } from 'state/ui/editor/actions';
++import editedPostHasContent from 'state/selectors/edited-post-has-content';
++import { getSelectedSiteId } from 'state/ui/selectors';
++import {
++	getEditorPostId,
++	getEditorInitialRawContent,
++	getEditorRawContent,
++	isEditorSaveBlocked,
++} from 'state/ui/editor/selectors';
++import {
++	startEditingPost,
++	startEditingNewPost,
++	editorAutosave,
++	editorAutosaveReset,
++	editorLoadingErrorReset,
++	editorReset,
++	editorSetLoadingError,
++	editorInitRawContent,
++} from 'state/ui/editor/actions';
+ import { setEditorLastDraft, resetEditorLastDraft } from 'state/ui/editor/last-draft/actions';
+ import { receivePost, savePostSuccess } from 'state/posts/actions';
++import { getSitePost, getEditedPost, getPostEdits, isEditedPostDirty } from 'state/posts/selectors';
+ 
+-let PostActions;
++function getParentId( post ) {
++	if ( ! post || ! post.parent ) {
++		return null;
++	}
++
++	if ( post.parent.ID ) {
++		return post.parent.ID;
++	}
++
++	return post.parent;
++}
++
++function getPageTemplate( post ) {
++	if ( ! post || ! post.page_template || post.page_template === 'default' ) {
++		return '';
++	}
++	return post.page_template;
++}
++
++function normalizePost( post ) {
++	post.parent_id = getParentId( post );
++	if ( post.type === 'page' ) {
++		post.page_template = getPageTemplate( post );
++	}
++	if ( post.title ) {
++		post.title = decodeEntities( post.title );
++	}
++
++	return post;
++}
+ 
+ /**
+  * Normalizes attributes to API expectations
+@@ -41,258 +85,236 @@ function normalizeApiAttributes( attributes ) {
+ 	return attributes;
+ }
+ 
+-PostActions = {
+-	/**
+-	 * Start keeping track of edits to a new post
+-	 *
+-	 * @param {Object} site    Site object
+-	 * @param {Object} options Edit options
+-	 */
+-	startEditingNew: function( site, options ) {
+-		let args;
+-		options = options || {};
+-
+-		args = {
+-			type: 'DRAFT_NEW_POST',
+-			postType: options.type || 'post',
+-			title: options.title,
+-			content: options.content,
+-			site,
+-		};
++/**
++ * Load an existing post and keep track of edits to it
++ *
++ * @param {Object} siteId Site ID
++ * @param {Number} postId Post ID to load
++ * @return {Promise<?Object>} The edited post object
++ */
++export const startEditingExistingPost = ( siteId, postId ) => ( dispatch, getState ) => {
++	const currentSiteId = getSelectedSiteId( getState() );
++	const currentPostId = getEditorPostId( getState() );
++	if ( currentSiteId === siteId && currentPostId === postId ) {
++		// already editing same post
++		return Promise.resolve( getEditedPost( getState(), siteId, postId ) );
++	}
+ 
+-		Dispatcher.handleViewAction( args );
+-	},
+-
+-	/**
+-	 * Load an existing post and keep track of edits to it
+-	 *
+-	 * @param {Object} site   Site object
+-	 * @param {Number} postId Post ID to load
+-	 * @return {Promise<?Object>} The edited post object
+-	 */
+-	startEditingExisting: function( site, postId ) {
+-		if ( ! site || ! site.ID ) {
+-			return Promise.resolve( null );
+-		}
+-
+-		const currentPost = PostEditStore.get();
+-		if ( currentPost && currentPost.site_ID === site.ID && currentPost.ID === postId ) {
+-			return Promise.resolve( currentPost ); // already editing same post
+-		}
+-
+-		Dispatcher.handleViewAction( {
+-			type: 'START_EDITING_POST',
+-			siteId: site.ID,
+-			postId: postId,
++	dispatch( startEditingPost( siteId, postId ) );
++
++	return wpcom
++		.site( siteId )
++		.post( postId )
++		.get( { context: 'edit', meta: 'autosave' } )
++		.then( post => {
++			post = normalizePost( post );
++			dispatch( receivePost( post ) );
++			dispatch( editorReset() );
++			return post;
++		} )
++		.catch( error => {
++			dispatch( editorSetLoadingError( error ) );
++			return null;
+ 		} );
++};
+ 
+-		return wpcom
+-			.site( site.ID )
+-			.post( postId )
+-			.get( { context: 'edit', meta: 'autosave' } )
+-			.then( post => {
+-				Dispatcher.handleServerAction( {
+-					type: 'RECEIVE_POST_TO_EDIT',
+-					post,
+-					site,
+-				} );
+-
+-				// Retrieve the normalized post and use it to update Redux store
+-				const receivedPost = PostEditStore.get();
+-				reduxDispatch( receivePost( receivedPost ) );
+-
+-				return receivedPost;
+-			} )
+-			.catch( error => {
+-				Dispatcher.handleServerAction( {
+-					type: 'SET_POST_LOADING_ERROR',
+-					error,
+-				} );
+-
+-				return null;
+-			} );
+-	},
+-
+-	/**
+-	 * Stop keeping track of edits to a post
+-	 */
+-	stopEditing: function() {
+-		Dispatcher.handleViewAction( {
+-			type: 'STOP_EDITING_POST',
+-		} );
+-	},
+-
+-	autosave: async function() {
+-		const post = PostEditStore.get();
+-		const savedPost = PostEditStore.getSavedPost();
+-
+-		if ( ! PostEditStore.isDirty() ) {
+-			throw new Error( 'NOT_DIRTY' );
+-		}
+-
+-		store.set( 'wpcom-autosave:' + post.site_ID + ':' + post.ID, post );
+-
+-		// TODO: incorporate post locking
+-		if ( utils.isPublished( savedPost ) || utils.isPublished( post ) ) {
+-			await reduxDispatch( editorAutosave( post ) );
+-		} else {
+-			await PostActions.saveEdited( null, {
+-				recordSaveEvent: false,
+-				autosave: true,
+-			} );
+-		}
+-	},
+-
+-	/**
+-	 * Edits attributes on a post
+-	 *
+-	 * @param {object} attributes to change
+-	 */
+-	edit: function( attributes ) {
+-		Dispatcher.handleViewAction( {
+-			type: 'EDIT_POST',
+-			post: attributes,
+-		} );
+-	},
+-
+-	/**
+-	 * Edits the raw TinyMCE content of a post
+-	 *
+-	 * @param {string} content Raw content
+-	 */
+-	editRawContent: function( content ) {
+-		Dispatcher.handleViewAction( {
+-			type: 'EDIT_POST_RAW_CONTENT',
+-			content: content,
+-		} );
+-	},
+-
+-	/**
+-	 * Unsets the raw TinyMCE content value
+-	 */
+-	resetRawContent: function() {
+-		Dispatcher.handleViewAction( {
+-			type: 'RESET_POST_RAW_CONTENT',
+-		} );
+-	},
+-
+-	/**
+-	 * Calls out to API to save a Post object
+-	 *
+-	 * @param {object} attributes post attributes to change before saving
+-	 * @param {object} options object with optional recordSaveEvent property. True if you want to record the save event.
+-	 */
+-	saveEdited: async function( attributes, options ) {
+-		// TODO: skip this edit if `attributes` are `null`. That means
+-		// we don't want to do any additional edit before saving.
+-		Dispatcher.handleViewAction( {
+-			type: 'EDIT_POST',
+-			post: attributes,
++export const startEditingPostCopy = ( siteId, postToCopyId ) => dispatch => {
++	dispatch( startEditingPost( siteId, null ) );
++
++	wpcom
++		.site( siteId )
++		.post( postToCopyId )
++		.get( { context: 'edit' } )
++		.then( postToCopy => {
++			const postAttributes = pick( postToCopy, [
++				'canonical_image',
++				'content',
++				'excerpt',
++				'format',
++				'post_thumbnail',
++				'terms',
++				'type',
++			] );
++
++			postAttributes.title = decodeEntities( postToCopy.title );
++			postAttributes.featured_image = utils.getFeaturedImageId( postToCopy );
++
++			/**
++			 * A post metadata whitelist for the `updatePostMetadata()` action.
++			 *
++			 * This is needed because blindly passing all post metadata to `editPost()`
++			 * causes unforeseeable issues, such as Publicize not triggering on the copied post.
++			 *
++			 * @see https://github.com/Automattic/wp-calypso/issues/14840
++			 */
++			const metadataWhitelist = [ 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ];
++
++			// Filter the post metadata to include only the ones we want to copy,
++			// use only the `key` and `value` properties (and, most importantly exclude `id`),
++			// and add an `operation` field to the copied values.
++			const copiedMetadata = reduce(
++				postToCopy.metadata,
++				( copiedMeta, { key, value } ) => {
++					if ( includes( metadataWhitelist, key ) ) {
++						copiedMeta.push( { key, value, operation: 'update' } );
++					}
++					return copiedMeta;
++				},
++				[]
++			);
++
++			if ( copiedMetadata.length > 0 ) {
++				postAttributes.metadata = copiedMetadata;
++			}
++
++			dispatch( startEditingNewPost( siteId, postAttributes ) );
++		} )
++		.catch( error => {
++			dispatch( editorSetLoadingError( error ) );
+ 		} );
++};
++
++/*
++ * Construct a "save result" object that contains the received post object and a boolean
++ * flag that tells whether a post ID was assigned during this save. Happens when a new draft
++ * has been just saved for the first time.
++ */
++function saveResult( localPost, receivedPost ) {
++	return {
++		receivedPost,
++		idAssigned: localPost.ID !== receivedPost.ID,
++	};
++}
++
++/*
++ * Calls out to API to save a Post object
++ *
++ * @param {object} options object with optional recordSaveEvent property. True if you want to record the save event.
++ */
++export const saveEdited = options => async ( dispatch, getState ) => {
++	const siteId = getSelectedSiteId( getState() );
++	const postId = getEditorPostId( getState() );
++	const post = getEditedPost( getState(), siteId, postId );
++
++	// Don't send a request to the API if the post has no content (title,
++	// content, or excerpt). A post without content is invalid.
++	if ( ! editedPostHasContent( getState(), siteId, postId ) ) {
++		throw new Error( 'NO_CONTENT' );
++	}
+ 
+-		const post = PostEditStore.get();
++	// Prevent saving post if another module has blocked saving.
++	if ( isEditorSaveBlocked( getState() ) ) {
++		throw new Error( 'SAVE_BLOCKED' );
++	}
+ 
+-		// Don't send a request to the API if the post has no content (title,
+-		// content, or excerpt). A post without content is invalid.
+-		if ( ! PostEditStore.hasContent() ) {
+-			throw new Error( 'NO_CONTENT' );
+-		}
++	const initialRawContent = getEditorInitialRawContent( getState() );
++	const rawContent = getEditorRawContent( getState() );
+ 
+-		// Prevent saving post if another module has blocked saving.
+-		if ( isEditorSaveBlocked( reduxGetState() ) ) {
+-			throw new Error( 'SAVE_BLOCKED' );
+-		}
++	let changedAttributes = getPostEdits( getState(), siteId, postId );
+ 
+-		let changedAttributes = PostEditStore.getChangedAttributes();
++	// when toggling editor modes, it is possible for the post to be dirty
++	// even though the content hasn't changed. To avoid a confusing UX
++	// let's just pass the content through and save it anyway
++	if ( ! changedAttributes.content && rawContent !== initialRawContent ) {
++		changedAttributes = {
++			...changedAttributes,
++			content: post.content,
++		};
++	}
+ 
+-		// Don't send a request to the API if the post is unchanged. An empty  post request is invalid.
+-		// This case is not treated as error, but rather as a successful save.
+-		if ( ! Object.keys( changedAttributes ).length ) {
+-			return;
+-		}
++	// Don't send a request to the API if the post is unchanged. An empty post request is invalid.
++	// This case is not treated as error, but rather as a successful save.
++	if ( isEmpty( changedAttributes ) ) {
++		return null;
++	}
+ 
+-		changedAttributes = normalizeApiAttributes( changedAttributes );
+-		const rawContent = PostEditStore.getRawContent();
+-		const mode = PreferencesStore.get( 'editor-mode' );
+-		const isNew = ! post.ID;
++	changedAttributes = normalizeApiAttributes( changedAttributes );
++	const mode = PreferencesStore.get( 'editor-mode' );
++	const isNew = ! postId;
++
++	const postHandle = wpcom.site( siteId ).post( postId );
++	const query = {
++		context: 'edit',
++		apiVersion: '1.2',
++	};
++	if ( options && options.autosave ) {
++		query.autosave = options.autosave;
++	}
+ 
+-		// There is a separate action dispatched here because we need to queue changes
+-		// that occur while the subsequent AJAX request is in-flight
+-		Dispatcher.handleViewAction( {
+-			type: 'EDIT_POST_SAVE',
++	if ( ! options || options.recordSaveEvent !== false ) {
++		dispatch( recordSaveEvent() ); // do this before changing status from 'future'
++	}
++
++	if (
++		( changedAttributes && changedAttributes.status === 'future' && utils.isFutureDated( post ) ) ||
++		( changedAttributes && changedAttributes.status === 'publish' && utils.isBackDated( post ) )
++	) {
++		// HACK: This is necessary because for some reason v1.1 and v1.2 of the update post endpoints
++		// don't accept a status of 'future' under any conditions.
++		// We also need to make sure that we send the date so that the post isn't published.
++
++		// HACK^2: If a post is back-dated, we must also pass in the date, otherwise the API resets the date
++		// here /public.api/rest/json-endpoints/class.wpcom-json-api-update-post-v1-2-endpoint.php#L102
++		changedAttributes = assign( {}, changedAttributes, {
++			status: 'publish',
++			date: post.date,
+ 		} );
++	}
+ 
+-		const postHandle = wpcom.site( post.site_ID ).post( post.ID );
+-		const query = {
+-			context: 'edit',
+-			apiVersion: '1.2',
+-		};
+-		if ( options && options.autosave ) {
+-			query.autosave = options.autosave;
+-		}
+-
+-		if ( ! options || options.recordSaveEvent !== false ) {
+-			reduxDispatch( recordSaveEvent() ); // do this before changing status from 'future'
+-		}
+-
+-		if (
+-			( changedAttributes &&
+-				changedAttributes.status === 'future' &&
+-				utils.isFutureDated( post ) ) ||
+-			( changedAttributes && changedAttributes.status === 'publish' && utils.isBackDated( post ) )
+-		) {
+-			// HACK: This is necessary because for some reason v1.1 and v1.2 of the update post endpoints
+-			// don't accept a status of 'future' under any conditions.
+-			// We also need to make sure that we send the date so that the post isn't published.
+-
+-			// HACK^2: If a post is back-dated, we must also pass in the date, otherwise the API resets the date
+-			// here /public.api/rest/json-endpoints/class.wpcom-json-api-update-post-v1-2-endpoint.php#L102
+-			changedAttributes = assign( {}, changedAttributes, {
+-				status: 'publish',
+-				date: post.date,
+-			} );
+-		}
+-
+-		try {
+-			const data = await postHandle[ isNew ? 'add' : 'update' ]( query, changedAttributes );
+-
+-			const currentMode = PreferencesStore.get( 'editor-mode' );
+-
+-			Dispatcher.handleServerAction( {
+-				type: 'RECEIVE_POST_BEING_EDITED',
+-				// Only pass the rawContent if the mode hasn't changed since the request
+-				// was initiated. Changing the mode re-initializes the rawContent, so we don't want to stomp on
+-				// it
+-				rawContent: mode === currentMode ? rawContent : null,
+-				post: data,
+-			} );
+-
+-			// Retrieve the normalized post and use it to update Redux store
+-			const receivedPost = PostEditStore.get();
+-
+-			if ( receivedPost.status === 'draft' ) {
+-				// If a draft was successfully saved, set it as "last edited draft"
+-				// There's UI in masterbar for one-click "continue editing"
+-				reduxDispatch( setEditorLastDraft( receivedPost.site_ID, receivedPost.ID ) );
+-			} else {
+-				// Draft was published or trashed: reset the "last edited draft" record
+-				reduxDispatch( resetEditorLastDraft() );
+-			}
++	const data = await postHandle[ isNew ? 'add' : 'update' ]( query, changedAttributes );
++
++	const currentMode = PreferencesStore.get( 'editor-mode' );
++
++	dispatch( editorAutosaveReset() );
++	dispatch( editorLoadingErrorReset() );
++
++	// Retrieve the normalized post and use it to update Redux store
++	const receivedPost = normalizePost( data );
+ 
+-			// `post.ID` can be null/undefined, which means we're saving new post.
+-			// `savePostSuccess` will convert the temporary ID (empty string key) in Redux
+-			// to the newly assigned ID in `receivedPost.ID`.
+-			reduxDispatch( savePostSuccess( receivedPost.site_ID, post.ID, receivedPost, {} ) );
+-			reduxDispatch( receivePost( receivedPost ) );
+-		} catch ( error ) {
+-			Dispatcher.handleServerAction( {
+-				type: 'RECEIVE_POST_BEING_EDITED',
+-				error,
+-			} );
+-
+-			throw error;
+-		}
+-	},
++	if ( receivedPost.status === 'draft' ) {
++		// If a draft was successfully saved, set it as "last edited draft"
++		// There's UI in masterbar for one-click "continue editing"
++		dispatch( setEditorLastDraft( receivedPost.site_ID, receivedPost.ID ) );
++	} else {
++		// Draft was published or trashed: reset the "last edited draft" record
++		dispatch( resetEditorLastDraft() );
++	}
++
++	// `post.ID` can be null/undefined, which means we're saving new post.
++	// `savePostSuccess` will convert the temporary ID (empty string key) in Redux
++	// to the newly assigned ID in `receivedPost.ID`.
++	dispatch( savePostSuccess( receivedPost.site_ID, post.ID, receivedPost, {} ) );
++	dispatch( receivePost( receivedPost ) );
++
++	// Only re-init the rawContent if the mode hasn't changed since the request was initiated.
++	// Changing the mode re-initializes the rawContent, so we don't want to stomp on it
++	if ( mode === currentMode ) {
++		dispatch( editorInitRawContent( rawContent ) );
++	}
++
++	return saveResult( post, receivedPost );
+ };
+ 
+-export default PostActions;
++export const autosave = () => async ( dispatch, getState ) => {
++	const state = getState();
++
++	const siteId = getSelectedSiteId( state );
++	const postId = getEditorPostId( state );
++
++	if ( ! isEditedPostDirty( state, siteId, postId ) ) {
++		return null;
++	}
++
++	const savedPost = getSitePost( state, siteId, postId );
++	const post = getEditedPost( state, siteId, postId );
++
++	store.set( 'wpcom-autosave:' + siteId + ':' + postId, post );
++
++	// TODO: incorporate post locking
++	if ( utils.isPublished( savedPost ) || utils.isPublished( post ) ) {
++		await dispatch( editorAutosave( post ) );
++		return null;
++	}
++
++	return await dispatch( saveEdited( { recordSaveEvent: false, autosave: true } ) );
++};
+diff --git a/client/lib/posts/post-edit-store.js b/client/lib/posts/post-edit-store.js
+deleted file mode 100644
+index c6963b2e765ea..0000000000000
+--- a/client/lib/posts/post-edit-store.js
++++ /dev/null
+@@ -1,348 +0,0 @@
+-/** @format */
+-
+-/**
+- * External dependencies
+- */
+-import { assign, filter, find, get, isEqual, pickBy } from 'lodash';
+-import debugFactory from 'debug';
+-const debug = debugFactory( 'calypso:posts:post-edit-store' );
+-import emitter from 'lib/mixins/emitter';
+-
+-/**
+- * Internal dependencies
+- */
+-import Dispatcher from 'dispatcher';
+-import { decodeEntities } from 'lib/formatting';
+-import { reduxDispatch } from 'lib/redux-bridge';
+-import { resetSaveBlockers } from 'state/ui/editor/save-blockers/actions';
+-import { editorAutosaveReset } from 'state/ui/editor/actions';
+-
+-/**
+- * Module variables
+- */
+-let REGEXP_EMPTY_CONTENT = /^<p>(<br[^>]*>|&nbsp;|\s)*<\/p>$/,
+-	CONTENT_LENGTH_ASSUME_SET = 50;
+-
+-let _initialRawContent = null,
+-	_isLoading = false,
+-	_loadingError = null,
+-	_post = null,
+-	_queue = [],
+-	_queueChanges = false,
+-	_rawContent = null,
+-	_savedPost = null,
+-	PostEditStore;
+-
+-function resetState() {
+-	debug( 'Reset state' );
+-	reduxDispatch( resetSaveBlockers() );
+-	_initialRawContent = null;
+-	_isLoading = false;
+-	_loadingError = null;
+-	_post = null;
+-	reduxDispatch( editorAutosaveReset() );
+-	_queue = [];
+-	_queueChanges = false;
+-	_rawContent = null;
+-	_savedPost = null;
+-}
+-
+-function getParentId( post ) {
+-	if ( ! post || ! post.parent ) {
+-		return null;
+-	}
+-
+-	if ( post.parent.ID ) {
+-		return post.parent.ID;
+-	}
+-
+-	return post.parent;
+-}
+-
+-function getPageTemplate( post ) {
+-	if ( ! post || ! post.page_template || post.page_template === 'default' ) {
+-		return '';
+-	}
+-	return post.page_template;
+-}
+-
+-function startEditing( site, post ) {
+-	resetState();
+-	post = normalize( post );
+-	if ( post.title ) {
+-		post.title = decodeEntities( post.title );
+-	}
+-	_savedPost = Object.freeze( post );
+-	_post = _savedPost;
+-	_isLoading = false;
+-}
+-
+-function updatePost( post ) {
+-	post = normalize( post );
+-	if ( post.title ) {
+-		post.title = decodeEntities( post.title );
+-	}
+-	reduxDispatch( editorAutosaveReset() );
+-	_savedPost = Object.freeze( post );
+-	_post = _savedPost;
+-	_loadingError = null;
+-
+-	// To ensure that edits made while an update is inflight are not lost, we need to apply them to the updated post.
+-	_queue.forEach( function( change ) {
+-		set( change );
+-	} );
+-}
+-
+-function initializeNewPost( site, options ) {
+-	options = options || {};
+-
+-	const args = {
+-		site_ID: get( site, 'ID' ),
+-		status: 'draft',
+-		type: options.postType || 'post',
+-		content: options.content || '',
+-		title: options.title || '',
+-	};
+-
+-	startEditing( site, args );
+-}
+-
+-function setLoadingError( error ) {
+-	resetState();
+-	_loadingError = error;
+-	_isLoading = false;
+-}
+-
+-function mergeMetadataEdits( metadata, edits ) {
+-	// remove existing metadata that get updated in `edits`
+-	const newMetadata = filter( metadata, meta => ! find( edits, { key: meta.key } ) );
+-	// append the new edits at the end
+-	return newMetadata.concat( edits );
+-}
+-
+-function set( attributes ) {
+-	if ( ! _post ) {
+-		// ignore since post isn't currently being edited
+-		return false;
+-	}
+-
+-	if ( _queueChanges ) {
+-		_queue.push( attributes );
+-	}
+-
+-	let updatedPost = {
+-		..._post,
+-		...attributes,
+-	};
+-
+-	// merge metadata with a custom function
+-	if ( attributes && attributes.metadata ) {
+-		updatedPost.metadata = mergeMetadataEdits( _post.metadata, attributes.metadata );
+-	}
+-
+-	updatedPost = normalize( updatedPost );
+-
+-	if ( ! isEqual( updatedPost, _post ) ) {
+-		// post has changed, so update
+-		if ( isEqual( updatedPost, _savedPost ) ) {
+-			_post = _savedPost;
+-		} else {
+-			_post = Object.freeze( updatedPost );
+-		}
+-
+-		return true;
+-	}
+-	return false;
+-}
+-
+-function normalize( post ) {
+-	post.parent_id = getParentId( post );
+-	if ( post.type === 'page' ) {
+-		post.page_template = getPageTemplate( post );
+-	}
+-	return post;
+-}
+-
+-function setRawContent( content ) {
+-	let isDirty, hasContent;
+-
+-	if ( null === _initialRawContent ) {
+-		debug( 'Set initial raw content to: %s', content );
+-		_initialRawContent = content;
+-	}
+-
+-	if ( content !== _rawContent ) {
+-		isDirty = PostEditStore.isDirty();
+-		hasContent = PostEditStore.hasContent();
+-
+-		debug( 'Set raw content to: %s', content );
+-		_rawContent = content;
+-
+-		if ( PostEditStore.isDirty() !== isDirty || PostEditStore.hasContent() !== hasContent ) {
+-			PostEditStore.emit( 'change' );
+-		}
+-		PostEditStore.emit( 'rawContentChange' );
+-	}
+-}
+-
+-function isContentEmpty( content ) {
+-	return (
+-		! content ||
+-		( content.length < CONTENT_LENGTH_ASSUME_SET && REGEXP_EMPTY_CONTENT.test( content ) )
+-	);
+-}
+-
+-function dispatcherCallback( payload ) {
+-	let action = payload.action,
+-		changed;
+-
+-	switch ( action.type ) {
+-		case 'EDIT_POST':
+-			changed = set( action.post );
+-			if ( changed ) {
+-				PostEditStore.emit( 'change' );
+-			}
+-			break;
+-
+-		case 'RESET_POST_RAW_CONTENT':
+-			_initialRawContent = null;
+-			setRawContent( null );
+-			break;
+-
+-		case 'EDIT_POST_RAW_CONTENT':
+-			setRawContent( action.content );
+-			break;
+-
+-		case 'DRAFT_NEW_POST':
+-			initializeNewPost( action.site, {
+-				postType: action.postType,
+-				title: action.title,
+-				content: action.content,
+-			} );
+-			PostEditStore.emit( 'change' );
+-			break;
+-
+-		case 'START_EDITING_POST':
+-			resetState();
+-			_isLoading = true;
+-			PostEditStore.emit( 'change' );
+-			break;
+-
+-		case 'STOP_EDITING_POST':
+-			resetState();
+-			PostEditStore.emit( 'change' );
+-			break;
+-
+-		case 'RECEIVE_POST_TO_EDIT':
+-			_isLoading = false;
+-			startEditing( action.site, action.post );
+-			PostEditStore.emit( 'change' );
+-			break;
+-
+-		case 'EDIT_POST_SAVE':
+-			_queueChanges = true;
+-			break;
+-
+-		case 'RECEIVE_POST_BEING_EDITED':
+-			if ( ! action.error ) {
+-				updatePost( action.post );
+-				if ( typeof action.rawContent === 'string' ) {
+-					_initialRawContent = action.rawContent;
+-				}
+-				PostEditStore.emit( 'change' );
+-			}
+-			_queueChanges = false;
+-			_queue = [];
+-			break;
+-
+-		case 'SET_POST_LOADING_ERROR':
+-			_isLoading = false;
+-			if ( action.error ) {
+-				setLoadingError( action.error );
+-			}
+-			PostEditStore.emit( 'change' );
+-			break;
+-	}
+-}
+-
+-PostEditStore = {
+-	get: function() {
+-		return _post;
+-	},
+-
+-	getSavedPost: function() {
+-		return _savedPost;
+-	},
+-
+-	getRawContent: function() {
+-		return _rawContent;
+-	},
+-
+-	getChangedAttributes: function() {
+-		if ( _post && ! _post.ID ) {
+-			return _post;
+-		}
+-
+-		if ( ! this.isDirty() ) {
+-			// nothing has changed
+-			return Object.freeze( {} );
+-		}
+-
+-		const changedAttributes = pickBy( _post, function( value, key ) {
+-			return value !== _savedPost[ key ] && 'metadata' !== key;
+-		} );
+-
+-		// exclude metadata which doesn't have any operation set (means it's unchanged)
+-		if ( _post.metadata ) {
+-			const metadata = filter( _post.metadata, 'operation' );
+-
+-			if ( metadata.length ) {
+-				assign( changedAttributes, { metadata } );
+-			}
+-		}
+-
+-		// when toggling editor modes, it is possible for the post to be dirty
+-		// even though the content hasn't changed to avoid a confusing UX
+-		// let's just pass the content through and save it anyway
+-		if ( ! changedAttributes.content && _rawContent !== _initialRawContent ) {
+-			changedAttributes.content = _post.content;
+-		}
+-
+-		return Object.freeze( changedAttributes );
+-	},
+-
+-	getLoadingError: function() {
+-		return _loadingError;
+-	},
+-
+-	isDirty: function() {
+-		return _post !== _savedPost || _rawContent !== _initialRawContent;
+-	},
+-
+-	isLoading: function() {
+-		return _isLoading;
+-	},
+-
+-	hasContent: function() {
+-		if ( ! _post ) {
+-			return false;
+-		}
+-
+-		if ( ( _post.title && _post.title.trim() ) || _post.excerpt ) {
+-			return true;
+-		}
+-
+-		if ( _rawContent ) {
+-			// Raw content contains the most up-to-date post content
+-			return ! isContentEmpty( _rawContent );
+-		}
+-
+-		return ! isContentEmpty( _post.content );
+-	},
+-};
+-
+-emitter( PostEditStore );
+-
+-PostEditStore.dispatchToken = Dispatcher.register( dispatcherCallback );
+-
+-export default PostEditStore;
+diff --git a/client/lib/posts/utils.js b/client/lib/posts/utils.js
+index d64f770e760a4..bc52770ce843a 100644
+--- a/client/lib/posts/utils.js
++++ b/client/lib/posts/utils.js
+@@ -6,7 +6,6 @@
+ 
+ import url from 'url';
+ import { moment } from 'i18n-calypso';
+-import { includes } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+@@ -14,14 +13,36 @@ import { includes } from 'lodash';
+ import postNormalizer from 'lib/post-normalizer';
+ 
+ export const getEditURL = function( post, site ) {
+-	let basePath = '';
+-	const postType = post.type || 'post';
++	if ( ! site ) {
++		return '/post';
++	}
++
++	if ( ! post ) {
++		return `/post/${ site.slug }`;
++	}
++
++	let path;
++
++	const type = post.type || 'post';
++	switch ( type ) {
++		case 'post':
++			path = '/post';
++			break;
++		case 'page':
++			path = '/page';
++			break;
++		default:
++			path = `/edit/${ type }`;
++			break;
++	}
++
++	path += `/${ site.slug }`;
+ 
+-	if ( ! includes( [ 'post', 'page' ], postType ) ) {
+-		basePath = '/edit';
++	if ( post.ID ) {
++		path += `/${ post.ID }`;
+ 	}
+ 
+-	return `${ basePath }/${ postType }/${ site.slug }/${ post.ID }`;
++	return path;
+ };
+ 
+ export const getPreviewURL = function( site, post, autosavePreviewUrl ) {
+@@ -71,31 +92,56 @@ export const userCan = function( capability, post ) {
+ 	return hasCap;
+ };
+ 
+-export const isBackDatedPublished = function( post ) {
+-	if ( ! post || post.status !== 'future' ) {
++// Return backdated-published status of a post. Optionally, the `status` can be overridden
++// with a custom value: what would the post status be if a `status` edit was applied?
++export const isBackDatedPublished = function( post, status ) {
++	if ( ! post ) {
+ 		return false;
+ 	}
+ 
+-	return moment( post.date ).isBefore( moment() );
++	const effectiveStatus = status || post.status;
++
++	return effectiveStatus === 'future' && moment( post.date ).isBefore( moment() );
+ };
+ 
+-export const isPublished = function( post ) {
++// Return published status of a post. Optionally, the `status` can be overridden
++// with a custom value: what would the post status be if a `status` edit was applied?
++export const isPublished = function( post, status ) {
++	if ( ! post ) {
++		return false;
++	}
++
++	const effectiveStatus = status || post.status;
++
+ 	return (
+-		post &&
+-		( post.status === 'publish' || post.status === 'private' || isBackDatedPublished( post ) )
++		effectiveStatus === 'publish' ||
++		effectiveStatus === 'private' ||
++		isBackDatedPublished( post, status )
+ 	);
+ };
+ 
+ export const isScheduled = function( post ) {
+-	return post && 'future' === post.status;
++	if ( ! post ) {
++		return false;
++	}
++
++	return post.status === 'future';
+ };
+ 
+ export const isPrivate = function( post ) {
+-	return post && 'private' === post.status;
++	if ( ! post ) {
++		return false;
++	}
++
++	return post.status === 'private';
+ };
+ 
+ export const isPending = function( post ) {
+-	return post && 'pending' === post.status;
++	if ( ! post ) {
++		return false;
++	}
++
++	return post.status === 'pending';
+ };
+ 
+ export const getEditedTime = function( post ) {
+diff --git a/client/post-editor/controller.js b/client/post-editor/controller.js
+index 1d7042bb89ec5..1db2d523cb3ef 100644
+--- a/client/post-editor/controller.js
++++ b/client/post-editor/controller.js
+@@ -10,24 +10,20 @@ import i18n from 'i18n-calypso';
+ import page from 'page';
+ import { stringify } from 'qs';
+ import { isWebUri as isValidUrl } from 'valid-url';
+-import { includes, map, pick, reduce, startsWith } from 'lodash';
++import { startsWith } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+  */
+-import actions from 'lib/posts/actions';
++import { startEditingPostCopy, startEditingExistingPost } from 'lib/posts/actions';
+ import { addSiteFragment } from 'lib/route';
+ import User from 'lib/user';
+-import { decodeEntities } from 'lib/formatting';
+ import PostEditor from './post-editor';
+-import { startEditingPost, stopEditingPost } from 'state/ui/editor/actions';
++import { startEditingNewPost, stopEditingPost } from 'state/ui/editor/actions';
+ import { getSelectedSiteId } from 'state/ui/selectors';
+ import { getSite } from 'state/sites/selectors';
+-import { getEditorPostId, getEditorPath } from 'state/ui/editor/selectors';
+-import { editPost } from 'state/posts/actions';
+-import wpcom from 'lib/wp';
+-import Dispatcher from 'dispatcher';
+-import { getEditURL, getFeaturedImageId } from 'lib/posts/utils';
++import { getEditorNewPostPath } from 'state/ui/editor/selectors';
++import { getEditURL } from 'lib/posts/utils';
+ 
+ const user = User();
+ 
+@@ -57,17 +53,21 @@ function renderEditor( context, props ) {
+ }
+ 
+ function maybeRedirect( context ) {
++	const postType = determinePostType( context );
++	const postId = getPostID( context );
++
+ 	const state = context.store.getState();
+ 	const siteId = getSelectedSiteId( state );
+-	const postId = getEditorPostId( state );
+ 
+-	let path = getEditorPath( state, siteId, postId, 'post', context.query );
+-	if ( path !== context.pathname ) {
+-		if ( context.querystring ) {
+-			path += `?${ context.querystring }`;
++	if ( postId === null ) {
++		let path = getEditorNewPostPath( state, siteId, postType );
++		if ( path !== context.pathname ) {
++			if ( context.querystring ) {
++				path += `?${ context.querystring }`;
++			}
++			page.replace( path, null, false, false );
++			return true;
+ 		}
+-		page.redirect( path );
+-		return true;
+ 	}
+ 
+ 	return false;
+@@ -110,95 +110,6 @@ function getPressThisContent( query ) {
+ 	return pieces.join( '\n\n' );
+ }
+ 
+-// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-// Until the full migration, the Copy Post functionality needs to dispatch both Flux and Redux actions:
+-// - (Flux) startEditingNew: to set the editor content;
+-// - (Redux) editPost: to set every other attribute (in particular, to update the Category Selector, terms can only be set via Redux);
+-// - (Flux) edit: to reliably show the updated post attributes before (auto)saving.
+-function startEditingPostCopy( site, postToCopyId, context ) {
+-	wpcom
+-		.site( site.ID )
+-		.post( postToCopyId )
+-		.get( { context: 'edit' } )
+-		.then( postToCopy => {
+-			const postAttributes = pick(
+-				postToCopy,
+-				'canonical_image',
+-				'content',
+-				'excerpt',
+-				'featured_image',
+-				'format',
+-				'post_thumbnail',
+-				'terms',
+-				'title',
+-				'type'
+-			);
+-			postAttributes.tags = map( postToCopy.tags, 'name' );
+-			postAttributes.title = decodeEntities( postAttributes.title );
+-			postAttributes.featured_image = getFeaturedImageId( postToCopy );
+-
+-			actions.startEditingNew( site, {
+-				content: postToCopy.content,
+-				title: postToCopy.title,
+-				type: postToCopy.type,
+-			} );
+-			actions.edit( postAttributes );
+-
+-			/**
+-			 * A post attributes whitelist for Redux's `editPost()` action.
+-			 *
+-			 * This is needed because blindly passing all post attributes to `editPost()`
+-			 * caused some of them (notably the featured image) to revert to their original value
+-			 * when modified right after the copy.
+-			 *
+-			 * @see https://github.com/Automattic/wp-calypso/pull/13933
+-			 */
+-			const reduxPostAttributes = pick( postAttributes, [
+-				'excerpt',
+-				'featured_image',
+-				'format',
+-				'terms',
+-				'title',
+-			] );
+-
+-			/**
+-			 * A post metadata whitelist for the `updatePostMetadata()` action.
+-			 *
+-			 * This is needed because blindly passing all post metadata to `editPost()`
+-			 * causes unforeseeable issues, such as Publicize not triggering on the copied post.
+-			 *
+-			 * @see https://github.com/Automattic/wp-calypso/issues/14840
+-			 */
+-			const metadataWhitelist = [ 'geo_latitude', 'geo_longitude', 'geo_address', 'geo_public' ];
+-
+-			// Filter the post metadata to include only the ones we want to copy,
+-			// use only the `key` and `value` properties (and, most importantly exclude `id`),
+-			// and add an `operation` field to the copied values.
+-			const copiedMetadata = reduce(
+-				postToCopy.metadata,
+-				( copiedMeta, { key, value } ) => {
+-					if ( includes( metadataWhitelist, key ) ) {
+-						copiedMeta.push( { key, value, operation: 'update' } );
+-					}
+-					return copiedMeta;
+-				},
+-				[]
+-			);
+-
+-			if ( copiedMetadata.length > 0 ) {
+-				reduxPostAttributes.metadata = copiedMetadata;
+-			}
+-
+-			context.store.dispatch( editPost( site.ID, null, reduxPostAttributes ) );
+-		} )
+-		.catch( error => {
+-			Dispatcher.handleServerAction( {
+-				type: 'SET_POST_LOADING_ERROR',
+-				error: error,
+-			} );
+-		} );
+-}
+-
+ const getAnalyticsPathAndTitle = ( postType, postId, postToCopyId ) => {
+ 	const isPost = 'post' === postType;
+ 	const isPage = 'page' === postType;
+@@ -228,14 +139,10 @@ const getAnalyticsPathAndTitle = ( postType, postId, postToCopyId ) => {
+ export default {
+ 	post: function( context, next ) {
+ 		const postType = determinePostType( context );
+-		const postID = getPostID( context );
++		const postId = getPostID( context );
+ 		const postToCopyId = context.query.copy;
+ 
+ 		function startEditing( siteId ) {
+-			const site = getSite( context.store.getState(), siteId );
+-			const isCopy = context.query.copy ? true : false;
+-			context.store.dispatch( startEditingPost( siteId, isCopy ? null : postID, postType ) );
+-
+ 			if ( maybeRedirect( context ) ) {
+ 				return;
+ 			}
+@@ -244,11 +151,10 @@ export default {
+ 			// so kick it off here to minimize time spent waiting for it to load
+ 			// in the view components
+ 			if ( postToCopyId ) {
+-				startEditingPostCopy( site, postToCopyId, context );
+-			} else if ( postID ) {
+-				// TODO: REDUX - remove flux actions when whole post-editor is reduxified
++				context.store.dispatch( startEditingPostCopy( siteId, postToCopyId ) );
++			} else if ( postId ) {
+ 				const contextPath = context.path;
+-				actions.startEditingExisting( site, postID ).then( editedPost => {
++				context.store.dispatch( startEditingExistingPost( siteId, postId ) ).then( editedPost => {
+ 					if ( contextPath !== page.current ) {
+ 						// browser navigated elsewhere while the load was in progress
+ 						return;
+@@ -256,24 +162,23 @@ export default {
+ 
+ 					if ( editedPost && editedPost.type && editedPost.type !== postType ) {
+ 						// incorrect post type in URL
+-						page.redirect( getEditURL( editedPost, site ) );
++						page.redirect( getEditURL( editedPost, getSite( context.store.getState(), siteId ) ) );
+ 					}
+ 				} );
+ 			} else {
+-				const postOptions = { type: postType };
++				const post = { type: postType };
+ 
+ 				// handle press-this params if applicable
+ 				if ( context.query.url ) {
+ 					const pressThisContent = getPressThisContent( context.query );
+-					Object.assign( postOptions, {
+-						postFormat: 'quote',
++					Object.assign( post, {
++						format: 'quote',
+ 						title: context.query.title,
+ 						content: pressThisContent,
+ 					} );
+ 				}
+ 
+-				// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-				actions.startEditingNew( site, postOptions );
++				context.store.dispatch( startEditingNewPost( siteId, post ) );
+ 			}
+ 		}
+ 
+@@ -307,7 +212,7 @@ export default {
+ 
+ 		const [ analyticsPath, analyticsTitle ] = getAnalyticsPathAndTitle(
+ 			postType,
+-			postID,
++			postId,
+ 			postToCopyId
+ 		);
+ 		renderEditor( context, { analyticsPath, analyticsTitle } );
+diff --git a/client/post-editor/editor-featured-image/index.jsx b/client/post-editor/editor-featured-image/index.jsx
+index de24a2d1e1e95..b39578404a53a 100644
+--- a/client/post-editor/editor-featured-image/index.jsx
++++ b/client/post-editor/editor-featured-image/index.jsx
+@@ -102,6 +102,16 @@ class EditorFeaturedImage extends Component {
+ 		stats.recordEvent( 'Featured image removed' );
+ 	};
+ 
++	// called when media library item transitions from temporary ID to a permanent ID, e.g.,
++	// after creating an item by uploading or selecting from Google library.
++	onImageChange = imageId => {
++		if ( imageId !== this.props.featuredImageId ) {
++			this.props.editPost( this.props.siteId, this.props.postId, {
++				featured_image: imageId,
++			} );
++		}
++	};
++
+ 	renderMediaModal() {
+ 		if ( ! this.props.siteId ) {
+ 			return;
+@@ -133,6 +143,7 @@ class EditorFeaturedImage extends Component {
+ 				siteId={ siteId }
+ 				itemId={ featuredImageId }
+ 				maxWidth={ this.props.maxWidth }
++				onImageChange={ this.onImageChange }
+ 			/>
+ 		);
+ 	}
+diff --git a/client/post-editor/editor-featured-image/preview-container.jsx b/client/post-editor/editor-featured-image/preview-container.jsx
+index ef986acb22084..2e749e3407ff4 100644
+--- a/client/post-editor/editor-featured-image/preview-container.jsx
++++ b/client/post-editor/editor-featured-image/preview-container.jsx
+@@ -6,14 +6,13 @@
+ 
+ import PropTypes from 'prop-types';
+ import React from 'react';
+-import { defer, noop } from 'lodash';
++import { defer } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+  */
+ import MediaActions from 'lib/media/actions';
+ import MediaStore from 'lib/media/store';
+-import PostActions from 'lib/posts/actions';
+ import EditorFeaturedImagePreview from './preview';
+ 
+ export default class extends React.Component {
+@@ -29,8 +28,6 @@ export default class extends React.Component {
+ 
+ 	state = {
+ 		image: null,
+-		onImageChange: noop,
+-		showEditIcon: false,
+ 	};
+ 
+ 	componentDidMount() {
+@@ -72,21 +69,8 @@ export default class extends React.Component {
+ 		} );
+ 
+ 		defer( () => {
+-			if ( this.props.onImageChange ) {
+-				// When used in Simple Payments button we only want to update the
+-				// ID field of parent form instead of sending post actions bellow
+-				if ( image && image.ID ) {
+-					this.props.onImageChange( image.ID );
+-					MediaActions.setLibrarySelectedItems( this.props.siteId, [ image ] );
+-				}
+-				return;
+-			}
+-
+-			if ( image && image.ID !== this.props.itemId ) {
+-				// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-				PostActions.edit( {
+-					featured_image: image.ID,
+-				} );
++			if ( this.props.onImageChange && image && image.ID ) {
++				this.props.onImageChange( image.ID );
+ 			}
+ 		} );
+ 	};
+diff --git a/client/post-editor/editor-visibility/index.jsx b/client/post-editor/editor-visibility/index.jsx
+index a52dda58e5f58..3983cd2c7bec5 100644
+--- a/client/post-editor/editor-visibility/index.jsx
++++ b/client/post-editor/editor-visibility/index.jsx
+@@ -21,7 +21,6 @@ import FormTextInput from 'components/forms/form-text-input';
+ import SelectDropdown from 'components/select-dropdown';
+ import DropdownItem from 'components/select-dropdown/item';
+ import { hasTouch } from 'lib/touch-detect';
+-import postActions from 'lib/posts/actions';
+ import { recordEvent, recordStat } from 'lib/posts/stats';
+ import { tracks } from 'lib/analytics';
+ import accept from 'lib/accept';
+@@ -112,18 +111,12 @@ class EditorVisibility extends React.Component {
+ 				break;
+ 		}
+ 
+-		// Make sure that status edits are applied both to Flux and Redux stores
+-		postActions.edit( { status: newStatus } );
+ 		this.props.editPost( siteId, postId, postEdits );
+ 		this.recordStats( newVisibility );
+ 	}
+ 
+ 	setPostToPrivate() {
+ 		const { siteId, postId } = this.props;
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		postActions.edit( {
+-			status: 'private',
+-		} );
+ 
+ 		// Private posts cannot be sticky
+ 		this.props.editPost( siteId, postId, {
+diff --git a/client/post-editor/editor-word-count/index.jsx b/client/post-editor/editor-word-count/index.jsx
+index 35dd2e6dd6e34..92efba67f8183 100644
+--- a/client/post-editor/editor-word-count/index.jsx
++++ b/client/post-editor/editor-word-count/index.jsx
+@@ -5,45 +5,24 @@
+  */
+ 
+ import PropTypes from 'prop-types';
+-import React, { PureComponent } from 'react';
++import React, { Component } from 'react';
+ import { connect } from 'react-redux';
+ import { localize } from 'i18n-calypso';
+ 
+ /**
+  * Internal dependencies
+  */
+-import PostEditStore from 'lib/posts/post-edit-store';
+ import { countWords } from 'lib/text-utils';
+ import { getCurrentUserLocale } from 'state/current-user/selectors';
++import { getEditorRawContent } from 'state/ui/editor/selectors';
+ 
+-export class EditorWordCount extends PureComponent {
++export class EditorWordCount extends Component {
+ 	static propTypes = {
+ 		selectedText: PropTypes.string,
++		rawContent: PropTypes.string,
+ 		localeSlug: PropTypes.string,
+ 	};
+ 
+-	state = {
+-		rawContent: '',
+-	};
+-
+-	componentWillMount() {
+-		PostEditStore.on( 'rawContentChange', this.onRawContentChange );
+-	}
+-
+-	componentDidMount() {
+-		this.onRawContentChange();
+-	}
+-
+-	componentWillUnmount() {
+-		PostEditStore.removeListener( 'rawContentChange', this.onRawContentChange );
+-	}
+-
+-	onRawContentChange = () => {
+-		this.setState( {
+-			rawContent: PostEditStore.getRawContent(),
+-		} );
+-	};
+-
+ 	getSelectedTextCount() {
+ 		const selectedText = countWords( this.props.selectedText );
+ 
+@@ -57,7 +36,7 @@ export class EditorWordCount extends PureComponent {
+ 			{
+ 				count: selectedText,
+ 				args: {
+-					selectedText: selectedText,
++					selectedText,
+ 					separator: '/ ',
+ 				},
+ 				components: {
+@@ -83,7 +62,7 @@ export class EditorWordCount extends PureComponent {
+ 				return null;
+ 		}
+ 
+-		const wordCount = countWords( this.state.rawContent );
++		const wordCount = countWords( this.props.rawContent );
+ 
+ 		return (
+ 			<div className="editor-word-count">
+@@ -101,4 +80,5 @@ export class EditorWordCount extends PureComponent {
+ 
+ export default connect( state => ( {
+ 	localeSlug: getCurrentUserLocale( state ) || 'en',
++	rawContent: getEditorRawContent( state ),
+ } ) )( localize( EditorWordCount ) );
+diff --git a/client/post-editor/post-editor.jsx b/client/post-editor/post-editor.jsx
+index f12fdfc9811a2..4bc2bfcd71c9a 100644
+--- a/client/post-editor/post-editor.jsx
++++ b/client/post-editor/post-editor.jsx
+@@ -16,9 +16,8 @@ import { v4 as uuid } from 'uuid';
+ /**
+  * Internal dependencies
+  */
+-import actions from 'lib/posts/actions';
++import { autosave, saveEdited } from 'lib/posts/actions';
+ import { addSiteFragment } from 'lib/route';
+-import PostEditStore from 'lib/posts/post-edit-store';
+ import EditorActionBar from 'post-editor/editor-action-bar';
+ import FeaturedImage from 'post-editor/editor-featured-image';
+ import EditorTitle from 'post-editor/editor-title';
+@@ -34,19 +33,30 @@ import EditorPreview from './editor-preview';
+ import { recordStat, recordEvent } from 'lib/posts/stats';
+ import analytics from 'lib/analytics';
+ import { getSelectedSiteId, getSelectedSite } from 'state/ui/selectors';
+-import { saveConfirmationSidebarPreference } from 'state/ui/editor/actions';
++import {
++	saveConfirmationSidebarPreference,
++	editorEditRawContent,
++	editorResetRawContent,
++} from 'state/ui/editor/actions';
+ import { closeEditorSidebar, openEditorSidebar } from 'state/ui/editor/sidebar/actions';
+ import {
+ 	getEditorPostId,
+-	getEditorPath,
+ 	isConfirmationSidebarEnabled,
++	isEditorNewPost,
+ 	isEditorAutosaving,
++	isEditorLoading,
+ 	isEditorSaveBlocked,
+ 	getEditorPostPreviewUrl,
++	getEditorLoadingError,
+ } from 'state/ui/editor/selectors';
+ import { recordTracksEvent, recordGoogleEvent } from 'state/analytics/actions';
+ import { editPost } from 'state/posts/actions';
+-import { getEditedPostValue, getPostEdits, isEditedPostDirty } from 'state/posts/selectors';
++import {
++	getSitePost,
++	getEditedPost,
++	getEditedPostValue,
++	isEditedPostDirty,
++} from 'state/posts/selectors';
+ import { getCurrentUserId } from 'state/current-user/selectors';
+ import editedPostHasContent from 'state/selectors/edited-post-has-content';
+ import hasBrokenSiteUserConnection from 'state/selectors/has-broken-site-user-connection';
+@@ -73,8 +83,6 @@ import QuickSaveButtons from 'post-editor/editor-ground-control/quick-save-butto
+ import EditorRevisionsDialog from 'post-editor/editor-revisions/dialog';
+ import PageViewTracker from 'lib/analytics/page-view-tracker';
+ 
+-const isPostNew = post => !! ( post && ! post.ID );
+-
+ export class PostEditor extends React.Component {
+ 	static propTypes = {
+ 		siteId: PropTypes.number,
+@@ -84,7 +92,6 @@ export class PostEditor extends React.Component {
+ 		setNextLayoutFocus: PropTypes.func.isRequired,
+ 		editorModePreference: PropTypes.string,
+ 		editorSidebarPreference: PropTypes.string,
+-		editPath: PropTypes.string,
+ 		markChanged: PropTypes.func.isRequired,
+ 		markSaved: PropTypes.func.isRequired,
+ 		translate: PropTypes.func.isRequired,
+@@ -101,7 +108,7 @@ export class PostEditor extends React.Component {
+ 
+ 	getDefaultState() {
+ 		return {
+-			...this.getPostEditState(),
++			mode: this.props.editorModePreference || 'tinymce',
+ 			confirmationSidebar: 'closed',
+ 			confirmationSidebarPreference: true,
+ 			isSaving: false,
+@@ -116,19 +123,7 @@ export class PostEditor extends React.Component {
+ 		};
+ 	}
+ 
+-	getPostEditState() {
+-		return {
+-			savedPost: PostEditStore.getSavedPost(),
+-			loadingError: PostEditStore.getLoadingError(),
+-			isDirty: PostEditStore.isDirty(),
+-			hasContent: PostEditStore.hasContent(),
+-			post: PostEditStore.get(),
+-			isLoading: PostEditStore.isLoading(),
+-		};
+-	}
+-
+ 	componentWillMount() {
+-		PostEditStore.on( 'change', this.onEditedPostChange );
+ 		this.debouncedSaveRawContent = debounce( this.saveRawContent, 200 );
+ 		this.throttledAutosave = throttle( this.autosave, 20000 );
+ 		this.debouncedAutosave = debounce( this.throttledAutosave, 3000 );
+@@ -151,7 +146,7 @@ export class PostEditor extends React.Component {
+ 			this.throttledAutosave.cancel();
+ 		}
+ 
+-		if ( nextState.isDirty || nextProps.dirty ) {
++		if ( nextProps.isDirty ) {
+ 			this.props.markChanged();
+ 		} else {
+ 			this.props.markSaved();
+@@ -159,18 +154,18 @@ export class PostEditor extends React.Component {
+ 	}
+ 
+ 	componentDidMount() {
+-		// if content is passed in, e.g., through url param
+-		if ( this.state.post && this.state.post.content ) {
+-			this.editor.setEditorContent( this.state.post.content, { initial: true } );
++		// if post and content is already available on mount, e.g., "Press This" or a post copy
++		if ( this.props.post && this.props.post.content ) {
++			this.editor.setEditorContent( this.props.post.content, { initial: true } );
++		}
++
++		// record the initial value of the editor mode preference
++		if ( this.props.editorModePreference ) {
++			analytics.mc.bumpStat( 'calypso_default_editor_mode', this.props.editorModePreference );
+ 		}
+ 	}
+ 
+ 	componentWillUnmount() {
+-		PostEditStore.removeListener( 'change', this.onEditedPostChange );
+-
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		actions.stopEditing();
+-
+ 		this.debouncedAutosave.cancel();
+ 		this.throttledAutosave.cancel();
+ 		this.debouncedSaveRawContent.cancel();
+@@ -181,17 +176,12 @@ export class PostEditor extends React.Component {
+ 
+ 	componentWillReceiveProps( nextProps ) {
+ 		const { siteId, postId } = this.props;
+-		if ( nextProps.siteId === siteId && nextProps.postId !== postId ) {
+-			// make sure the history entry has the post ID in it, but don't dispatch
+-			page.replace( nextProps.editPath, null, false, false );
+-		}
+ 
+-		if (
+-			nextProps.siteId !== siteId ||
+-			( nextProps.siteId === siteId && nextProps.postId !== postId )
+-		) {
++		if ( nextProps.siteId !== siteId || nextProps.postId !== postId ) {
+ 			this.useDefaultSidebarFocus( nextProps );
+ 		}
++
++		this.onEditedPostChange( nextProps );
+ 	}
+ 
+ 	storeEditor = ref => {
+@@ -260,20 +250,17 @@ export class PostEditor extends React.Component {
+ 	};
+ 
+ 	render() {
+-		const site = this.props.selectedSite || undefined;
+-		const mode = this.getEditorMode();
+-		const isInvalidURL = this.state.loadingError;
++		const site = this.props.selectedSite;
++		const mode = this.state.mode;
++		const isInvalidURL = this.props.loadingError;
+ 
+-		let isTrashed;
+-		let hasAutosave;
++		const isTrashed = get( this.props.post, 'status' ) === 'trash';
++		const hasAutosave = get( this.props.post, 'meta.data.autosave' );
+ 
+-		if ( this.state.post ) {
+-			isTrashed = this.state.post.status === 'trash';
+-			hasAutosave = get( this.state.post.meta, [ 'data', 'autosave' ] );
+-		}
+ 		const classes = classNames( 'post-editor', {
+ 			'is-loading': ! this.state.isEditorInitialized,
+ 		} );
++
+ 		return (
+ 			<div className={ classes }>
+ 				<PageViewTracker path={ this.props.analyticsPath } title={ this.props.analyticsTitle } />
+@@ -293,10 +280,10 @@ export class PostEditor extends React.Component {
+ 				<div className="post-editor__inner">
+ 					<EditorGroundControl
+ 						setPostDate={ this.setPostDate }
+-						hasContent={ this.state.hasContent || this.props.hasContent }
++						hasContent={ this.props.hasContent }
+ 						isConfirmationSidebarEnabled={ this.props.isConfirmationSidebarEnabled }
+ 						confirmationSidebarStatus={ this.state.confirmationSidebar }
+-						isDirty={ this.state.isDirty || this.props.dirty }
++						isDirty={ this.props.isDirty }
+ 						isSaveBlocked={ this.isSaveBlocked() }
+ 						isPublishing={ this.state.isPublishing }
+ 						isSaving={ this.state.isSaving }
+@@ -321,12 +308,12 @@ export class PostEditor extends React.Component {
+ 									homeLink={ true }
+ 									externalLink={ true }
+ 								/>
+-								{ this.state.isDirty || this.props.dirty ? (
++								{ this.props.isDirty ? (
+ 									<QuickSaveButtons
+ 										isSaving={ this.state.isSaving }
+ 										isSaveBlocked={ this.isSaveBlocked() }
+-										isDirty={ this.state.isDirty || this.props.dirty }
+-										hasContent={ this.state.hasContent || this.props.hasContent }
++										isDirty={ this.props.isDirty }
++										hasContent={ this.props.hasContent }
+ 										onSave={ this.onSave }
+ 									/>
+ 								) : (
+@@ -360,7 +347,7 @@ export class PostEditor extends React.Component {
+ 									ref={ this.storeEditor }
+ 									mode={ mode }
+ 									tabIndex={ 2 }
+-									isNew={ isPostNew( this.state.savedPost ) }
++									isNew={ this.props.isNew }
+ 									onSetContent={ this.debouncedSaveRawContent }
+ 									onInit={ this.onEditorInitialized }
+ 									onChange={ this.onEditorContentChange }
+@@ -388,13 +375,12 @@ export class PostEditor extends React.Component {
+ 							onClose={ this.onPreviewClose }
+ 							onEdit={ this.onPreviewEdit }
+ 							isSaving={ this.state.isSaving || this.props.isAutosaving }
+-							isLoading={ this.state.isLoading }
++							isLoading={ this.props.isLoading }
+ 							isFullScreen={ this.state.isPostPublishPreview }
+ 							previewUrl={ this.props.previewUrl }
+ 							postId={ this.props.postId }
+ 							externalUrl={ this.getExternalUrl() }
+-							editUrl={ this.props.editPath }
+-							revision={ get( this.state, 'post.revisions.length', 0 ) }
++							revision={ get( this.props.post, 'revisions.length', 0 ) }
+ 						/>
+ 					) : null }
+ 					<EditorNotice { ...this.state.notice } onDismissClick={ this.hideNotice } />
+@@ -423,17 +409,14 @@ export class PostEditor extends React.Component {
+ 
+ 	restoreAutosave = () => {
+ 		this.setState( { showAutosaveDialog: false } );
+-		this.restoreRevision( get( this.state, 'post.meta.data.autosave' ) );
++		this.restoreRevision( get( this.props.post, 'meta.data.autosave' ) );
+ 	};
+ 
+ 	restoreRevision = revision => {
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		actions.edit( {
+-			content: revision.content,
+-		} );
+ 		this.props.editPost( this.props.siteId, this.props.postId, {
+ 			excerpt: revision.excerpt,
+ 			title: revision.title,
++			content: revision.content,
+ 		} );
+ 		if ( this.editor ) {
+ 			this.editor.setEditorContent( revision.content, { initial: true } );
+@@ -448,34 +431,19 @@ export class PostEditor extends React.Component {
+ 		this.setState( { showVerifyEmailDialog: false } );
+ 	};
+ 
+-	onEditedPostChange = () => {
+-		const wasNew = isPostNew( this.state.savedPost );
+-		const isNew = isPostNew( PostEditStore.getSavedPost() );
+-		const didLoad = this.state.isLoading && ! PostEditStore.isLoading();
+-		const loadingError = PostEditStore.getLoadingError();
++	onEditedPostChange = nextProps => {
++		if ( nextProps.loadingError ) {
++			return;
++		}
+ 
+-		if ( loadingError ) {
+-			this.setState( { loadingError } );
+-		} else if ( ( isNew && ! wasNew ) || PostEditStore.isLoading() ) {
++		if ( ( nextProps.isNew && ! this.props.isNew ) || nextProps.isLoading ) {
+ 			// is new or loading
+ 			this.setState(
+ 				this.getDefaultState(),
+ 				() => this.editor && this.editor.setEditorContent( '' )
+ 			);
+-		} else if ( wasNew && this.state.hasContent && ! this.state.isDirty ) {
+-			// Is a copy of an existing post.
+-			// When copying a post, the created draft is new and the editor is not yet dirty, but it already has content.
+-			// Once the content is set, the editor becomes dirty and the following setState won't trigger anymore.
+-			this.setState(
+-				this.getDefaultState(),
+-				() => this.editor && this.editor.setEditorContent( this.state.post.content )
+-			);
+-		} else {
+-			this.setState( this.getPostEditState(), function() {
+-				if ( this.editor && didLoad ) {
+-					this.editor.setEditorContent( this.state.post.content, { initial: true } );
+-				}
+-			} );
++		} else if ( this.editor && this.props.isLoading && ! nextProps.isLoading ) {
++			this.editor.setEditorContent( nextProps.post.content, { initial: true } );
+ 		}
+ 	};
+ 
+@@ -525,13 +493,28 @@ export class PostEditor extends React.Component {
+ 	};
+ 
+ 	saveRawContent = () => {
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		actions.editRawContent( this.editor.getContent( { format: 'raw' } ) );
++		this.props.editorEditRawContent( this.editor.getContent( { format: 'raw' } ) );
+ 
+ 		// If debounced save raw content was pending, consider it flushed
+ 		this.debouncedSaveRawContent.cancel();
+ 	};
+ 
++	// Sync content from the TinyMCE editor to the Redux state. Because it's expensive to serialize
++	// the content when TinyMCE is the active mode, we don't sync on every keystroke, but only
++	// immediately before save/publish and after switching editor mode.
++	syncEditorContent( options ) {
++		const resetRawContent = get( options, 'resetRawContent', false );
++		const content = get( options, 'content', this.editor.getContent() );
++
++		if ( resetRawContent ) {
++			this.props.editorResetRawContent();
++		}
++		this.saveRawContent();
++		if ( content !== get( this.props.post, 'content', null ) ) {
++			this.props.editPost( this.props.siteId, this.props.postId, { content } );
++		}
++	}
++
+ 	autosave = async () => {
+ 		// If debounced / throttled autosave was pending, consider it flushed
+ 		this.throttledAutosave.cancel();
+@@ -541,32 +524,20 @@ export class PostEditor extends React.Component {
+ 			return;
+ 		}
+ 
+-		this.saveRawContent();
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		const edits = {
+-			...this.props.edits,
+-			content: this.editor.getContent(),
+-		};
+-		actions.edit( edits );
+-
+-		// Make sure that after TinyMCE processing that the post is still dirty
+-		if ( ! PostEditStore.isDirty() || ! PostEditStore.hasContent() || ! this.state.post ) {
+-			return;
+-		}
++		this.syncEditorContent();
+ 
+ 		// The post is either already published or the current modifications are going to publish it
+ 		const savingPublishedPost =
+-			utils.isPublished( this.state.savedPost ) || utils.isPublished( this.state.post );
++			utils.isPublished( this.props.savedPost ) || utils.isPublished( this.props.post );
+ 
+ 		if ( ! savingPublishedPost ) {
+ 			this.setState( { isSaving: true } );
+ 		}
+ 
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+ 		try {
+-			await actions.autosave();
++			const saveResult = await this.props.autosave();
+ 			if ( ! savingPublishedPost ) {
+-				this.onSaveDraftSuccess();
++				this.onSaveDraftSuccess( saveResult );
+ 			}
+ 		} catch ( error ) {
+ 			if ( ! savingPublishedPost ) {
+@@ -628,32 +599,29 @@ export class PostEditor extends React.Component {
+ 	};
+ 
+ 	onSave = status => {
+-		const edits = { ...this.props.edits };
+-		if ( status ) {
+-			edits.status = status;
+-			// Sync the status edit to Redux to ensure that Flux and Redux stores have the same info
+-			this.props.editPost( this.props.siteId, this.props.postId, { status } );
+-		}
+-
++		// Refuse to save if the current edits would mean that an unpublished post gets published.
++		// That's an exclusive resposibility of the `onPublish` method.
+ 		if (
+-			! utils.isPublished( this.state.savedPost ) &&
+-			( ( ! status && utils.isPublished( this.state.post ) ) || utils.isPublished( edits ) )
++			! utils.isPublished( this.props.savedPost ) &&
++			utils.isPublished( this.props.post, status )
+ 		) {
+ 			return;
+ 		}
+ 
+ 		this.setState( { isSaving: true } );
+ 
++		if ( status ) {
++			this.props.editPost( this.props.siteId, this.props.postId, { status } );
++		}
++
+ 		// Flush any pending raw content saves
+-		this.saveRawContent();
+-		edits.content = this.editor.getContent();
++		this.syncEditorContent();
+ 
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		actions.saveEdited( edits ).then( this.onSaveDraftSuccess, this.onSaveDraftFailure );
++		this.props.saveEdited().then( this.onSaveDraftSuccess, this.onSaveDraftFailure );
+ 	};
+ 
+ 	getExternalUrl() {
+-		const { post } = this.state;
++		const { post } = this.props;
+ 
+ 		if ( post ) {
+ 			return post.URL;
+@@ -688,7 +656,7 @@ export class PostEditor extends React.Component {
+ 			this._previewWindow = window.open( 'about:blank', 'WordPress.com Post Preview' );
+ 		}
+ 
+-		if ( this.state.isDirty || this.props.dirty ) {
++		if ( this.props.isDirty ) {
+ 			await this.autosave();
+ 		}
+ 
+@@ -702,9 +670,7 @@ export class PostEditor extends React.Component {
+ 	};
+ 
+ 	iframePreview = async () => {
+-		// to avoid a weird UX we clear the iframe when (auto)saving so we need to delay
+-		// opening the preview frame until the save is done to avoid flickering
+-		if ( this.state.isDirty || this.props.dirty ) {
++		if ( this.props.isDirty ) {
+ 			this.autosave();
+ 		}
+ 
+@@ -746,24 +712,33 @@ export class PostEditor extends React.Component {
+ 		this.onSaveFailure( error, 'saveFailure' );
+ 	};
+ 
+-	onSaveDraftSuccess = () => {
+-		const { post } = this.state;
++	onSaveDraftSuccess = saveResult => {
++		this.onSaveSuccess( saveResult, 'save' );
++	};
+ 
+-		if ( utils.isPublished( post ) ) {
+-			this.onSaveSuccess( 'updated' );
+-		} else {
+-			this.onSaveSuccess();
++	// determine if publish is private, future or normal
++	getPublishStatus() {
++		if ( utils.isPrivate( this.props.post ) ) {
++			return 'private';
+ 		}
+-	};
+ 
+-	onPublish = ( isConfirmed = false ) => {
+-		if ( this.props.isConfirmationSidebarEnabled && false === isConfirmed ) {
+-			this.setConfirmationSidebar( { status: 'open' } );
+-			return;
++		if ( utils.isFutureDated( this.props.post ) ) {
++			return 'future';
+ 		}
+ 
+-		if ( this.props.isConfirmationSidebarEnabled && 'open' === this.state.confirmationSidebar ) {
+-			this.setConfirmationSidebar( { status: 'publishing' } );
++		return 'publish';
++	}
++
++	onPublish = ( isConfirmed = false ) => {
++		if ( this.props.isConfirmationSidebarEnabled ) {
++			if ( isConfirmed === false ) {
++				this.setConfirmationSidebar( { status: 'open' } );
++				return;
++			}
++
++			if ( this.state.confirmationSidebar === 'open' ) {
++				this.setConfirmationSidebar( { status: 'publishing' } );
++			}
+ 		}
+ 
+ 		this.setState( {
+@@ -771,49 +746,22 @@ export class PostEditor extends React.Component {
+ 			isPublishing: true,
+ 		} );
+ 
+-		const edits = { ...this.props.edits };
+-
+-		// determine if this is a private publish
+-		if ( utils.isPrivate( this.state.post ) ) {
+-			edits.status = 'private';
+-		} else if ( utils.isFutureDated( this.state.post ) ) {
+-			edits.status = 'future';
+-		} else {
+-			edits.status = 'publish';
+-		}
+-
+-		// Sync the status edit to Redux to ensure that Flux and Redux stores have the same info
+-		this.props.editPost( this.props.siteId, this.props.postId, { status: edits.status } );
++		const status = this.getPublishStatus();
++		this.props.editPost( this.props.siteId, this.props.postId, { status } );
++		this.syncEditorContent();
+ 
+-		// Flush any pending raw content saves
+-		// Update content on demand to avoid unnecessary lag and because it is expensive
+-		// to serialize when TinyMCE is the active mode
+-		this.saveRawContent();
+-		edits.content = this.editor.getContent();
+-
+-		actions.saveEdited( edits ).then( this.onPublishSuccess, this.onPublishFailure );
++		this.props.saveEdited().then( this.onPublishSuccess, this.onPublishFailure );
+ 	};
+ 
+ 	onPublishFailure = error => {
+-		this.onSaveFailure( error, 'publishFailure' );
+-
+ 		if ( this.props.isConfirmationSidebarEnabled ) {
+ 			this.setConfirmationSidebar( { status: 'closed', context: 'publish_failure' } );
+ 		}
+-	};
+-
+-	onPublishSuccess = () => {
+-		const { savedPost } = this.state;
+ 
+-		let message;
+-		if ( utils.isPrivate( savedPost ) ) {
+-			message = 'publishedPrivately';
+-		} else if ( utils.isFutureDated( savedPost ) ) {
+-			message = 'scheduled';
+-		} else {
+-			message = 'published';
+-		}
++		this.onSaveFailure( error, 'publishFailure' );
++	};
+ 
++	onPublishSuccess = saveResult => {
+ 		if ( ! this.state.confirmationSidebarPreference ) {
+ 			this.props.saveConfirmationSidebarPreference( this.props.siteId, false );
+ 		}
+@@ -822,7 +770,7 @@ export class PostEditor extends React.Component {
+ 			this.setConfirmationSidebar( { status: 'closed', context: 'publish_success' } );
+ 		}
+ 
+-		this.onSaveSuccess( message );
++		this.onSaveSuccess( saveResult, 'publish' );
+ 	};
+ 
+ 	onSaveFailure = ( error, message ) => {
+@@ -840,8 +788,6 @@ export class PostEditor extends React.Component {
+ 	setPostDate = date => {
+ 		const { siteId, postId } = this.props;
+ 		const dateValue = date ? date.format() : null;
+-		// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-		actions.edit( { date: dateValue } );
+ 
+ 		this.props.editPost( siteId, postId, { date: dateValue } );
+ 
+@@ -850,10 +796,26 @@ export class PostEditor extends React.Component {
+ 		} );
+ 	};
+ 
+-	onSaveSuccess = message => {
+-		const post = PostEditStore.get();
+-		const isNotPrivateOrIsConfirmed =
+-			'private' !== post.status || 'closed' !== this.state.confirmationSidebar;
++	onSaveSuccess = ( saveResult, type ) => {
++		let message = null;
++
++		if ( saveResult ) {
++			const { receivedPost } = saveResult;
++
++			if ( type === 'save' ) {
++				if ( utils.isPublished( receivedPost ) ) {
++					message = 'updated';
++				}
++			} else if ( type === 'publish' ) {
++				if ( utils.isPrivate( receivedPost ) ) {
++					message = 'publishedPrivately';
++				} else if ( utils.isFutureDated( receivedPost ) ) {
++					message = 'scheduled';
++				} else {
++					message = 'published';
++				}
++			}
++		}
+ 
+ 		const nextState = {
+ 			isSaving: false,
+@@ -868,7 +830,7 @@ export class PostEditor extends React.Component {
+ 
+ 			window.scrollTo( 0, 0 );
+ 
+-			if ( this.props.isSitePreviewable && isNotPrivateOrIsConfirmed && 'published' === message ) {
++			if ( this.props.isSitePreviewable && message === 'published' ) {
+ 				this.setState( { isPostPublishPreview: true } );
+ 				this.iframePreview();
+ 			}
+@@ -877,19 +839,12 @@ export class PostEditor extends React.Component {
+ 		}
+ 
+ 		this.setState( nextState );
+-	};
+-
+-	getEditorMode = () => {
+-		let editorMode = 'tinymce';
+-		if ( this.props.editorModePreference ) {
+-			editorMode = this.props.editorModePreference;
+ 
+-			if ( ! this.recordedDefaultEditorMode ) {
+-				analytics.mc.bumpStat( 'calypso_default_editor_mode', editorMode );
+-				this.recordedDefaultEditorMode = true;
+-			}
++		// make sure the history entry has the post ID in it, but don't dispatch
++		if ( saveResult && saveResult.idAssigned ) {
++			const editUrl = utils.getEditURL( saveResult.receivedPost, this.props.selectedSite );
++			page.replace( editUrl, null, false, false );
+ 		}
+-		return editorMode;
+ 	};
+ 
+ 	getContainingTagInfo = ( content, cursorPosition ) => {
+@@ -1129,6 +1084,8 @@ export class PostEditor extends React.Component {
+ 		if ( mode === 'html' ) {
+ 			const selectionRange = this.findBookmarkedPosition( this.editor._editor );
+ 
++			// `this.findBookmarkedPosition` inserted some markup into the TinyMCE content.
++			// Reset it back to the original.
+ 			this.editor.setEditorContent( content );
+ 
+ 			if ( this.state.selectedText ) {
+@@ -1144,25 +1101,12 @@ export class PostEditor extends React.Component {
+ 		}
+ 
+ 		this.props.setEditorModePreference( mode );
+-
+-		// Defer actions until next available tick to avoid
+-		// dispatching inside a dispatch which can happen if for example the
+-		// title field is focused when toggling the editor.
+-		this._switchEditorTimeout = setTimeout(
+-			function() {
+-				// TODO: REDUX - remove flux actions when whole post-editor is reduxified
+-				actions.edit( { content: content } );
+-				actions.resetRawContent();
+-
+-				if ( mode === 'html' ) {
+-					// Set raw content directly to avoid race conditions
+-					actions.editRawContent( content );
+-				} else {
+-					this.saveRawContent();
+-				}
+-			}.bind( this ),
+-			0
+-		);
++		this.setState( { mode }, () => {
++			this.syncEditorContent( {
++				resetRawContent: true,
++				content,
++			} );
++		} );
+ 	};
+ }
+ 
+@@ -1174,18 +1118,18 @@ const enhance = flow(
+ 			const siteId = getSelectedSiteId( state );
+ 			const postId = getEditorPostId( state );
+ 			const userId = getCurrentUserId( state );
+-			const type = getEditedPostValue( state, siteId, postId, 'type' );
+ 
+ 			return {
+ 				siteId,
+ 				postId,
+-				type,
++				savedPost: getSitePost( state, siteId, postId ),
++				post: getEditedPost( state, siteId, postId ),
++				type: getEditedPostValue( state, siteId, postId, 'type' ),
+ 				selectedSite: getSelectedSite( state ),
+ 				editorModePreference: getPreference( state, 'editor-mode' ),
+ 				editorSidebarPreference: getPreference( state, 'editor-sidebar' ) || 'open',
+-				editPath: getEditorPath( state, siteId, postId ),
+-				edits: getPostEdits( state, siteId, postId ),
+-				dirty: isEditedPostDirty( state, siteId, postId ),
++				isNew: isEditorNewPost( state ),
++				isDirty: isEditedPostDirty( state, siteId, postId ),
+ 				hasContent: editedPostHasContent( state, siteId, postId ),
+ 				layoutFocus: getCurrentLayoutFocus( state ),
+ 				hasBrokenPublicizeConnection: hasBrokenSiteUserConnection( state, siteId, userId ),
+@@ -1194,9 +1138,13 @@ const enhance = flow(
+ 				isSaveBlocked: isEditorSaveBlocked( state ),
+ 				previewUrl: getEditorPostPreviewUrl( state ),
+ 				isAutosaving: isEditorAutosaving( state ),
++				isLoading: isEditorLoading( state ),
++				loadingError: getEditorLoadingError( state ),
+ 			};
+ 		},
+ 		{
++			autosave,
++			saveEdited,
+ 			editPost,
+ 			setEditorModePreference: partial( savePreference, 'editor-mode' ),
+ 			setLayoutFocus,
+@@ -1206,6 +1154,8 @@ const enhance = flow(
+ 			recordGoogleEvent,
+ 			closeEditorSidebar,
+ 			openEditorSidebar,
++			editorEditRawContent,
++			editorResetRawContent,
+ 		}
+ 	)
+ );
+diff --git a/client/state/action-types.js b/client/state/action-types.js
+index 4f8c84f10f0b7..ba45a86442406 100644
+--- a/client/state/action-types.js
++++ b/client/state/action-types.js
+@@ -198,9 +198,9 @@ export const EDITOR_AUTOSAVE = 'EDITOR_AUTOSAVE';
+ export const EDITOR_AUTOSAVE_SUCCESS = 'EDITOR_AUTOSAVE_SUCCESS';
+ export const EDITOR_AUTOSAVE_FAILURE = 'EDITOR_AUTOSAVE_FAILURE';
+ export const EDITOR_AUTOSAVE_RESET = 'EDITOR_AUTOSAVE_RESET';
++export const EDITOR_LOADING_ERROR_RESET = 'EDITOR_LOADING_ERROR_RESET';
+ export const EDITOR_SAVE_BLOCK = 'EDITOR_SAVE_BLOCK';
+ export const EDITOR_SAVE_UNBLOCK = 'EDITOR_SAVE_UNBLOCK';
+-export const EDITOR_SAVE_RESET = 'EDITOR_SAVE_RESET';
+ export const EDITOR_CONTACT_FORM_CLEAR = 'EDITOR_CONTACT_FORM_CLEAR';
+ export const EDITOR_CONTACT_FORM_FIELD_ADD = 'EDITOR_CONTACT_FORM_FIELD_ADD';
+ export const EDITOR_CONTACT_FORM_FIELD_REMOVE = 'EDITOR_CONTACT_FORM_FIELD_REMOVE';
+@@ -210,8 +210,12 @@ export const EDITOR_CONTACT_FORM_SETTINGS_UPDATE = 'EDITOR_CONTACT_FORM_SETTINGS
+ export const EDITOR_LAST_DRAFT_SET = 'EDITOR_LAST_DRAFT_SET';
+ export const EDITOR_MEDIA_EDIT_ITEM_SET = 'EDITOR_MEDIA_EDIT_ITEM_SET';
+ export const EDITOR_PASTE_EVENT = 'EDITOR_PASTE_EVENT';
++export const EDITOR_RESET = 'EDITOR_RESET';
+ export const EDITOR_START = 'EDITOR_START';
+ export const EDITOR_STOP = 'EDITOR_STOP';
++export const EDITOR_EDIT_RAW_CONTENT = 'EDITOR_EDIT_RAW_CONTENT';
++export const EDITOR_INIT_RAW_CONTENT = 'EDITOR_INIT_RAW_CONTENT';
++export const EDITOR_RESET_RAW_CONTENT = 'EDITOR_RESET_RAW_CONTENT';
+ export const EMAIL_VERIFY_REQUEST = 'EMAIL_VERIFY_REQUEST';
+ export const EMAIL_VERIFY_REQUEST_SUCCESS = 'EMAIL_VERIFY_REQUEST_SUCCESS';
+ export const EMAIL_VERIFY_REQUEST_FAILURE = 'EMAIL_VERIFY_REQUEST_FAILURE';
+diff --git a/client/state/posts/reducer.js b/client/state/posts/reducer.js
+index 9a404bc4b2399..891294e56c14a 100644
+--- a/client/state/posts/reducer.js
++++ b/client/state/posts/reducer.js
+@@ -472,7 +472,6 @@ export function edits( state = {}, action ) {
+ 			const postId = action.postId || '';
+ 			const postEdits = get( state, [ siteId, postId ] );
+ 			const mergedEdits = mergePostEdits( postEdits, action.post );
+-
+ 			return {
+ 				...state,
+ 				[ siteId ]: {
+@@ -486,7 +485,7 @@ export function edits( state = {}, action ) {
+ 			return Object.assign( {}, state, {
+ 				[ action.siteId ]: {
+ 					...state[ action.siteId ],
+-					[ action.postId || '' ]: { type: action.postType },
++					[ action.postId || '' ]: null,
+ 				},
+ 			} );
+ 
+diff --git a/client/state/posts/selectors.js b/client/state/posts/selectors.js
+index ebc73385934c3..8ebd2a6a4bd16 100644
+--- a/client/state/posts/selectors.js
++++ b/client/state/posts/selectors.js
+@@ -404,7 +404,7 @@ export const isEditedPostDirty = createSelector(
+ 		const post = getSitePost( state, siteId, postId );
+ 		const edits = getPostEdits( state, siteId, postId );
+ 
+-		return some( edits, ( value, key ) => {
++		const editsDirty = some( edits, ( value, key ) => {
+ 			if ( key === 'type' ) {
+ 				return false;
+ 			}
+@@ -437,8 +437,12 @@ export const isEditedPostDirty = createSelector(
+ 				! DEFAULT_NEW_POST_VALUES.hasOwnProperty( key ) || value !== DEFAULT_NEW_POST_VALUES[ key ]
+ 			);
+ 		} );
++
++		const { initial, current } = state.ui.editor.rawContent;
++		const rawContentDirty = initial !== current;
++		return editsDirty || rawContentDirty;
+ 	},
+-	state => [ state.posts.queries, state.posts.edits ]
++	state => [ state.posts.queries, state.posts.edits, state.ui.editor.rawContent ]
+ );
+ 
+ /**
+diff --git a/client/state/posts/utils.js b/client/state/posts/utils.js
+index 60611beb71b2d..72969253afd68 100644
+--- a/client/state/posts/utils.js
++++ b/client/state/posts/utils.js
+@@ -270,7 +270,7 @@ export function normalizePostForState( post ) {
+ 			...map( post.attachments, ( attachment, id ) => [ 'attachments', id ] ),
+ 		],
+ 		( memo, path ) => {
+-			unset( memo, path.concat( 'meta' ) );
++			unset( memo, path.concat( 'meta', 'links' ) );
+ 			return memo;
+ 		},
+ 		normalizedPost
+diff --git a/client/state/selectors/edited-post-has-content.js b/client/state/selectors/edited-post-has-content.js
+index b8b8344df71fc..1965c7b17c380 100644
+--- a/client/state/selectors/edited-post-has-content.js
++++ b/client/state/selectors/edited-post-has-content.js
+@@ -10,6 +10,7 @@ import { some, trim } from 'lodash';
+  * Internal dependencies
+  */
+ import { getEditedPost } from 'state/posts/selectors';
++import { getEditorRawContent } from 'state/ui/editor/selectors';
+ 
+ const REGEXP_EMPTY_CONTENT = /^<p>(<br[^>]*>|&nbsp;|\s)*<\/p>$/;
+ const CONTENT_LENGTH_ASSUME_SET = 50;
+@@ -37,15 +38,20 @@ export function isEmptyContent( content ) {
+  */
+ export default function editedPostHasContent( state, siteId, postId ) {
+ 	const editedPost = getEditedPost( state, siteId, postId );
+-	return (
+-		!! editedPost &&
+-		( some(
+-			[ 'title', 'excerpt' ],
+-			field => editedPost[ field ] && !! trim( editedPost[ field ] )
+-		) ||
+-			// We don't yet have the notion of post's raw content in the Redux state so we rely on post content attribute here
+-			// when we do, we'll want it to reflect the Flux implementation's emptiness check
+-			// where raw content is preferred to the content property if available
+-			! isEmptyContent( editedPost.content ) )
+-	);
++
++	if ( ! editedPost ) {
++		return false;
++	}
++
++	if ( some( [ 'title', 'excerpt' ], field => trim( editedPost[ field ] ) ) ) {
++		return true;
++	}
++
++	const rawContent = getEditorRawContent( state );
++	if ( rawContent ) {
++		// Raw content contains the most up-to-date post content
++		return ! isEmptyContent( rawContent );
++	}
++
++	return ! isEmptyContent( editedPost.content );
+ }
+diff --git a/client/state/ui/editor/actions.js b/client/state/ui/editor/actions.js
+index 02751ba878b22..45ebcbe6dfed1 100644
+--- a/client/state/ui/editor/actions.js
++++ b/client/state/ui/editor/actions.js
+@@ -4,7 +4,7 @@
+  * External dependencies
+  */
+ 
+-import { filter } from 'lodash';
++import { defaults, filter, get } from 'lodash';
+ 
+ /**
+  * Internal dependencies
+@@ -16,9 +16,14 @@ import {
+ 	EDITOR_AUTOSAVE_RESET,
+ 	EDITOR_AUTOSAVE_SUCCESS,
+ 	EDITOR_AUTOSAVE_FAILURE,
++	EDITOR_LOADING_ERROR_RESET,
+ 	EDITOR_PASTE_EVENT,
++	EDITOR_RESET,
+ 	EDITOR_START,
+ 	EDITOR_STOP,
++	EDITOR_EDIT_RAW_CONTENT,
++	EDITOR_RESET_RAW_CONTENT,
++	EDITOR_INIT_RAW_CONTENT,
+ } from 'state/action-types';
+ import { ModalViews } from 'state/ui/media-modal/constants';
+ import { setMediaModalView } from 'state/ui/media-modal/actions';
+@@ -26,6 +31,7 @@ import { withAnalytics, bumpStat, recordTracksEvent } from 'state/analytics/acti
+ import { savePreference } from 'state/preferences/actions';
+ import { getPreference } from 'state/preferences/selectors';
+ import { getSelectedSite } from 'state/ui/selectors';
++import { editPost } from 'state/posts/actions';
+ 
+ /**
+  * Constants
+@@ -44,15 +50,27 @@ export const MODAL_VIEW_STATS = {
+  *
+  * @param  {Number}  siteId   Site ID
+  * @param  {?Number} postId   Post ID
+- * @param  {String}  postType Post Type
+- * @return {Object}           Action object
++ * @return {Action}           Action object
+  */
+-export function startEditingPost( siteId, postId, postType = 'post' ) {
+-	return {
+-		type: EDITOR_START,
+-		siteId,
+-		postId,
+-		postType,
++export function startEditingPost( siteId, postId ) {
++	return dispatch => {
++		dispatch( editorReset( { isLoading: true } ) );
++		dispatch( { type: EDITOR_START, siteId, postId } );
++	};
++}
++
++export function startEditingNewPost( siteId, post ) {
++	return dispatch => {
++		const postAttributes = defaults( post, {
++			status: 'draft',
++			type: 'post',
++			content: '',
++			title: '',
++		} );
++
++		dispatch( { type: EDITOR_START, siteId, postId: null } );
++		dispatch( editPost( siteId, null, postAttributes ) );
++		dispatch( editorReset() );
+ 	};
+ }
+ 
+@@ -62,13 +80,12 @@ export function startEditingPost( siteId, postId, postType = 'post' ) {
+  *
+  * @param  {Number}  siteId Site ID
+  * @param  {?Number} postId Post ID
+- * @return {Object}         Action object
++ * @return {Action}         Action object
+  */
+ export function stopEditingPost( siteId, postId ) {
+-	return {
+-		type: EDITOR_STOP,
+-		siteId,
+-		postId,
++	return dispatch => {
++		dispatch( editorReset() );
++		dispatch( { type: EDITOR_STOP, siteId, postId } );
+ 	};
+ }
+ 
+@@ -181,3 +198,51 @@ export const editorAutosave = post => ( dispatch, getState ) => {
+ 
+ 	return autosaveResult;
+ };
++
++/**
++ * Edits the raw TinyMCE content of a post
++ *
++ * @param {string} content Raw content
++ * @returns {Action} Action object
++ */
++export function editorEditRawContent( content ) {
++	return {
++		type: EDITOR_EDIT_RAW_CONTENT,
++		content,
++	};
++}
++
++/**
++ * Unsets the raw TinyMCE content value
++ * @returns {Action} Action object
++ */
++export function editorResetRawContent() {
++	return {
++		type: EDITOR_RESET_RAW_CONTENT,
++	};
++}
++
++export function editorInitRawContent( content ) {
++	return {
++		type: EDITOR_INIT_RAW_CONTENT,
++		content,
++	};
++}
++
++export function editorReset( options ) {
++	return {
++		type: EDITOR_RESET,
++		isLoading: get( options, 'isLoading', false ),
++		loadingError: get( options, 'loadingError', null ),
++	};
++}
++
++export function editorSetLoadingError( loadingError ) {
++	return editorReset( { loadingError } );
++}
++
++export function editorLoadingErrorReset() {
++	return {
++		type: EDITOR_LOADING_ERROR_RESET,
++	};
++}
+diff --git a/client/state/ui/editor/raw-content/reducer.js b/client/state/ui/editor/raw-content/reducer.js
+new file mode 100644
+index 0000000000000..045ae0d584d3b
+--- /dev/null
++++ b/client/state/ui/editor/raw-content/reducer.js
+@@ -0,0 +1,43 @@
++/** @format */
++
++/**
++ * Internal dependencies
++ */
++import {
++	EDITOR_RESET,
++	EDITOR_RESET_RAW_CONTENT,
++	EDITOR_EDIT_RAW_CONTENT,
++	EDITOR_INIT_RAW_CONTENT,
++} from 'state/action-types';
++import { combineReducers } from 'state/utils';
++
++const initial = ( state = null, action ) => {
++	switch ( action.type ) {
++		case EDITOR_INIT_RAW_CONTENT:
++			return action.content;
++		case EDITOR_RESET:
++		case EDITOR_RESET_RAW_CONTENT:
++			return null;
++		case EDITOR_EDIT_RAW_CONTENT:
++			if ( state === null ) {
++				return action.content;
++			}
++	}
++	return state;
++};
++
++const current = ( state = null, action ) => {
++	switch ( action.type ) {
++		case EDITOR_RESET:
++		case EDITOR_RESET_RAW_CONTENT:
++			return null;
++		case EDITOR_EDIT_RAW_CONTENT:
++			return action.content;
++	}
++	return state;
++};
++
++export default combineReducers( {
++	initial,
++	current,
++} );
+diff --git a/client/state/ui/editor/reducer.js b/client/state/ui/editor/reducer.js
+index def03fdbf27ec..775f1959702b6 100644
+--- a/client/state/ui/editor/reducer.js
++++ b/client/state/ui/editor/reducer.js
+@@ -1,4 +1,10 @@
+ /** @format */
++
++/**
++ * External dependencies
++ */
++import { get } from 'lodash';
++
+ /**
+  * Internal dependencies
+  */
+@@ -7,7 +13,9 @@ import {
+ 	EDITOR_AUTOSAVE_SUCCESS,
+ 	EDITOR_AUTOSAVE_FAILURE,
+ 	EDITOR_AUTOSAVE_RESET,
++	EDITOR_RESET,
+ 	EDITOR_START,
++	EDITOR_STOP,
+ 	POST_SAVE_SUCCESS,
+ } from 'state/action-types';
+ import { combineReducers } from 'state/utils';
+@@ -16,6 +24,7 @@ import videoEditor from './video-editor/reducer';
+ import lastDraft from './last-draft/reducer';
+ import contactForm from './contact-form/reducer';
+ import saveBlockers from './save-blockers/reducer';
++import rawContent from './raw-content/reducer';
+ 
+ /**
+  * Returns the updated editor post ID state after an action has been
+@@ -29,6 +38,8 @@ export function postId( state = null, action ) {
+ 	switch ( action.type ) {
+ 		case EDITOR_START:
+ 			return action.postId;
++		case EDITOR_STOP:
++			return null;
+ 		case POST_SAVE_SUCCESS:
+ 			return state === action.postId ? action.savedPost.ID : state;
+ 	}
+@@ -36,10 +47,29 @@ export function postId( state = null, action ) {
+ 	return state;
+ }
+ 
++export function loadingError( state = null, action ) {
++	switch ( action.type ) {
++		case EDITOR_RESET:
++			return get( action, 'loadingError', null );
++	}
++
++	return state;
++}
++
++export function isLoading( state = false, action ) {
++	switch ( action.type ) {
++		case EDITOR_RESET:
++			return get( action, 'isLoading', false );
++	}
++
++	return state;
++}
++
+ export function isAutosaving( state = false, action ) {
+ 	switch ( action.type ) {
+ 		case EDITOR_AUTOSAVE:
+ 			return true;
++		case EDITOR_RESET:
+ 		case EDITOR_AUTOSAVE_RESET:
+ 		case EDITOR_AUTOSAVE_SUCCESS:
+ 		case EDITOR_AUTOSAVE_FAILURE:
+@@ -51,6 +81,7 @@ export function isAutosaving( state = false, action ) {
+ 
+ function autosavePreviewUrl( state = null, action ) {
+ 	switch ( action.type ) {
++		case EDITOR_RESET:
+ 		case EDITOR_AUTOSAVE_RESET:
+ 			return null;
+ 		case EDITOR_AUTOSAVE_SUCCESS:
+@@ -62,6 +93,8 @@ function autosavePreviewUrl( state = null, action ) {
+ 
+ export default combineReducers( {
+ 	postId,
++	loadingError,
++	isLoading,
+ 	isAutosaving,
+ 	autosavePreviewUrl,
+ 	imageEditor,
+@@ -69,4 +102,5 @@ export default combineReducers( {
+ 	lastDraft,
+ 	contactForm,
+ 	saveBlockers,
++	rawContent,
+ } );
+diff --git a/client/state/ui/editor/save-blockers/actions.js b/client/state/ui/editor/save-blockers/actions.js
+index ff159489a7337..96467e76bfba8 100644
+--- a/client/state/ui/editor/save-blockers/actions.js
++++ b/client/state/ui/editor/save-blockers/actions.js
+@@ -3,7 +3,7 @@
+ /**
+  * Internal dependencies
+  */
+-import { EDITOR_SAVE_BLOCK, EDITOR_SAVE_UNBLOCK, EDITOR_SAVE_RESET } from 'state/action-types';
++import { EDITOR_SAVE_BLOCK, EDITOR_SAVE_UNBLOCK } from 'state/action-types';
+ 
+ export const blockSave = key => ( {
+ 	type: EDITOR_SAVE_BLOCK,
+@@ -14,8 +14,3 @@ export const unblockSave = key => ( {
+ 	type: EDITOR_SAVE_UNBLOCK,
+ 	key,
+ } );
+-
+-// TODO: merge this action into EDITOR_START, EDITOR_STOP etc. when they are ready
+-export const resetSaveBlockers = () => ( {
+-	type: EDITOR_SAVE_RESET,
+-} );
+diff --git a/client/state/ui/editor/save-blockers/reducer.js b/client/state/ui/editor/save-blockers/reducer.js
+index 346c8a1d36395..1fa3c03616ed7 100644
+--- a/client/state/ui/editor/save-blockers/reducer.js
++++ b/client/state/ui/editor/save-blockers/reducer.js
+@@ -8,7 +8,7 @@ import { includes, without } from 'lodash';
+ /**
+  * Internal dependencies
+  */
+-import { EDITOR_SAVE_BLOCK, EDITOR_SAVE_UNBLOCK, EDITOR_SAVE_RESET } from 'state/action-types';
++import { EDITOR_RESET, EDITOR_SAVE_BLOCK, EDITOR_SAVE_UNBLOCK } from 'state/action-types';
+ 
+ export default ( state = [], action ) => {
+ 	switch ( action.type ) {
+@@ -16,7 +16,7 @@ export default ( state = [], action ) => {
+ 			return includes( state, action.key ) ? state : [ ...state, action.key ];
+ 		case EDITOR_SAVE_UNBLOCK:
+ 			return includes( state, action.key ) ? without( state, action.key ) : state;
+-		case EDITOR_SAVE_RESET:
++		case EDITOR_RESET:
+ 			return state.length > 0 ? [] : state;
+ 	}
+ 
+diff --git a/client/state/ui/editor/selectors.js b/client/state/ui/editor/selectors.js
+index e540ec807faa1..50dbd2a276df9 100644
+--- a/client/state/ui/editor/selectors.js
++++ b/client/state/ui/editor/selectors.js
+@@ -143,6 +143,10 @@ export function isEditorAutosaving( state ) {
+ 	return state.ui.editor.isAutosaving;
+ }
+ 
++export function isEditorLoading( state ) {
++	return state.ui.editor.isLoading;
++}
++
+ export function getEditorPublishButtonStatus( state ) {
+ 	const siteId = getSelectedSiteId( state );
+ 	const postId = getEditorPostId( state );
+@@ -179,3 +183,15 @@ export function getEditorPublishButtonStatus( state ) {
+ 
+ 	return 'requestReview';
+ }
++
++export function getEditorInitialRawContent( state ) {
++	return state.ui.editor.rawContent.initial;
++}
++
++export function getEditorRawContent( state ) {
++	return state.ui.editor.rawContent.current;
++}
++
++export function getEditorLoadingError( state ) {
++	return state.ui.editor.loadingError;
++}

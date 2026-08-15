@@ -1,0 +1,17 @@
+diff --git a/src/core/core.datasetController.js b/src/core/core.datasetController.js
+index cff882ab865..f55b2fa2c02 100644
+--- a/src/core/core.datasetController.js
++++ b/src/core/core.datasetController.js
+@@ -722,10 +722,12 @@ export default class DatasetController {
+         (element.$context = createDataContext(me.getContext(), index, element));
+       context.parsed = me.getParsed(index);
+       context.raw = dataset.data[index];
++      context.index = context.dataIndex = index;
+     } else {
+       context = me.$context ||
+         (me.$context = createDatasetContext(me.chart.getContext(), me.index));
+       context.dataset = dataset;
++      context.index = context.datasetIndex = me.index;
+     }
+ 
+     context.active = !!active;

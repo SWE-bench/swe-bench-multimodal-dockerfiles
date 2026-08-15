@@ -1,0 +1,14 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'visual-basic' – should pass test case 'comment_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'visual-basic' – should pass test case 'directive_feature'",
+    "Testing language 'visual-basic' – should pass test case 'number_feature'",
+    "Testing language 'visual-basic' – should pass test case 'keyword_feature'",
+    "Testing language 'visual-basic' – should pass test case 'date_feature'",
+    "Testing language 'visual-basic' – should pass test case 'string_feature'",
+    "Testing language 'visual-basic' – should pass test case 'boolean_feature'",
+    "Testing language 'visual-basic' – should pass test case 'operator_feature'"
+  ]
+}

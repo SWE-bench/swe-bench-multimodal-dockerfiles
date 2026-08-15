@@ -1,0 +1,35 @@
+{
+  "FAIL_TO_PASS": [
+    "toast - should render nowrap message when content too long[Overlay case]",
+    "toast - should render message when only pass content string"
+  ],
+  "PASS_TO_PASS": [
+    "toast - should close message after duration and call afterClose method",
+    "Message A11y - should not have any violations when closable",
+    "Message - should have type class",
+    "Message - should receive className prop",
+    "Message - should receive style prop",
+    "toast quick-calling - render loading",
+    "toast - should render message when only pass content react element",
+    "Message A11y - should not have any violations when various shapes",
+    "toast quick-calling - render success",
+    "Message - should custom icon type",
+    "toast - should hide message when click this close link",
+    "toast - should hide message when call hide method",
+    "Message - should show content if you pass it",
+    "Message A11y - should not have any violations when various types",
+    "Message - should show or hide under control",
+    "Message - should have shape class",
+    "Message - should have size class",
+    "Message - should show title if you pass it",
+    "toast quick-calling - render warning",
+    "should support configProvider - normal should obey: self.locale > nearest ConfigProvider.locale > further ConfigProvider.locale",
+    "toast - should render message when pass config object",
+    "toast quick-calling - render notice",
+    "toast - should show message all the time when set duration to 0",
+    "Message - should show close link if set closeable to true",
+    "Message A11y - should not have any violations when various sizes",
+    "toast quick-calling - render help",
+    "toast quick-calling - render error"
+  ]
+}

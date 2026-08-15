@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - update label embedded labels should delete label of task "
+  ],
+  "PASS_TO_PASS": []
+}

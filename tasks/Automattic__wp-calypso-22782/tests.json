@@ -1,0 +1,33 @@
+{
+  "FAIL_TO_PASS": [
+    "index - Masking - American Express Card - formats a number as 4-6-5 with any sort of whitespace",
+    "index - Masking - All Other Credit Cards - 19 digit cards format as 4-4-4-7",
+    "index - Masking - American Express Card - formats a number as 4-6-5",
+    "index - Masking - Diner Credit Cards - formats a number as 4-4-4-2",
+    "index - Masking - All Other Credit Cards - formats a number as 4-4-4-4",
+    "index - Masking - All Other Credit Cards - formats a number as 4-4-4-4 with any sort of whitespace",
+    "index - Masking - All Other Credit Cards - has a maximum length of 19",
+    "index - Masking - Diner Credit Cards - formats a number as 4-4-4-2 with any sort of whitespace",
+    "index - Masking - American Express Card - formats a number as 4-6-5 and trims to 15 digits"
+  ],
+  "PASS_TO_PASS": [
+    "index - Validation - Mastercard: range 51-55 - should return `mastercard` for 5100000000000000",
+    "index - Validation - American Express - should return `amex` for 378282246310005",
+    "index - Validation - Discover Card: starts with 6011, 64, 65 - should return `discover` for 6011000990139424",
+    "index - Validation - Mastercard: range 2221-2720 - should return `mastercard` for 2223003122003222",
+    "index - Validation - Mastercard: range 2221-2720 - should return `mastercard` for 2221000000000000",
+    "index - Validation - Mastercard: range 2221-2720 - should return `mastercard` for 2720990000000000",
+    "index - Validation - Other Brands - should return `unionpay` for 6240008631401148",
+    "index - Validation - Mastercard: range 51-55 - should not return mastercard for 5600000000000000",
+    "index - Validation - Other Brands - should return `jcb` for 3530111333300000",
+    "index - Validation - Other Brands - should return `diners` for 38520000023237",
+    "index - Validation - Discover Card: starts with 6011, 64, 65 - should return `discover` for 6445644564456445",
+    "index - Validation - American Express - should return `amex` for 370000000000002",
+    "index - Validation - Other Brands - should return `diners` for 30569309025904",
+    "index - Validation - Discover Card: starts with 6011, 64, 65 - should not return Discover for 622125",
+    "index - Validation - Mastercard: range 51-55 - should not return mastercard for 5099999999999999",
+    "index - Validation - Visa - should return `visa` for 4242424242424242",
+    "index - Validation - Mastercard: range 51-55 - should return `mastercard` for 5599000000000000",
+    "index - Validation - Visa - should return `visa` for 4000000400000008"
+  ]
+}

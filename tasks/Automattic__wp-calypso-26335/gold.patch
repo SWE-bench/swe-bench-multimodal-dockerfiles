@@ -1,0 +1,214 @@
+diff --git a/client/state/posts/actions.js b/client/state/posts/actions.js
+index 7b4eb96b167a7..4654e186febf8 100644
+--- a/client/state/posts/actions.js
++++ b/client/state/posts/actions.js
+@@ -77,25 +77,28 @@ import { getSelectedSiteId } from 'state/ui/selectors';
+  * Returns an action object to be used in signalling that a post object has
+  * been received.
+  *
+- * @param  {Object} post Post received
+- * @return {Object}      Action object
++ * @param  {Object}  post       Post received
++ * @param  {?String} saveMarker Save marker in the edits log
++ * @return {Object}             Action object
+  */
+-export function receivePost( post ) {
+-	return receivePosts( [ post ] );
++export function receivePost( post, saveMarker ) {
++	return receivePosts( [ post ], saveMarker );
+ }
+ 
+ /**
+  * Returns an action object to be used in signalling that post objects have
+  * been received.
+  *
+- * @param  {Array}  posts Posts received
+- * @return {Object}       Action object
++ * @param  {Array}   posts      Posts received
++ * @param  {?String} saveMarker Save marker in the edits log
++ * @return {Object}             Action object
+  */
+-export function receivePosts( posts ) {
+-	return {
+-		type: POSTS_RECEIVE,
+-		posts,
+-	};
++export function receivePosts( posts, saveMarker ) {
++	const action = { type: POSTS_RECEIVE, posts };
++	if ( saveMarker ) {
++		action.saveMarker = saveMarker;
++	}
++	return action;
+ }
+ 
+ /**
+@@ -261,17 +264,15 @@ export function deletePostMetadata( siteId, postId = null, metaKeys ) {
+  * @param  {Number}   postId     Post ID
+  * @param  {Object}   savedPost  Updated post
+  * @param  {Object}   post       Post attributes
+- * @param  {?String}  saveMarker Save marker in the edits log
+  * @return {Object}              Action thunk
+  */
+-export function savePostSuccess( siteId, postId = null, savedPost, post, saveMarker = null ) {
++export function savePostSuccess( siteId, postId = null, savedPost, post ) {
+ 	return {
+ 		type: POST_SAVE_SUCCESS,
+ 		siteId,
+ 		postId,
+ 		savedPost,
+ 		post,
+-		saveMarker,
+ 	};
+ }
+ 
+@@ -730,8 +731,8 @@ export const saveEdited = options => async ( dispatch, getState ) => {
+ 	// `post.ID` can be null/undefined, which means we're saving new post.
+ 	// `savePostSuccess` will convert the temporary ID (empty string key) in Redux
+ 	// to the newly assigned ID in `receivedPost.ID`.
+-	dispatch( savePostSuccess( receivedPost.site_ID, post.ID, receivedPost, {}, saveMarker ) );
+-	dispatch( receivePost( receivedPost ) );
++	dispatch( savePostSuccess( receivedPost.site_ID, post.ID, receivedPost, {} ) );
++	dispatch( receivePost( receivedPost, saveMarker ) );
+ 
+ 	// Only re-init the rawContent if the mode hasn't changed since the request was initiated.
+ 	// Changing the mode re-initializes the rawContent, so we don't want to stomp on it
+diff --git a/client/state/posts/reducer.js b/client/state/posts/reducer.js
+index 2f298afb2aaa0..5c6a56900b2ef 100644
+--- a/client/state/posts/reducer.js
++++ b/client/state/posts/reducer.js
+@@ -418,12 +418,9 @@ export function edits( state = {}, action ) {
+ 					// Receive a new version of a post object, in most cases returned in the POST
+ 					// response after a successful save. Removes the edits that have been applied
+ 					// and leaves only the ones that are not noops.
+-					const postEditsLog = get( memoState, [ post.site_ID, post.ID ] ) || [];
++					let postEditsLog = get( memoState, [ post.site_ID, post.ID ] );
+ 
+-					// merge the array of edits into one object
+-					const postEdits = mergePostEdits( ...postEditsLog );
+-
+-					if ( ! postEdits ) {
++					if ( ! postEditsLog ) {
+ 						return memoState;
+ 					}
+ 
+@@ -431,43 +428,60 @@ export function edits( state = {}, action ) {
+ 						memoState = merge( {}, state );
+ 					}
+ 
+-					// remove the edits that try to set an attribute to a value it already has.
+-					// For most attributes, it's a simple `isEqual` deep comparison, but a few
+-					// properties are more complicated than that.
+-					const unappliedPostEdits = omitBy( postEdits, ( value, key ) => {
+-						switch ( key ) {
+-							case 'author':
+-								return isAuthorEqual( value, post[ key ] );
+-							case 'date':
+-								return isDateEqual( value, post[ key ] );
+-							case 'discussion':
+-								return isDiscussionEqual( value, post[ key ] );
+-							case 'featured_image':
+-								return value === getFeaturedImageId( post );
+-							case 'metadata':
+-								// omit from unappliedPostEdits, metadata edits will be merged
+-								return true;
+-							case 'status':
+-								return isStatusEqual( value, post[ key ] );
+-							case 'terms':
+-								return isTermsEqual( value, post[ key ] );
++					// if the action has a save marker, remove the edits before that marker
++					if ( action.saveMarker ) {
++						const markerIndex = postEditsLog.indexOf( action.saveMarker );
++						if ( markerIndex !== -1 ) {
++							postEditsLog = postEditsLog.slice( markerIndex + 1 );
++						}
++					}
++
++					// merge the array of remaining edits into one object
++					const postEdits = mergePostEdits( ...postEditsLog );
++					let newEditsLog = null;
++
++					if ( postEdits ) {
++						// remove the edits that try to set an attribute to a value it already has.
++						// For most attributes, it's a simple `isEqual` deep comparison, but a few
++						// properties are more complicated than that.
++						const unappliedPostEdits = omitBy( postEdits, ( value, key ) => {
++							switch ( key ) {
++								case 'author':
++									return isAuthorEqual( value, post[ key ] );
++								case 'date':
++									return isDateEqual( value, post[ key ] );
++								case 'discussion':
++									return isDiscussionEqual( value, post[ key ] );
++								case 'featured_image':
++									return value === getFeaturedImageId( post );
++								case 'metadata':
++									// omit from unappliedPostEdits, metadata edits will be merged
++									return true;
++								case 'status':
++									return isStatusEqual( value, post[ key ] );
++								case 'terms':
++									return isTermsEqual( value, post[ key ] );
++							}
++							return isEqual( post[ key ], value );
++						} );
++
++						// remove edits that are already applied in the incoming metadata values and
++						// leave only the unapplied ones.
++						if ( postEdits.metadata ) {
++							const unappliedMetadataEdits = getUnappliedMetadataEdits(
++								postEdits.metadata,
++								post.metadata
++							);
++							if ( unappliedMetadataEdits.length > 0 ) {
++								unappliedPostEdits.metadata = unappliedMetadataEdits;
++							}
+ 						}
+-						return isEqual( post[ key ], value );
+-					} );
+-
+-					// remove edits that are already applied in the incoming metadata values and
+-					// leave only the unapplied ones.
+-					if ( postEdits.metadata ) {
+-						const unappliedMetadataEdits = getUnappliedMetadataEdits(
+-							postEdits.metadata,
+-							post.metadata
+-						);
+-						if ( unappliedMetadataEdits.length > 0 ) {
+-							unappliedPostEdits.metadata = unappliedMetadataEdits;
++
++						if ( ! isEmpty( unappliedPostEdits ) ) {
++							newEditsLog = [ unappliedPostEdits ];
+ 						}
+ 					}
+ 
+-					const newEditsLog = isEmpty( unappliedPostEdits ) ? null : [ unappliedPostEdits ];
+ 					return set( memoState, [ post.site_ID, post.ID ], newEditsLog );
+ 				},
+ 				state
+@@ -533,26 +547,6 @@ export function edits( state = {}, action ) {
+ 		case POST_SAVE_SUCCESS: {
+ 			const siteId = action.siteId;
+ 			const postId = action.postId || '';
+-			const postEditsLog = get( state, [ siteId, postId ] );
+-
+-			if ( ! postEditsLog ) {
+-				break;
+-			}
+-
+-			// if the save action has a marker, remove the edits before that marker
+-			if ( action.saveMarker ) {
+-				const markerIndex = postEditsLog.indexOf( action.saveMarker );
+-				if ( markerIndex !== -1 ) {
+-					const newEditsLog = postEditsLog.slice( markerIndex + 1 );
+-					state = {
+-						...state,
+-						[ siteId ]: {
+-							...state[ siteId ],
+-							[ postId ]: newEditsLog,
+-						},
+-					};
+-				}
+-			}
+ 
+ 			// if new post (edited with a transient postId of '') has been just saved and assigned
+ 			// a real numeric ID, rewrite the state key with the new postId.

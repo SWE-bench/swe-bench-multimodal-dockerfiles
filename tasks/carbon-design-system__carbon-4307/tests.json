@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "packages/react/src/components/Checkbox/Checkbox-test.js"
+  ],
+  "PASS_TO_PASS": []
+}

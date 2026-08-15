@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Core.scale auto /base/test/fixtures/core.scale/ticks-mirror.js "
+  ],
+  "PASS_TO_PASS": []
+}

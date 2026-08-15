@@ -1,0 +1,14 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'cpp' – should pass test case 'number_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'cpp' – should pass test case 'raw_string_feature'",
+    "Testing language 'cpp' – should pass test case 'class-name_feature'",
+    "Testing language 'cpp' – should pass test case 'boolean_feature'",
+    "Testing language 'cpp' – should pass test case 'keyword_feature'",
+    "Testing language 'cpp' – should pass test case 'operator_feature'",
+    "Testing language 'cpp+pure' – should pass test case 'cpp_inclusion'",
+    "Testing language 'opencl+cpp' – should pass test case 'type_feature'"
+  ]
+}

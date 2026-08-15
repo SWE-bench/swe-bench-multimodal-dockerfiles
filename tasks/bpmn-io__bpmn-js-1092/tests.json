@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/snapping - BpmnConnectSnapping sequence flow connect should snap event target mid ",
+    "features/snapping - BpmnConnectSnapping sequence flow connect Task target should snap to grid point "
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "Chart.layouts auto /base/test/fixtures/core.layouts/long-labels.js "
+  ],
+  "PASS_TO_PASS": []
+}

@@ -1,0 +1,1 @@
+I don't know about highlighting inline functions, but I do think we can quite easily fix the original bug.  We just need to handle recursive `{}` inside template literal subst blocks.

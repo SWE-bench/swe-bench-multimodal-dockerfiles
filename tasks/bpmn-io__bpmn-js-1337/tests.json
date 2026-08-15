@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/replace - bpmn replace sub processes should drop event type from start event after moving it into sub process ",
+    "features/popup-menu - replace menu provider replace menu events should contain only start event, end event and intermediate throw event inside sub process except the current one "
+  ],
+  "PASS_TO_PASS": []
+}

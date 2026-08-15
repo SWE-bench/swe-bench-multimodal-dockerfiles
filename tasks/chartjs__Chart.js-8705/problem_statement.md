@@ -1,0 +1,136 @@
+scatter chart v3.0.0-rc.2: Uncaught (in promise) TypeError: Cannot read property 'value' of undefined
+
+
+## Expected Behavior
+
+I can't find the bug, since the new version I got the bug. However, this does not occur in simple test cases. 
+
+**What options do I have to isolate the error?**
+
+![Bildschirmfoto 2021-03-23 um 07 38 46](https://user-images.githubusercontent.com/30198737/112105043-38e37a80-8bac-11eb-8ea8-e5c1f21802b5.png)
+
+it happens if i set the `defaults.layout.paddings`
+
+```
+this.ChartControl = window.Chart3 || Chart
+
+if (this.ChartControl.defaults.layout && this.ChartControl.defaults.layout.padding) {
+    this.ChartControl.defaults.layout.padding = {
+        top: 24,
+        left: 0,
+        right: 0,
+        bottom: 0
+    }
+}
+```
+
+chart.js?module:3593 Uncaught (in promise) TypeError: Cannot read property 'value' of undefined
+
+```
+options = {
+			type: "scatter",
+			data: {
+				labels: [],
+				datasets: [{
+						label: "Reni",
+						unit: "%",
+						hoverRadius: 18,
+						pointRadius: 16,
+						hitRadius: 22,
+						backgroundColor: "rgba(192,57,43,0.85)",
+						borderColor: "rgba(192,57,43,0.85)",
+						data: [{
+								x: 17.65,
+								y: 17.8
+							},
+							{
+								x: 17.65,
+								y: 17.8
+							},
+							{
+								x: 18.01,
+								y: 17.84
+							},
+							{
+								x: 17.61,
+								y: 17.95
+							},
+							{
+								x: 17.78,
+								y: 17.87
+							},
+							{
+								x: 16.76,
+								y: 17.98
+							}
+						]
+					},
+					{
+						label: "Peter",
+						unit: "%",
+						hoverRadius: 18,
+						pointRadius: 16,
+						hitRadius: 22,
+						backgroundColor: "rgba(230,126,34,0.85)",
+						borderColor: "rgba(230,126,34,0.85)",
+						data: [{
+								x: 12.36,
+								y: 22.51
+							},
+							{
+								x: 12.23,
+								y: 22.42
+							},
+							{
+								x: 12.23,
+								y: 22.42
+							},
+							{
+								x: 12.22,
+								y: 22.48
+							},
+							{
+								x: 12.51,
+								y: 22.6
+							},
+							{
+								x: 12.25,
+								y: 22.45
+							},
+							{
+								x: 12.35,
+								y: 22.53
+							}
+						]
+					}
+				]
+			},
+			options: {
+				units: "",
+				layout: {},
+				chartArea: {
+					backgroundColor: "transparent"
+				},
+				hover: {
+					mode: "nearest",
+					intersect: true
+				},
+				elements: {},
+				spanGaps: true,
+				plugins: {
+					title: {},
+					tooltip: {},
+					legend: {
+						display: true,
+						position: "top"
+					},
+					scales: {}
+				},
+				animation: {},
+				onResize: null
+			}
+		}
+```
+## Environment
+
+* Chart.js version: v3.0.0-rc.2

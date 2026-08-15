@@ -1,0 +1,29 @@
+diff --git a/test/fixtures/controller.doughnut/single-slice-circumference-405.png b/test/fixtures/controller.doughnut/single-slice-circumference-405.png
+index 0591cca9425..db4e2523509 100644
+Binary files a/test/fixtures/controller.doughnut/single-slice-circumference-405.png and b/test/fixtures/controller.doughnut/single-slice-circumference-405.png differ
+diff --git a/test/fixtures/controller.doughnut/single-slice-offset.js b/test/fixtures/controller.doughnut/single-slice-offset.js
+new file mode 100644
+index 00000000000..d2a9ace0c27
+--- /dev/null
++++ b/test/fixtures/controller.doughnut/single-slice-offset.js
+@@ -0,0 +1,16 @@
++module.exports = {
++  config: {
++    type: 'doughnut',
++    data: {
++      labels: ['A'],
++      datasets: [{
++        data: [385],
++        backgroundColor: 'rgba(0,0,0,0.3)',
++        borderColor: 'rgba(0,0,0,0.5)',
++      }]
++    },
++    options: {
++      offset: 20
++    }
++  }
++};
+diff --git a/test/fixtures/controller.doughnut/single-slice-offset.png b/test/fixtures/controller.doughnut/single-slice-offset.png
+new file mode 100644
+index 00000000000..b38c18b8033
+Binary files /dev/null and b/test/fixtures/controller.doughnut/single-slice-offset.png differ

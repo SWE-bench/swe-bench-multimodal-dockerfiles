@@ -1,0 +1,1 @@
+Pretty sure this is a side effect of https://github.com/openlayers/openlayers/pull/12965 since now the layer opacity is handled in the webgl shaders.

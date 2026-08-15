@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/grid-snapping - layout connection on connection layout should UNDO snap "
+  ],
+  "PASS_TO_PASS": []
+}

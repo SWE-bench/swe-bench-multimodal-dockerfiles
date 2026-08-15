@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.interaction.Modify geometry collection modification all geometries should be modified"
+  ],
+  "PASS_TO_PASS": []
+}

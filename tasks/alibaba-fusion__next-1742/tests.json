@@ -1,0 +1,22 @@
+{
+  "FAIL_TO_PASS": [
+    "Cascader - should render multiple cascader when set checkStrictly to true",
+    "Cascader - should compute expanded value auto if set value but not set expanded value",
+    "Cascader - should support remove title"
+  ],
+  "PASS_TO_PASS": [
+    "Cascader - should support listClassName and listStyle",
+    "Cascader - should set the style of the cascader inner node",
+    "Cascader - should load data asynchronously when set loadData",
+    "Cascader A11y - should not have any violations when expanded",
+    "Cascader - could only select leaf item when set canOnlySelectLeaf to true",
+    "Cascader - should support rtl",
+    "Cascader - should expand menu by hover when set expandTriggerType to hover",
+    "Cascader - should render single cascader",
+    "Cascader - should render single cascader under control",
+    "Cascader - should support keyboard",
+    "Cascader - should render multiple cascader",
+    "Cascader - should not trigger onChange when click the selected item",
+    "Cascader - could only check checkbox of leaf item when set canOnlyCheckLeaf to true"
+  ]
+}

@@ -1,0 +1,16 @@
+base_commit: 8984c91372e64d1e8dd2ce21b87b80977d57bff9
+created_at: '2021-03-23T01:54:17Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.eslint_1776_eslint-14242:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/9407072/110871764-42790280-82cf-11eb-805a-7049261c3b62.png
+  test_patch: []
+instance_id: eslint__eslint-14242
+log_parser: parse_log_eslint
+repo: eslint/eslint
+split: test
+version: '7.22'

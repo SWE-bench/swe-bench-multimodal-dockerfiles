@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "import - associations should import data association boundary event -> data object "
+  ],
+  "PASS_TO_PASS": []
+}

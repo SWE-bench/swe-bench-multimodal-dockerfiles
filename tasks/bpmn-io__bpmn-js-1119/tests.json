@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling - replace connection reconnecting to create loops should set correct parents when reconnecting message flow start to task ",
+    "features/modeling - replace connection reconnecting to create loops should set correct parents when reconnecting message flow from participant to task "
+  ],
+  "PASS_TO_PASS": []
+}

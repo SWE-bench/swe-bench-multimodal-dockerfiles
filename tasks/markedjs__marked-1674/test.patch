@@ -1,0 +1,22 @@
+diff --git a/test/specs/new/list_loose_tasks.html b/test/specs/new/list_loose_tasks.html
+index ae4e8c58b2..f7bc47eb1b 100644
+--- a/test/specs/new/list_loose_tasks.html
++++ b/test/specs/new/list_loose_tasks.html
+@@ -9,4 +9,7 @@
+ <p><input type="checkbox" disabled=""></p>
+ <pre>Task2</pre>
+ </li>
++<li>
++<p><input type="checkbox" disabled=""></p>
++</li>
+ </ul>
+diff --git a/test/specs/new/list_loose_tasks.md b/test/specs/new/list_loose_tasks.md
+index cb1cab5b0d..7ed70e1b6c 100644
+--- a/test/specs/new/list_loose_tasks.md
++++ b/test/specs/new/list_loose_tasks.md
+@@ -2,3 +2,5 @@
+ - [x] Task1
+ 
+ - [ ] <pre>Task2</pre>
++
++- [ ] 

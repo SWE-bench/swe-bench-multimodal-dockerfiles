@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol.renderer.canvas.VectorLayer #prepareFrame sets replayGroupChanged correctly"
+  ],
+  "PASS_TO_PASS": []
+}

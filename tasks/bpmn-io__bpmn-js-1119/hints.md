@@ -1,0 +1,1 @@
+Added notice about a crash when the previous source is Participant

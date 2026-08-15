@@ -1,0 +1,163 @@
+diff --git a/src/controllers/controller.line.js b/src/controllers/controller.line.js
+index 82b8894dd34..04670d15147 100644
+--- a/src/controllers/controller.line.js
++++ b/src/controllers/controller.line.js
+@@ -86,13 +86,14 @@ export default class LineController extends DatasetController {
+   getMaxOverflow() {
+     const me = this;
+     const meta = me._cachedMeta;
+-    const border = meta.dataset.options.borderWidth || 0;
++    const dataset = meta.dataset;
++    const border = dataset.options && dataset.options.borderWidth || 0;
+     const data = meta.data || [];
+     if (!data.length) {
+       return border;
+     }
+-    const firstPoint = data[0].size();
+-    const lastPoint = data[data.length - 1].size();
++    const firstPoint = data[0].size(me.resolveDataElementOptions(0));
++    const lastPoint = data[data.length - 1].size(me.resolveDataElementOptions(data.length - 1));
+     return Math.max(border, firstPoint, lastPoint) / 2;
+   }
+ 
+diff --git a/src/core/core.controller.js b/src/core/core.controller.js
+index cf2c195b791..ded583f0796 100644
+--- a/src/core/core.controller.js
++++ b/src/core/core.controller.js
+@@ -474,15 +474,17 @@ class Chart {
+     me.notifyPlugins('beforeElementsUpdate');
+ 
+     // Make sure all dataset controllers have correct meta data counts
++    let minPadding = 0;
+     for (let i = 0, ilen = me.data.datasets.length; i < ilen; i++) {
+       const {controller} = me.getDatasetMeta(i);
+       const reset = !animsDisabled && newControllers.indexOf(controller) === -1;
+       // New controllers will be reset after the layout pass, so we only want to modify
+       // elements added to new datasets
+       controller.buildOrUpdateElements(reset);
++      minPadding = Math.max(+controller.getMaxOverflow(), minPadding);
+     }
+-
+-    me._updateLayout();
++    me._minPadding = minPadding;
++    me._updateLayout(minPadding);
+ 
+     // Only reset the controllers if we have animations
+     if (!animsDisabled) {
+@@ -513,14 +515,14 @@ class Chart {
+ 	 * hook, in which case, plugins will not be called on `afterLayout`.
+ 	 * @private
+ 	 */
+-  _updateLayout() {
++  _updateLayout(minPadding) {
+     const me = this;
+ 
+     if (me.notifyPlugins('beforeLayout', {cancelable: true}) === false) {
+       return;
+     }
+ 
+-    layouts.update(me, me.width, me.height);
++    layouts.update(me, me.width, me.height, minPadding);
+ 
+     const area = me.chartArea;
+     const noArea = area.width <= 0 || area.height <= 0;
+@@ -1087,7 +1089,7 @@ class Chart {
+     callCallback(options.onHover || hoverOptions.onHover, [e, active, me], me);
+ 
+     if (e.type === 'mouseup' || e.type === 'click' || e.type === 'contextmenu') {
+-      if (_isPointInArea(e, me.chartArea)) {
++      if (_isPointInArea(e, me.chartArea, me._minPadding)) {
+         callCallback(options.onClick, [e, active, me], me);
+       }
+     }
+diff --git a/src/core/core.interaction.js b/src/core/core.interaction.js
+index 10db9f487de..b9676492385 100644
+--- a/src/core/core.interaction.js
++++ b/src/core/core.interaction.js
+@@ -128,7 +128,7 @@ function getDistanceMetricForAxis(axis) {
+ function getIntersectItems(chart, position, axis, useFinalPosition) {
+   const items = [];
+ 
+-  if (!_isPointInArea(position, chart.chartArea)) {
++  if (!_isPointInArea(position, chart.chartArea, chart._minPadding)) {
+     return items;
+   }
+ 
+@@ -156,7 +156,7 @@ function getNearestItems(chart, position, axis, intersect, useFinalPosition) {
+   let minDistance = Number.POSITIVE_INFINITY;
+   let items = [];
+ 
+-  if (!_isPointInArea(position, chart.chartArea)) {
++  if (!_isPointInArea(position, chart.chartArea, chart._minPadding)) {
+     return items;
+   }
+ 
+diff --git a/src/core/core.layouts.js b/src/core/core.layouts.js
+index eba4250d789..006521251e5 100644
+--- a/src/core/core.layouts.js
++++ b/src/core/core.layouts.js
+@@ -306,8 +306,9 @@ export default {
+ 	 * @param {Chart} chart - the chart
+ 	 * @param {number} width - the width to fit into
+ 	 * @param {number} height - the height to fit into
++   * @param {number} minPadding - minimum padding required for each side of chart area
+ 	 */
+-  update(chart, width, height) {
++  update(chart, width, height, minPadding) {
+     if (!chart) {
+       return;
+     }
+@@ -366,8 +367,10 @@ export default {
+       vBoxMaxWidth: availableWidth / 2 / visibleVerticalBoxCount,
+       hBoxMaxHeight: availableHeight / 2
+     });
++    const maxPadding = Object.assign({}, padding);
++    updateMaxPadding(maxPadding, toPadding(minPadding));
+     const chartArea = Object.assign({
+-      maxPadding: Object.assign({}, padding),
++      maxPadding,
+       w: availableWidth,
+       h: availableHeight,
+       x: padding.left,
+diff --git a/src/elements/element.point.js b/src/elements/element.point.js
+index 30932624ef4..2d34d1b740e 100644
+--- a/src/elements/element.point.js
++++ b/src/elements/element.point.js
+@@ -41,9 +41,10 @@ export default class PointElement extends Element {
+     return {x, y};
+   }
+ 
+-  size() {
+-    const options = this.options || {};
+-    const radius = Math.max(options.radius, options.hoverRadius) || 0;
++  size(options) {
++    options = options || this.options || {};
++    let radius = options.radius || 0;
++    radius = Math.max(radius, radius && options.hoverRadius || 0);
+     const borderWidth = radius && options.borderWidth || 0;
+     return (radius + borderWidth) * 2;
+   }
+diff --git a/src/helpers/helpers.canvas.js b/src/helpers/helpers.canvas.js
+index 158f8af2d3a..e3344e6dd41 100644
+--- a/src/helpers/helpers.canvas.js
++++ b/src/helpers/helpers.canvas.js
+@@ -244,14 +244,15 @@ export function drawPoint(ctx, options, x, y) {
+  * Returns true if the point is inside the rectangle
+  * @param {object} point - The point to test
+  * @param {object} area - The rectangle
++ * @param {number} [margin] - allowed margin
+  * @returns {boolean}
+  * @private
+  */
+-export function _isPointInArea(point, area) {
+-  const epsilon = 0.5; // margin - to match rounded decimals
++export function _isPointInArea(point, area, margin) {
++  margin = margin || 0.5; // margin - default is to match rounded decimals
+ 
+-  return point.x > area.left - epsilon && point.x < area.right + epsilon &&
+-		point.y > area.top - epsilon && point.y < area.bottom + epsilon;
++  return point.x > area.left - margin && point.x < area.right + margin &&
++		point.y > area.top - margin && point.y < area.bottom + margin;
+ }
+ 
+ export function clipArea(ctx, area) {

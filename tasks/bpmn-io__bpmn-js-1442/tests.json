@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/rules - BpmnRules create elements can't create multiple elements on flow "
+  ],
+  "PASS_TO_PASS": []
+}

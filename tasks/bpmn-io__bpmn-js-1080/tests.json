@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "features/modeling/behavior - fix hover connect lane reconnect should set end to participant ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> Task_in_SubProcess ",
+    "features/modeling/behavior - fix hover connect lane connect should set start to participant ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> Group ",
+    "features/modeling/behavior - fix hover connect lane reconnect should set start to participant ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> DataOutputAssociation ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> Collaboration ",
+    "features/modeling/behavior - fix hover connect lane should set global connect source to participant ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> MessageFlow ",
+    "features/modeling/behavior - fix hover group create should set root as hover element ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> CollapsedParticipant ",
+    "features/modeling/rules - BpmnRules on collaboration diagram drop MessageFlow label -> SequenceFlow ",
+    "features/modeling/behavior - fix hover connect lane connect should set end to participant "
+  ],
+  "PASS_TO_PASS": []
+}

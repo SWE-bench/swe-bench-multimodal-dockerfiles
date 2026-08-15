@@ -1,0 +1,7 @@
+{
+  "FAIL_TO_PASS": [
+    "ol/geom/MultiPolygon.js with a simple MultiPolygon #getCoordinates() returns coordinates as they were constructed:",
+    "ol/format/GeoJSON.js #readGeometry works with empty coordinate arrays:"
+  ],
+  "PASS_TO_PASS": []
+}

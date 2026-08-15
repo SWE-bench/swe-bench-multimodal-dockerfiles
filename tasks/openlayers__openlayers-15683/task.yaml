@@ -1,0 +1,23 @@
+base_commit: e0efc264d17712e7d5de3baa57c313357453ee81
+created_at: '2024-03-28T15:57:15Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-15683:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/layer-vector-extent-rotation/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/8e50daefa63f18548b18f8c4cb7d79cc5a912c88/test/rendering/cases/layer-vector-extent-rotation/expected.png
+  - path: test/rendering/cases/linestring-style-rotation/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/8e50daefa63f18548b18f8c4cb7d79cc5a912c88/test/rendering/cases/linestring-style-rotation/expected.png
+  - path: test/rendering/cases/text-style-linestring-nice/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/8e50daefa63f18548b18f8c4cb7d79cc5a912c88/test/rendering/cases/text-style-linestring-nice/expected.png
+  - path: test/rendering/cases/text-style/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/8e50daefa63f18548b18f8c4cb7d79cc5a912c88/test/rendering/cases/text-style/expected.png
+instance_id: openlayers__openlayers-15683
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '9.1'

@@ -1,0 +1,37 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'css' – should pass test case 'atrule_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'css' – should pass test case 'important_feature'",
+    "Testing language 'css' – should pass test case 'comment_feature'",
+    "Testing language 'django!+css' – should pass test case 'inclusion'",
+    "Testing language 'markup!+css' – should pass test case 'css_inclusion'",
+    "Testing language 'javascript!+css+js-templates' – should pass test case 'css_inclusion'",
+    "Testing language 'css' – should pass test case 'url_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'color_feature'",
+    "Testing language 'css+textile' – should pass test case 'css_inclusion'",
+    "Testing language 'css!+css-extras' – should pass test case 'selector_attribute_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'selector_pseudo-class_feature'",
+    "Testing language 'markup!+css+javascript' – should pass test case 'issue1240'",
+    "Testing language 'css' – should pass test case 'string_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'entity_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'unit_feature'",
+    "Testing language 'markup+css+wiki' – should pass test case 'table-tag_feature'",
+    "Testing language 'css+http' – should pass test case 'css_inclusion'",
+    "Testing language 'css' – should pass test case 'selector_feature'",
+    "Testing language 'css' – should pass test case 'property_feature'",
+    "Testing language 'css+haml' – should pass test case 'css+haml_usage'",
+    "Testing language 'css!+css-extras' – should pass test case 'atrule_selector-function-argument_feature'",
+    "Testing language 'arturo!+css' – should pass test case 'css-string_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'number_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'selector_n-th_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'selector_feature'",
+    "Testing language 'css+css-extras+sass' – should pass test case 'issue2992'",
+    "Testing language 'css' – should pass test case 'atrule_selector-function-argument_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'variable_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'hexcode_feature'",
+    "Testing language 'css!+css-extras' – should pass test case 'operator_feature'",
+    "Testing language 'css' – should pass test case 'function_feature'"
+  ]
+}

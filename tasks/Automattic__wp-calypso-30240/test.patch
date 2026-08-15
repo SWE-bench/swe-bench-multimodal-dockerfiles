@@ -1,0 +1,44 @@
+diff --git a/client/components/site-verticals-suggestion-search/test/__snapshots__/index.js.snap b/client/components/site-verticals-suggestion-search/test/__snapshots__/index.js.snap
+index adb31b3004179..38fa38732b568 100644
+--- a/client/components/site-verticals-suggestion-search/test/__snapshots__/index.js.snap
++++ b/client/components/site-verticals-suggestion-search/test/__snapshots__/index.js.snap
+@@ -4,7 +4,7 @@ exports[`<SiteVerticalsSuggestionSearch /> should render 1`] = `
+ <SuggestionSearch
+   id="siteTopic"
+   onChange={[Function]}
+-  placeholder="e.g. Fashion, travel, design, plumber, electrician"
++  placeholder="e.g. Fashion, travel, design, plumber"
+   sortResults={[Function]}
+   suggestions={
+     Array [
+diff --git a/client/signup/steps/site-information/test/__snapshots__/index.js.snap b/client/signup/steps/site-information/test/__snapshots__/index.js.snap
+index d82d5b87bc58d..b5a34f0f5940d 100644
+--- a/client/signup/steps/site-information/test/__snapshots__/index.js.snap
++++ b/client/signup/steps/site-information/test/__snapshots__/index.js.snap
+@@ -35,7 +35,7 @@ exports[`<SiteInformation /> should render 1`] = `
+                 id="title"
+                 name="title"
+                 onChange={[Function]}
+-                placeholder="E.g. Vail Renovations"
++                placeholder="E.g., Vail Renovations"
+                 value="Ho ho ho!"
+               />
+               <Button
+@@ -69,7 +69,7 @@ exports[`<SiteInformation /> should render 1`] = `
+                 id="address"
+                 name="address"
+                 onChange={[Function]}
+-                placeholder="E.g., 60 29th Street #343, San Francisco, CA 94110"
++                placeholder="E.g., 60 29th St, San Francisco, CA 94110"
+                 value=""
+               />
+               <Button
+@@ -103,7 +103,7 @@ exports[`<SiteInformation /> should render 1`] = `
+                 id="phone"
+                 name="phone"
+                 onChange={[Function]}
+-                placeholder="E.g. (555) 555-5555"
++                placeholder="E.g., (555) 555-5555"
+                 value=""
+               />
+               <Button

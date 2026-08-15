@@ -1,0 +1,57 @@
+diff --git a/src/core/rendering.js b/src/core/rendering.js
+index c2526ad726..391987a409 100644
+--- a/src/core/rendering.js
++++ b/src/core/rendering.js
+@@ -252,7 +252,8 @@ p5.prototype.createGraphics = function(w, h, renderer) {
+  * min(A*factor, B).</li>
+  * <li><code>LIGHTEST</code> - only the lightest colour succeeds: C =
+  * max(A*factor, B).</li>
+- * <li><code>DIFFERENCE</code> - subtract colors from underlying image.</li>
++ * <li><code>DIFFERENCE</code> - subtract colors from underlying image.
++ * <em>(2D)</em></li>
+  * <li><code>EXCLUSION</code> - similar to <code>DIFFERENCE</code>, but less
+  * extreme.</li>
+  * <li><code>MULTIPLY</code> - multiply the colors, result will always be
+diff --git a/src/webgl/material.js b/src/webgl/material.js
+index 6694427a3b..0157edf294 100644
+--- a/src/webgl/material.js
++++ b/src/webgl/material.js
+@@ -1054,7 +1054,10 @@ p5.RendererGL.prototype._applyColorBlend = function(colors) {
+ 
+   const isTexture = this.drawMode === constants.TEXTURE;
+   const doBlend =
+-    isTexture || colors[colors.length - 1] < 1.0 || this._isErasing;
++    isTexture ||
++    this.curBlendMode !== constants.BLEND ||
++    colors[colors.length - 1] < 1.0 ||
++    this._isErasing;
+ 
+   if (doBlend !== this._isBlending) {
+     if (
+@@ -1085,10 +1088,13 @@ p5.RendererGL.prototype._applyBlendMode = function() {
+   const gl = this.GL;
+   switch (this.curBlendMode) {
+     case constants.BLEND:
+-    case constants.ADD:
+       gl.blendEquation(gl.FUNC_ADD);
+       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+       break;
++    case constants.ADD:
++      gl.blendEquation(gl.FUNC_ADD);
++      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
++      break;
+     case constants.REMOVE:
+       gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+       gl.blendFunc(gl.SRC_ALPHA, gl.DST_ALPHA);
+diff --git a/src/webgl/p5.RendererGL.js b/src/webgl/p5.RendererGL.js
+index 17a61130cd..1023a826eb 100755
+--- a/src/webgl/p5.RendererGL.js
++++ b/src/webgl/p5.RendererGL.js
+@@ -1032,6 +1032,7 @@ p5.RendererGL.prototype.push = function() {
+   properties.drawMode = this.drawMode;
+ 
+   properties._currentNormal = this._currentNormal;
++  properties.curBlendMode = this.curBlendMode;
+ 
+   return style;
+ };

@@ -1,0 +1,21 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'java' – should pass test case 'package_feature'",
+    "Testing language 'java' – should pass test case 'module_feature'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'scala' – should pass test case 'symbol_feature'",
+    "Testing language 'java' – should pass test case 'function_featrue'",
+    "Testing language 'java' – should pass test case 'keyword_feature'",
+    "Testing language 'java' – should pass test case 'number_feature'",
+    "Testing language 'java' – should pass test case 'string_feature'",
+    "Testing language 'scala' – should pass test case 'builtin_feature'",
+    "Testing language 'scala' – should pass test case 'string_feature'",
+    "Testing language 'java' – should pass test case 'issue1351'",
+    "Testing language 'java' – should pass test case 'generics_feature'",
+    "Testing language 'scala' – should pass test case 'keyword_feature'",
+    "Testing language 'javadoc+java' – should pass test case 'javadoc_inclusion'",
+    "Testing language 'scala' – should pass test case 'number_feature'",
+    "Testing language 'java' – should pass test case 'operator_feature'"
+  ]
+}

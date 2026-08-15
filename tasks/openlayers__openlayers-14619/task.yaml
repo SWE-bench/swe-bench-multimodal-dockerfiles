@@ -1,0 +1,17 @@
+base_commit: f03524afc4f13303eb814d6aced0448dc0c5a96b
+created_at: '2023-03-28T08:44:21Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-14619:latest
+image_assets:
+  patch: []
+  problem_statement: []
+  test_patch:
+  - path: test/rendering/cases/icon-symbol-width-height/expected.png
+    url: https://raw.githubusercontent.com/openlayers/openlayers/001f702ccd549e82f395291d71dec0f067228d0c/test/rendering/cases/icon-symbol-width-height/expected.png
+instance_id: openlayers__openlayers-14619
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '7.3'

@@ -1,0 +1,23 @@
+{
+  "FAIL_TO_PASS": [
+    "Testing language 'bash' – should pass test case 'issue2436'"
+  ],
+  "PASS_TO_PASS": [
+    "Testing language 'bash' – should pass test case 'for-or-select_feature'",
+    "Testing language 'bash' – should pass test case 'operator_feature'",
+    "Testing language 'shell-session' – should pass test case 'info_feature'",
+    "Testing language 'bash' – should pass test case 'builtin_feature'",
+    "Testing language 'bash' – should pass test case 'function_feature'",
+    "Testing language 'bash' – should pass test case 'function-name_feature'",
+    "Testing language 'shell-session' – should pass test case 'issue2685'",
+    "Testing language 'bash' – should pass test case 'keyword_feature'",
+    "Testing language 'bash' – should pass test case 'comment_feature'",
+    "Testing language 'bash' – should pass test case 'shebang_feature'",
+    "Testing language 'shell-session' – should pass test case 'command_feature'",
+    "Testing language 'bash' – should pass test case 'environment_feature'",
+    "Testing language 'shell-session' – should pass test case 'issue2644'",
+    "Testing language 'bash' – should pass test case 'arithmetic_environment_feature'",
+    "Testing language 'bash' – should pass test case 'command_substitution_feature'",
+    "Testing language 'bash' – should pass test case 'variable_feature'"
+  ]
+}

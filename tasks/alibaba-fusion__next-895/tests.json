@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "Nav - should support iconOnly"
+  ],
+  "PASS_TO_PASS": [
+    "Nav - should support direction",
+    "Nav A11y - should not have any violations for inline subnav",
+    "Nav - should support type",
+    "Nav - should render popup item",
+    "Nav - should support activeDirection",
+    "Nav - should render group",
+    "Nav A11y - should not have any violations for icon only",
+    "Nav A11y - should not have any violations for Item",
+    "Nav - should render item",
+    "Nav - should render sub nav",
+    "Nav A11y - should not have any violations"
+  ]
+}

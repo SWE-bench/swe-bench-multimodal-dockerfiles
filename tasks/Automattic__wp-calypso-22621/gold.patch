@@ -1,0 +1,274 @@
+diff --git a/client/jetpack-onboarding/constants.js b/client/jetpack-onboarding/constants.js
+index 32a16b3c07147..c6955f7a06fd2 100644
+--- a/client/jetpack-onboarding/constants.js
++++ b/client/jetpack-onboarding/constants.js
+@@ -14,6 +14,7 @@ import JetpackOnboardingContactFormStep from './steps/contact-form';
+ import JetpackOnboardingHomepageStep from './steps/homepage';
+ import JetpackOnboardingSiteTitleStep from './steps/site-title';
+ import JetpackOnboardingSiteTypeStep from './steps/site-type';
++import JetpackOnboardingStatsStep from './steps/stats';
+ import JetpackOnboardingSummaryStep from './steps/summary';
+ import JetpackOnboardingWoocommerceStep from './steps/woocommerce';
+ 
+@@ -24,6 +25,7 @@ export const JETPACK_ONBOARDING_STEPS = {
+ 	CONTACT_FORM: 'contact-form',
+ 	BUSINESS_ADDRESS: 'business-address',
+ 	WOOCOMMERCE: 'woocommerce',
++	STATS: 'stats',
+ 	SUMMARY: 'summary',
+ };
+ 
+@@ -34,6 +36,7 @@ export const JETPACK_ONBOARDING_STEP_TITLES = {
+ 	[ JETPACK_ONBOARDING_STEPS.CONTACT_FORM ]: translate( 'Contact Us Form' ),
+ 	[ JETPACK_ONBOARDING_STEPS.BUSINESS_ADDRESS ]: translate( 'Business Address' ),
+ 	[ JETPACK_ONBOARDING_STEPS.WOOCOMMERCE ]: translate( 'Add a Store' ),
++	[ JETPACK_ONBOARDING_STEPS.STATS ]: translate( 'Jetpack Stats' ),
+ 	[ JETPACK_ONBOARDING_STEPS.SUMMARY ]: translate( 'Summary' ),
+ };
+ 
+@@ -44,5 +47,6 @@ export const JETPACK_ONBOARDING_COMPONENTS = {
+ 	[ JETPACK_ONBOARDING_STEPS.CONTACT_FORM ]: <JetpackOnboardingContactFormStep />,
+ 	[ JETPACK_ONBOARDING_STEPS.BUSINESS_ADDRESS ]: <JetpackOnboardingBusinessAddressStep />,
+ 	[ JETPACK_ONBOARDING_STEPS.WOOCOMMERCE ]: <JetpackOnboardingWoocommerceStep />,
++	[ JETPACK_ONBOARDING_STEPS.STATS ]: <JetpackOnboardingStatsStep />,
+ 	[ JETPACK_ONBOARDING_STEPS.SUMMARY ]: <JetpackOnboardingSummaryStep />,
+ };
+diff --git a/client/jetpack-onboarding/controller.js b/client/jetpack-onboarding/controller.js
+index 2b685580934eb..aa00bd9193ad7 100644
+--- a/client/jetpack-onboarding/controller.js
++++ b/client/jetpack-onboarding/controller.js
+@@ -19,7 +19,11 @@ export const onboarding = ( context, next ) => {
+ 
+ 	// We validate siteSlug inside the component
+ 	context.primary = (
+-		<JetpackOnboardingMain siteSlug={ context.params.site } stepName={ context.params.stepName } />
++		<JetpackOnboardingMain
++			action={ context.query.action }
++			siteSlug={ context.params.site }
++			stepName={ context.params.stepName }
++		/>
+ 	);
+ 	next();
+ };
+diff --git a/client/jetpack-onboarding/main.jsx b/client/jetpack-onboarding/main.jsx
+index a406f4bc49f8e..f8a3e543178b9 100644
+--- a/client/jetpack-onboarding/main.jsx
++++ b/client/jetpack-onboarding/main.jsx
+@@ -67,6 +67,7 @@ class JetpackOnboardingMain extends React.PureComponent {
+ 
+ 	render() {
+ 		const {
++			action,
+ 			isRequestingSettings,
+ 			recordJpoEvent,
+ 			settings,
+@@ -80,6 +81,7 @@ class JetpackOnboardingMain extends React.PureComponent {
+ 				<QueryJetpackOnboardingSettings siteId={ siteId } />
+ 				{ siteId ? (
+ 					<Wizard
++						action={ action }
+ 						basePath="/jetpack/start"
+ 						baseSuffix={ siteSlug }
+ 						components={ COMPONENTS }
+@@ -118,6 +120,7 @@ export default connect(
+ 			STEPS.CONTACT_FORM,
+ 			isBusiness && STEPS.BUSINESS_ADDRESS,
+ 			isBusiness && STEPS.WOOCOMMERCE,
++			STEPS.STATS,
+ 			STEPS.SUMMARY,
+ 		] );
+ 		return {
+diff --git a/client/jetpack-onboarding/steps/stats.jsx b/client/jetpack-onboarding/steps/stats.jsx
+new file mode 100644
+index 0000000000000..71f15a6545caf
+--- /dev/null
++++ b/client/jetpack-onboarding/steps/stats.jsx
+@@ -0,0 +1,150 @@
++/** @format */
++
++/**
++ * External dependencies
++ */
++import React, { Fragment } from 'react';
++import { connect } from 'react-redux';
++import { get } from 'lodash';
++import { localize } from 'i18n-calypso';
++
++/**
++ * Internal dependencies
++ */
++import DocumentHead from 'components/data/document-head';
++import FormattedHeader from 'components/formatted-header';
++import JetpackLogo from 'components/jetpack-logo';
++import PageViewTracker from 'lib/analytics/page-view-tracker';
++import QuerySites from 'components/data/query-sites';
++import Tile from 'components/tile-grid/tile';
++import TileGrid from 'components/tile-grid';
++import { addQueryArgs } from 'lib/route';
++import { getJetpackOnboardingPendingSteps, getUnconnectedSiteUrl } from 'state/selectors';
++import { isJetpackSite } from 'state/sites/selectors';
++import { JETPACK_ONBOARDING_STEPS as STEPS } from '../constants';
++import { saveJetpackOnboardingSettings } from 'state/jetpack-onboarding/actions';
++
++class JetpackOnboardingStatsStep extends React.Component {
++	componentDidUpdate() {
++		this.maybeActivateStats();
++	}
++
++	maybeActivateStats() {
++		const { action, activatedStats, isConnected, isRequestingSettings, stepsPending } = this.props;
++		const isPending = get( stepsPending, STEPS.STATS );
++
++		if (
++			! isPending &&
++			! isRequestingSettings &&
++			isConnected &&
++			activatedStats === false &&
++			action === 'activate_stats'
++		) {
++			this.activateStats();
++		}
++	}
++
++	handleActivateStats = () => {
++		this.props.recordJpoEvent( 'calypso_jpo_stats_clicked' );
++
++		if ( ! this.props.isConnected ) {
++			return;
++		}
++
++		this.activateStats();
++	};
++
++	handleStatsNextButton = () => {
++		this.props.recordJpoEvent( 'calypso_jpo_stats_next_clicked' );
++	};
++
++	activateStats() {
++		this.props.saveJetpackOnboardingSettings( this.props.siteId, {
++			stats: true,
++		} );
++	}
++
++	renderSuccess() {
++		const { getForwardUrl, translate } = this.props;
++
++		return (
++			<Fragment>
++				<FormattedHeader
++					headerText={ translate( 'Success! Jetpack is now collecting valuable stats.' ) }
++				/>
++
++				<TileGrid>
++					<Tile
++						buttonLabel={ translate( 'Continue' ) }
++						image="/calypso/images/illustrations/type-business.svg"
++						onClick={ this.handleStatsNextButton }
++						href={ getForwardUrl() }
++					/>
++				</TileGrid>
++			</Fragment>
++		);
++	}
++
++	renderActionTile() {
++		const { isConnected, siteUrl, translate } = this.props;
++		const headerText = translate( 'Keep track of your visitors with Jetpack.' );
++		const subHeaderText = translate(
++			'Keep an eye on your success with simple, concise, and mobile-friendly stats. ' +
++				'Get updates on site traffic, successful posts, site searches, and comments, all in real time.'
++		);
++		const connectUrl = addQueryArgs(
++			{
++				url: siteUrl,
++				// TODO: add a parameter to the JPC to redirect back to this step after completion
++				// and in the redirect URL include the ?action=activate_stats parameter
++				// to actually trigger the stats activation action after getting back to JPO
++			},
++			'/jetpack/connect'
++		);
++		const href = ! isConnected ? connectUrl : null;
++
++		return (
++			<Fragment>
++				<FormattedHeader headerText={ headerText } subHeaderText={ subHeaderText } />
++
++				<TileGrid>
++					<Tile
++						buttonLabel={ translate( 'Activate stats' ) }
++						image="/calypso/images/illustrations/type-business.svg"
++						onClick={ this.handleActivateStats }
++						href={ href }
++					/>
++				</TileGrid>
++			</Fragment>
++		);
++	}
++
++	render() {
++		const { activatedStats, basePath, siteId, translate } = this.props;
++
++		return (
++			<div className="steps__main">
++				<DocumentHead title={ translate( 'Jetpack Stats ‹ Jetpack Start' ) } />
++				<PageViewTracker
++					path={ [ basePath, STEPS.STATS, ':site' ].join( '/' ) }
++					title="Jetpack Stats ‹ Jetpack Start"
++				/>
++				<QuerySites siteId={ siteId } />
++
++				<JetpackLogo full size={ 45 } />
++
++				{ activatedStats ? this.renderSuccess() : this.renderActionTile() }
++			</div>
++		);
++	}
++}
++
++export default connect(
++	( state, { settings, siteId, steps } ) => ( {
++		activatedStats: get( settings, 'stats' ) === true,
++		isConnected: isJetpackSite( state, siteId ),
++		siteUrl: getUnconnectedSiteUrl( state, siteId ),
++		stepsPending: getJetpackOnboardingPendingSteps( state, siteId, steps ),
++	} ),
++	{ saveJetpackOnboardingSettings }
++)( localize( JetpackOnboardingStatsStep ) );
+diff --git a/client/state/jetpack-onboarding/schema.js b/client/state/jetpack-onboarding/schema.js
+index 64928e1e47e32..dbb8e1cb76301 100644
+--- a/client/state/jetpack-onboarding/schema.js
++++ b/client/state/jetpack-onboarding/schema.js
+@@ -50,5 +50,6 @@ export const jetpackOnboardingSettingsSchema = {
+ 			],
+ 		},
+ 		installWooCommerce: { type: 'boolean' },
++		stats: { type: 'boolean' },
+ 	},
+ };
+diff --git a/client/state/selectors/get-jetpack-onboarding-pending-steps.js b/client/state/selectors/get-jetpack-onboarding-pending-steps.js
+index a4237fd083c0e..46daddf0e680e 100644
+--- a/client/state/selectors/get-jetpack-onboarding-pending-steps.js
++++ b/client/state/selectors/get-jetpack-onboarding-pending-steps.js
+@@ -17,6 +17,9 @@ export default function getJetpackOnboardingPendingSteps( state, siteId, steps )
+ 		[ STEPS.WOOCOMMERCE ]: {
+ 			installWooCommerce: true,
+ 		},
++		[ STEPS.STATS ]: {
++			stats: true,
++		},
+ 	};
+ 
+ 	return reduce(
+diff --git a/client/state/selectors/is-jetpack-onboarding-step-completed.js b/client/state/selectors/is-jetpack-onboarding-step-completed.js
+index 51819e44c844c..12cba70b59cd6 100644
+--- a/client/state/selectors/is-jetpack-onboarding-step-completed.js
++++ b/client/state/selectors/is-jetpack-onboarding-step-completed.js
+@@ -46,6 +46,8 @@ export default createSelector(
+ 				return !! get( settings, 'businessAddress' );
+ 			case STEPS.WOOCOMMERCE:
+ 				return !! get( settings, 'installWooCommerce' );
++			case STEPS.STATS:
++				return !! get( settings, 'stats' );
+ 			default:
+ 				return false;
+ 		}

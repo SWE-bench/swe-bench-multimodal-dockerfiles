@@ -1,0 +1,6 @@
+{
+  "FAIL_TO_PASS": [
+    "ol/extent.js #applyTransform() returns empty for empty extents:"
+  ],
+  "PASS_TO_PASS": []
+}

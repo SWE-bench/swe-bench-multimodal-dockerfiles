@@ -1,0 +1,1 @@
+just for clarification, are the `aria-owns` and `aria-controls` attributes only necessary when the dropdown is open? I am assuming that the error is because when the dropdown is closed, the menu is not rendered so the attributes are referring to something that does not exist

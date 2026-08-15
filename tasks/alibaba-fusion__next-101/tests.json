@@ -1,0 +1,27 @@
+{
+  "FAIL_TO_PASS": [
+    "Select - should support async dataSource",
+    "number-picker - chrome bug hack - 0.28 + 0.01 should be 0.29 not 0.29000000000000004",
+    "number-picker - chrome bug hack - 0.29 - 0.01 should be 0.28 not 0.27999999999999997"
+  ],
+  "PASS_TO_PASS": [
+    "number-picker - behavior - should support value and can not be changed",
+    "number-picker - behavior - should work with value and onChange under control",
+    "number-picker - behavior - should support defaultValue and can be changed",
+    "number-picker - render - should accept type ",
+    "number-picker - behavior - should support precision",
+    "number-picker - behavior - should support input with -/-0/-0./0./0.0 ",
+    "number-picker - behavior - should accept disabled ",
+    "number-picker - behavior - should support e.triggerType ",
+    "number-picker - behavior - should support click add && reduce",
+    "number-picker - behavior - should support Integer & Float ",
+    "number-picker - behavior - should support editable",
+    "number-picker - behavior - simulates onChange/onClick/onFocus/onDisabled events",
+    "number-picker - react api - calls componentWillReceiveProps",
+    "number-picker - behavior - should support onKeyDown & onFocus & onBlur",
+    "number-picker - behavior - will render value in custom if `format` is settled",
+    "number-picker - behavior - should support max & min",
+    "number-picker - render - should accept defaultValue & value",
+    "number-picker - behavior - should support onCorrect"
+  ]
+}

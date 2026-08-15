@@ -1,0 +1,16 @@
+base_commit: 58478c529c2ea594a96c89a8c8daa3f7d22c2dda
+created_at: '2018-02-22T15:18:12Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.automattic_1776_wp-calypso-22709:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://cldup.com/06u0fqzCrV.png
+  test_patch: []
+instance_id: Automattic__wp-calypso-22709
+log_parser: parse_log_calypso
+repo: Automattic/wp-calypso
+split: dev
+version: 8.9.4

@@ -1,0 +1,1 @@
+@smbea Could you have a look at this? Seems to be related to a recent multi-instance loop fix we've shipped with v9.x.

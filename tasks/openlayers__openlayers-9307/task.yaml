@@ -1,0 +1,16 @@
+base_commit: 9c1c71b8e55cf2cb820cfceaec3f1e0cac80c3e3
+created_at: '2019-03-09T07:32:21Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: fail_only
+image: swebench/sweb.eval.x86_64.openlayers_1776_openlayers-9307:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://user-images.githubusercontent.com/8928341/37326353-15b7c08e-2692-11e8-8e66-81be5d94f3a3.jpg
+  test_patch: []
+instance_id: openlayers__openlayers-9307
+log_parser: parse_log_openlayers
+repo: openlayers/openlayers
+split: test
+version: '5.3'

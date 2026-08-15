@@ -1,0 +1,16 @@
+base_commit: 2a59086de41e312a5ce65deb4685625116b641f0
+created_at: '2020-01-06T03:12:29Z'
+datasets:
+- SWE-bench/SWE-bench_Multimodal
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.alibaba-fusion_1776_next-1500:latest
+image_assets:
+  patch: []
+  problem_statement:
+  - https://fusion-image.oss-cn-beijing.aliyuncs.com/images/FC20de3BmmoU.png
+  test_patch: []
+instance_id: alibaba-fusion__next-1500
+log_parser: parse_log_next
+repo: alibaba-fusion/next
+split: test
+version: '1.19'
