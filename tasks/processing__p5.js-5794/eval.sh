@@ -95,6 +95,7 @@ EOF_114329324912
 if ! git diff --quiet HEAD -- package.json 2>/dev/null; then echo "package.json changed by patch; re-syncing dependencies"; export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; chmod -R a+rX node_modules > /dev/null 2>&1 || true; fi
 : '>>>>> Start Test Output'
 sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js
+./node_modules/.bin/grunt yui --quiet || true
 stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force
 : '>>>>> End Test Output'
 git checkout aeda6d2f54b8567bababa6a01676e613e3513088 test/unit/webgl/p5.RendererGL.js

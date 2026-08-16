@@ -264,6 +264,11 @@ SPECS_P5_JS = {
             ],
             "test_cmd": (
                 """sed -i 's/concurrency:[[:space:]]*[0-9][0-9]*/concurrency: 1/g' Gruntfile.js\n"""
+                # docs/parameterData.json is written by the yuidoc preprocessor, and a
+                # patch can change that preprocessor -- so the docs step has to run after
+                # the patch, not just at build time, or the build requires a file that
+                # was never generated
+                "./node_modules/.bin/grunt yui --quiet || true\n"
                 "stdbuf -o 1M ./node_modules/.bin/grunt test --quiet --force"
             ),
             "docker_specs": {
