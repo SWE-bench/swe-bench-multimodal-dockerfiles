@@ -34,6 +34,6 @@ EOF_114329324912
 test -d /swebench/image_assets/test_patch && cp -a /swebench/image_assets/test_patch/. /testbed/ 2>/dev/null || true
 if ! git diff --quiet HEAD -- package.json 2>/dev/null; then echo "package.json changed by patch; re-syncing dependencies"; export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; chmod -R a+rX node_modules > /dev/null 2>&1 || true; fi
 : '>>>>> Start Test Output'
-pnpm install ; pnpm run build ; xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99" su chromeuser -c "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start ./karma.conf.cjs --single-run --coverage --grep --auto-watch false"
+pnpm install ; pnpm run build ; sed -i '0,/\.set({/s//.set({\n    browserNoActivityTimeout: 300000,/' ./karma.conf.cjs ; xvfb-run --server-args="-screen 0 1280x1024x24 -ac :99" su chromeuser -c "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start ./karma.conf.cjs --single-run --coverage --grep --auto-watch false"
 : '>>>>> End Test Output'
 git checkout c35d0c6e48ece06b2f420e3804c5f7267820d129 test/fixtures/controller.doughnut/single-slice-circumference-405.png && rm -f test/fixtures/controller.doughnut/single-slice-offset.js test/fixtures/controller.doughnut/single-slice-offset.png

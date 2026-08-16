@@ -161,6 +161,13 @@ SPECS_CALYPSO = {
 }
 
 TEST_CHART_JS_TEMPLATE = "./node_modules/.bin/cross-env NODE_ENV=test ./node_modules/.bin/karma start {} --single-run --coverage --grep --auto-watch false"
+# karma drops the browser after 30s of silence, which a slow fixture render under
+# the pinned Chrome can exceed -- that kills the whole run, not just the one test
+def _karma_no_activity(conf: str) -> str:
+    return (
+        """sed -i '0,/\\.set({/s//.set({\\n    browserNoActivityTimeout: 300000,/' """
+        + conf
+    )
 SPECS_CHART_JS = {
     **{
         k: {
@@ -171,6 +178,7 @@ SPECS_CHART_JS = {
             "test_cmd": [
                 "pnpm install",
                 "pnpm run build",
+                _karma_no_activity("./karma.conf.cjs"),
                 f'{TEST_XVFB_PREFIX} su chromeuser -c "{TEST_CHART_JS_TEMPLATE.format("./karma.conf.cjs")}"',
             ],
             "docker_specs": {
@@ -189,6 +197,7 @@ SPECS_CHART_JS = {
             "test_cmd": [
                 "npm install",
                 "npm run build",
+                _karma_no_activity("./karma.conf.js"),
                 f'{TEST_XVFB_PREFIX} su chromeuser -c "{TEST_CHART_JS_TEMPLATE.format("./karma.conf.js")}"',
             ],
             "docker_specs": {
