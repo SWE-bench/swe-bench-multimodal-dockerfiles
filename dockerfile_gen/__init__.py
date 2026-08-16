@@ -450,6 +450,14 @@ def _get_test_cmds_calypso(instance: dict) -> list:
     # run has failing suites whose markers truncate the parse.
     cmds = []
     for test_path in _get_test_paths(instance):
+        # a snapshot is checked by the test file beside it
+        if "__snapshots__/" in test_path and test_path.endswith(".snap"):
+            test_path = test_path.replace("__snapshots__/", "")[: -len(".snap")]
+        # jest only collects client/**/test/*.js(x); mocks, fixtures and config files
+        # in the same patch match nothing, and "No tests found" exits non-zero, which
+        # makes the whole run ungradeable
+        if not re.search(r"/test/[^/]+\.jsx?$", test_path):
+            continue
         cmds.append(
             "CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; "
             f"./node_modules/.bin/jest --verbose -c=$CFG {test_path}"
