@@ -1,6 +1,5 @@
 {
   "FAIL_TO_PASS": [
-    "packages/layout/tests/fullPageView.test.js",
     "packages/layout/tests/steps/resolveTextLayout.test.js"
   ],
   "PASS_TO_PASS": [
