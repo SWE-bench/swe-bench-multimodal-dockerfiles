@@ -168,6 +168,6 @@ index b65c64c93..73f212949 100644
 EOF_114329324912
 if ! git diff --quiet HEAD -- package.json 2>/dev/null; then echo "package.json changed by patch; re-syncing dependencies"; export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; chmod -R a+rX node_modules > /dev/null 2>&1 || true; fi
 : '>>>>> Start Test Output'
-NODE_OPTIONS="--experimental-vm-modules" ./node_modules/.bin/jest --no-color packages/textkit
+NODE_OPTIONS="--experimental-vm-modules" ./node_modules/.bin/jest --no-color
 : '>>>>> End Test Output'
 git checkout 39f9b8a255334d335b0c7678b2129aeff6372d87 packages/textkit/tests/indices/resolve.test.js

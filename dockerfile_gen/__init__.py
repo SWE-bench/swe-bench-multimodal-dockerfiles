@@ -502,20 +502,6 @@ def _get_test_cmds_prettier(instance: dict) -> list:
     return sorted(set(cmds))
 
 
-def _get_test_cmds_react_pdf(instance: dict) -> list:
-    test_prefix = MAP_REPO_VERSION_TO_SPECS_JS[instance['repo']][instance['version']]["test_cmd"]
-    cmds = []
-    for test_path in _get_test_paths(instance):
-        if test_path.endswith(".png"):
-            continue
-        elif test_path.startswith("packages/"):
-            test_path = "/".join(test_path.split("/")[:2])
-            cmds.append(f"{test_prefix} {test_path}")
-        elif test_path.startswith("tests/"):
-            cmds.append(test_prefix)
-    return sorted(set(cmds))
-
-
 _MAP_REPO_TO_TEST_CMDS = {
     "alibaba-fusion/next": _get_test_cmds_next,
     "Automattic/wp-calypso": _get_test_cmds_calypso,
@@ -526,7 +512,8 @@ _MAP_REPO_TO_TEST_CMDS = {
     "PrismJS/prism": _get_test_cmds_prism,
     # scratch-gui: static test_cmd runs all jest tests, works fine.
     # Per-instance cmd is too narrow (misses F2P tests not in test_patch).
-    "diegomura/react-pdf": _get_test_cmds_react_pdf,
+    # react-pdf: static test_cmd runs the whole monorepo, which is what its
+    # P2P lists need -- they span packages the patched one does not contain.
 }
 
 
