@@ -103,11 +103,22 @@ _CHROME_120_INSTALL = [
     "cp /usr/bin/google-chrome /usr/bin/google-chrome-stable",
 ]
 
+# npm removed the unscoped color-studio, so commits pinning 1.0.5 can no longer install.
+# The git tag still exists and later calypso commits install it this way themselves.
+_CALYPSO_COLOR_STUDIO = (
+    "sed -i 's|\"color-studio\": \"1.0.5\"|"
+    '"color-studio": "github:Automattic/color-studio#1.0.5"|\' package.json'
+)
+
 SPECS_CALYPSO = {
     **{
         k: {
             "apt-pkgs": ["libsass-dev", "sassc"],
-            "install": ["npm install --unsafe-perm"],
+            "install": [
+                _CALYPSO_COLOR_STUDIO,
+                "npm install --unsafe-perm",
+                "git checkout -- package.json || true",
+            ],
             "test_cmd": "npm run test-client",
             "docker_specs": {
                 "node_version": k,

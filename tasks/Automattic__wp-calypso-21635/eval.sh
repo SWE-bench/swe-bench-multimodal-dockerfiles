@@ -31,6 +31,6 @@ index f9d63d0c4a37b8..12a87218d63965 100644
 EOF_114329324912
 if ! git diff --quiet HEAD -- package.json 2>/dev/null; then echo "package.json changed by patch; re-syncing dependencies"; export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; chmod -R a+rX node_modules > /dev/null 2>&1 || true; fi
 : '>>>>> Start Test Output'
-npm run test-client
+CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; ./node_modules/.bin/jest --verbose -c=$CFG client/lib/credit-card-details/test/ebanx.js
 : '>>>>> End Test Output'
 git checkout 0bab036290b284735a7b5043cc11d194bd8ec37d client/lib/credit-card-details/test/ebanx.js

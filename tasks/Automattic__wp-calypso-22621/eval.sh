@@ -122,6 +122,6 @@ index f0b082494d587..d54001641200f 100644
 EOF_114329324912
 if ! git diff --quiet HEAD -- package.json 2>/dev/null; then echo "package.json changed by patch; re-syncing dependencies"; export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; chmod -R a+rX node_modules > /dev/null 2>&1 || true; fi
 : '>>>>> Start Test Output'
-npm run test-client
+CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; ./node_modules/.bin/jest --verbose -c=$CFG client/state/selectors/test/get-jetpack-onboarding-pending-steps.js ; CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; ./node_modules/.bin/jest --verbose -c=$CFG client/state/selectors/test/is-jetpack-onboarding-step-completed.js
 : '>>>>> End Test Output'
 git checkout 7e634d48378bf52ad659e902d3a4b82e579cc6cd client/state/selectors/test/get-jetpack-onboarding-pending-steps.js client/state/selectors/test/is-jetpack-onboarding-step-completed.js

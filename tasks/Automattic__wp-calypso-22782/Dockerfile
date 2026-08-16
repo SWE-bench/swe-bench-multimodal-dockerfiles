@@ -101,7 +101,7 @@ python2 -V
 EOF_9e43395224ce
 
 
-RUN <<EOF_4df93775b1aa
+RUN <<EOF_e7caaf8a9a83
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/Automattic/wp-calypso && git fetch -q --depth 1 origin 5f4c22c561a31972c973dc9dadd907836070bceb && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/Automattic/wp-calypso /testbed)
@@ -122,9 +122,11 @@ cd - || true
 cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
+sed -i 's|"color-studio": "1.0.5"|"color-studio": "github:Automattic/color-studio#1.0.5"|' package.json
 npm install --unsafe-perm
+git checkout -- package.json || true
 chmod -R 777 /testbed
-EOF_4df93775b1aa
+EOF_e7caaf8a9a83
 
 
 RUN <<EOF_96b7fed1e55f

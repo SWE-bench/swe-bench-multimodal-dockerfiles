@@ -100,6 +100,6 @@ index efdfccf6c2ba4..6522fb07e2d6b 100644
 EOF_114329324912
 if ! git diff --quiet HEAD -- package.json 2>/dev/null; then echo "package.json changed by patch; re-syncing dependencies"; export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true; if [ -f yarn.lock ]; then timeout 900 yarn install --silent > /dev/null 2>&1 || true; else timeout 900 npm install --silent > /dev/null 2>&1 || true; fi; chmod -R a+rX node_modules > /dev/null 2>&1 || true; fi
 : '>>>>> Start Test Output'
-npm run test-client
+CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; ./node_modules/.bin/jest --verbose -c=$CFG client/state/posts/test/actions.js ; CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; ./node_modules/.bin/jest --verbose -c=$CFG client/state/ui/editor/test/edit-save-flow.js
 : '>>>>> End Test Output'
 git checkout 1afcc6abc9e3e772d27086374d0a1b6e5a733a67 client/state/posts/test/actions.js client/state/ui/editor/test/edit-save-flow.js

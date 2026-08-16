@@ -442,6 +442,21 @@ def _get_test_cmds_scratch_gui(instance: dict) -> list:
     return sorted(set(cmds))
 
 
+def _get_test_cmds_calypso(instance: dict) -> list:
+    # parse_log_calypso splits the log on " ./node_modules/.bin/jest " and reads the
+    # verbose tick/cross lines, so jest has to be called directly rather than through
+    # `npm run test-client`, and with --verbose or a passing suite prints no test names.
+    # It also stops at the first "  ● ", so only the patched files are run: a full-suite
+    # run has failing suites whose markers truncate the parse.
+    cmds = []
+    for test_path in _get_test_paths(instance):
+        cmds.append(
+            "CFG=test/client/jest.config.json; [ -f $CFG ] || CFG=test/client/jest.config.js; "
+            f"./node_modules/.bin/jest --verbose -c=$CFG {test_path}"
+        )
+    return sorted(set(cmds))
+
+
 def _get_test_cmds_lighthouse(instance: dict) -> list:
     cmds = []
     SUBDIRS = ["report", "cli", "report", "treemap", "viewer"]
@@ -503,6 +518,7 @@ def _get_test_cmds_react_pdf(instance: dict) -> list:
 
 _MAP_REPO_TO_TEST_CMDS = {
     "alibaba-fusion/next": _get_test_cmds_next,
+    "Automattic/wp-calypso": _get_test_cmds_calypso,
     "carbon-design-system/carbon": _get_test_cmds_carbon,
     "GoogleChrome/lighthouse": _get_test_cmds_lighthouse,
     "openlayers/openlayers": _get_test_cmds_openlayers,
