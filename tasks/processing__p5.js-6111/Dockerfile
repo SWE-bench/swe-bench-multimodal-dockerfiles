@@ -101,7 +101,7 @@ python2 -V
 EOF_f3cdf1c44a47
 
 
-RUN <<EOF_16921c90373e
+RUN <<EOF_44d3ce4b581f
 #!/bin/bash
 set -euxo pipefail
 (mkdir -p /testbed && cd /testbed && git init -q . && git remote add origin https://github.com/processing/p5.js && git fetch -q --depth 1 origin 113b99ea8b249285f1ba2c09d869f0288a256cd4 && git reset -q --hard FETCH_HEAD) || (rm -rf /testbed && git clone -o origin https://github.com/processing/p5.js /testbed)
@@ -123,10 +123,10 @@ cd /testbed
 git clean -fdxq
 source $NVM_DIR/nvm.sh
 npm install
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' PUPPETEER_SKIP_DOWNLOAD='' node node_modules/puppeteer/install.js
 ./node_modules/.bin/grunt yui
 chmod -R 777 /testbed
-EOF_16921c90373e
+EOF_44d3ce4b581f
 
 
 RUN <<EOF_b01f3a3e7518

@@ -255,7 +255,11 @@ SPECS_P5_JS = {
             "apt-pkgs": X11_DEPS,
             "install": [
                 "npm install",
-                "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' node node_modules/puppeteer/install.js",
+                # both names must be cleared: puppeteer 18 reads PUPPETEER_SKIP_DOWNLOAD,
+                # and leaving it set skips the download, so mochaChrome later hangs
+                # looking for a browser until the eval hits its timeout
+                "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD='' PUPPETEER_SKIP_DOWNLOAD='' "
+                "node node_modules/puppeteer/install.js",
                 "./node_modules/.bin/grunt yui",
             ],
             "test_cmd": (

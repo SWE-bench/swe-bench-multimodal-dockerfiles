@@ -1,0 +1,8 @@
+name: SWE-Bench Multimodal
+description: "SWE-bench Multimodal is an evaluation benchmark designed to measure how effectively AI coding agents and Large Language Models (LLMs) can resolve real-world software engineering issues that include visual elements. It augments the original benchmark with 517 issues containing screenshots of bugs or interface issues, design mockups or wireframes, diagrams explaining desired functionality, and error messages with visual context."
+evaluation_framework: swe-bench
+
+tasks:
+  - id: swe_bench_multimodal_%_resolved
+    config: default
+    split: test
