@@ -128,17 +128,17 @@ chmod -R 777 /testbed
 EOF_2ac1fab6b88e
 
 
-RUN <<EOF_200974728254
+RUN <<EOF_990fd635da05
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-data-tile-interpolate-gutter/expected.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-data-tile-interpolate-gutter/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/6ca44f6ffa9e0d59341a9fee19afaee39aa358d4/test/rendering/cases/webgl-data-tile-interpolate-gutter/expected.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/{y}.png' 'https://tile.nextzen.org/tilezen/terrain/v1/{tilesize}/terrarium/{z}/{x}/{y}.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/162012609-a49c5f87-0efe-4832-8e24-05dd0993291d.png' 'https://user-images.githubusercontent.com/49240900/162012609-a49c5f87-0efe-4832-8e24-05dd0993291d.png' || true
-EOF_200974728254
+mkdir -p /problem_assets
+curl -fsSL -o '/problem_assets/0-{y}.png' 'https://tile.nextzen.org/tilezen/terrain/v1/{tilesize}/terrarium/{z}/{x}/{y}.png' || true
+EOF_990fd635da05
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

@@ -141,4 +141,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/reproj-ima
 EOF_9a65936a0051
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

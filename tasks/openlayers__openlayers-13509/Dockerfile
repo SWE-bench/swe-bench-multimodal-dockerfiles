@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-invi
 EOF_65335e830b55
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

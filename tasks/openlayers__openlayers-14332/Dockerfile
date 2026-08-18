@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/postrender
 EOF_f44a1d66e1f7
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

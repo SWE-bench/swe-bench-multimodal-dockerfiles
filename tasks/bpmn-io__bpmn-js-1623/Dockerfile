@@ -124,13 +124,6 @@ chmod -R 777 /testbed
 EOF_fc39699bda4e
 
 
-RUN <<EOF_3a209a57a3e0
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/158993088-cd5dab32-1bf0-40b2-afab-3adde3d3d7fc.gif' 'https://user-images.githubusercontent.com/27808087/158993088-cd5dab32-1bf0-40b2-afab-3adde3d3d7fc.gif' || true
-EOF_3a209a57a3e0
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

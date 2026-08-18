@@ -165,13 +165,6 @@ chmod -R 777 /testbed
 EOF_b9542e7497e2
 
 
-RUN <<EOF_bdcda5018322
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/rara-jiggs.png' 'http://arfer.net/mlp/img/rara-jiggs.png' || true
-EOF_bdcda5018322
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

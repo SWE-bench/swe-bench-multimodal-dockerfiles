@@ -127,7 +127,7 @@ chmod -R 777 /testbed
 EOF_fe73824349e1
 
 
-RUN <<EOF_09c373472b5f
+RUN <<EOF_7f2f4be012ff
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -143,9 +143,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.b
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/minBarLength/vertical-pos.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/368ad3cf70414de7769852cf52693c08aaf9e05c/test/fixtures/controller.bar/minBarLength/vertical-pos.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.bar/minBarLength/vertical-stacked.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/minBarLength/vertical-stacked.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/368ad3cf70414de7769852cf52693c08aaf9e05c/test/fixtures/controller.bar/minBarLength/vertical-stacked.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/146602938-9d5be17b-e050-4a9a-b9ac-5f9f51e08e8b.png' 'https://user-images.githubusercontent.com/10648471/146602938-9d5be17b-e050-4a9a-b9ac-5f9f51e08e8b.png' || true
-EOF_09c373472b5f
+EOF_7f2f4be012ff
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

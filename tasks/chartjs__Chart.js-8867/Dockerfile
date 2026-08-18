@@ -127,7 +127,7 @@ chmod -R 777 /testbed
 EOF_61c47d120895
 
 
-RUN <<EOF_d108752d133d
+RUN <<EOF_e641eb9527e3
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -135,13 +135,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/core.scale/t
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/core.scale/ticks-mirror-x.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/fbd999d4ec922713155cbb7b2c91a72281673c76/test/fixtures/core.scale/ticks-mirror-x.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/core.scale/ticks-mirror.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/core.scale/ticks-mirror.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/fbd999d4ec922713155cbb7b2c91a72281673c76/test/fixtures/core.scale/ticks-mirror.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/28313802-11565fca-6bb0-11e7-9f1c-578591f0cf33.png' 'https://user-images.githubusercontent.com/1318466/28313802-11565fca-6bb0-11e7-9f1c-578591f0cf33.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/28313834-359aaae4-6bb0-11e7-9793-3bbd5e5725cd.png' 'https://user-images.githubusercontent.com/1318466/28313834-359aaae4-6bb0-11e7-9793-3bbd5e5725cd.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/28313889-62bea084-6bb0-11e7-977e-5e7d3364c29e.png' 'https://user-images.githubusercontent.com/1318466/28313889-62bea084-6bb0-11e7-977e-5e7d3364c29e.png' || true
-EOF_d108752d133d
+EOF_e641eb9527e3
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

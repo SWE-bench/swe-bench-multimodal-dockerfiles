@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/regularsha
 EOF_208c6b0cad1c
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

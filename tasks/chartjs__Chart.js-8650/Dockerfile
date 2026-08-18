@@ -127,7 +127,7 @@ chmod -R 777 /testbed
 EOF_1d6e4484ed7d
 
 
-RUN <<EOF_793198e6251a
+RUN <<EOF_17d5ccce2a8c
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -275,9 +275,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/scale.timese
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/scale.timeseries/ticks-reverse-min.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/ticks-reverse-min.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/scale.timeseries/ticks-reverse.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/scale.timeseries/ticks-reverse.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/a7d909e3e0721895e0f9c12a0154e6c2fc42da12/test/fixtures/scale.timeseries/ticks-reverse.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/62070777-17918600-b233-11e9-8f0a-fcfb41ff6fd8.png' 'https://user-images.githubusercontent.com/35506344/62070777-17918600-b233-11e9-8f0a-fcfb41ff6fd8.png' || true
-EOF_793198e6251a
+EOF_17d5ccce2a8c
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

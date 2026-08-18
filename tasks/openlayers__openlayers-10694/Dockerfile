@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/rendering/cases/icon-opacity/ex
 EOF_6c58e0764153
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

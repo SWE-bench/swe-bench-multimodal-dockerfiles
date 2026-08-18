@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/rendering/cases/icon-scale/expe
 EOF_d89f0fbedf78
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

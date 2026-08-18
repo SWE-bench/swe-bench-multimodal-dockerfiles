@@ -128,7 +128,7 @@ chmod -R 777 /testbed
 EOF_d60c9aa133ac
 
 
-RUN <<EOF_d1d8a531f708
+RUN <<EOF_d85a7748d0c8
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -136,13 +136,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/icon-
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/icon-sprite/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/df493725c6489c1112ec8ad48287f42c1f265bec/test/rendering/cases/icon-sprite/expected.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/data/sprites/gis_symbols.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/data/sprites/gis_symbols.png' 'https://raw.githubusercontent.com/openlayers/openlayers/df493725c6489c1112ec8ad48287f42c1f265bec/test/rendering/data/sprites/gis_symbols.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/131383210-f7507bb7-fa16-49f1-a4a6-2f6ac518f351.png' 'https://user-images.githubusercontent.com/88471/131383210-f7507bb7-fa16-49f1-a4a6-2f6ac518f351.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/131382965-8143c6dc-71a6-4cae-9ebf-6ff6139b35ab.png' 'https://user-images.githubusercontent.com/88471/131382965-8143c6dc-71a6-4cae-9ebf-6ff6139b35ab.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/131383037-0df9d621-1687-4867-959d-f0a7c6d8e8e7.png' 'https://user-images.githubusercontent.com/88471/131383037-0df9d621-1687-4867-959d-f0a7c6d8e8e7.png' || true
-EOF_d1d8a531f708
+EOF_d85a7748d0c8
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

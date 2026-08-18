@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-data
 EOF_8fade7a3eabd
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

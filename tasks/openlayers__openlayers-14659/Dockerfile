@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/immediate-
 EOF_766a73505fac
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

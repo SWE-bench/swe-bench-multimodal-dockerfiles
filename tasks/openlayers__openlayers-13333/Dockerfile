@@ -128,7 +128,7 @@ chmod -R 777 /testbed
 EOF_c90447a82dab
 
 
-RUN <<EOF_f536c24ff2cb
+RUN <<EOF_2c7956b51109
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -136,15 +136,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-layer-extent/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/adbbc051590fe50b3c6d90618b0708c5902344f4/test/rendering/cases/webgl-layer-extent/expected.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-source-extent/expected.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-source-extent/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/adbbc051590fe50b3c6d90618b0708c5902344f4/test/rendering/cases/webgl-source-extent/expected.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/150269611-5ce2b3c1-6875-4d28-9496-5757e2845eb6.png' 'https://user-images.githubusercontent.com/33643503/150269611-5ce2b3c1-6875-4d28-9496-5757e2845eb6.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/150269629-0c04c806-af7c-4c83-9f7b-3056fa3dc7c8.jpg' 'https://user-images.githubusercontent.com/33643503/150269629-0c04c806-af7c-4c83-9f7b-3056fa3dc7c8.jpg' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/150269637-aa61aeb8-6ebe-4446-9005-ee107ed76abc.jpg' 'https://user-images.githubusercontent.com/33643503/150269637-aa61aeb8-6ebe-4446-9005-ee107ed76abc.jpg' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/150269952-528df1c0-6e4c-469f-9ba6-f3e7ff62c66e.jpg' 'https://user-images.githubusercontent.com/33643503/150269952-528df1c0-6e4c-469f-9ba6-f3e7ff62c66e.jpg' || true
-EOF_f536c24ff2cb
+EOF_2c7956b51109
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

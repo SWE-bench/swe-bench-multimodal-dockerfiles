@@ -140,4 +140,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/vector-lay
 EOF_286dcbc6e90c
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

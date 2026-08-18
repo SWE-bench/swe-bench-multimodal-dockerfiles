@@ -128,7 +128,7 @@ chmod -R 777 /testbed
 EOF_2a573791aef0
 
 
-RUN <<EOF_41194f50fe51
+RUN <<EOF_e25b74daa711
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -142,11 +142,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/data/tiles/
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/data/tiles/south-carolina/11/566/3-828.png' 'https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/data/tiles/south-carolina/11/566/3-828.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/data/tiles/south-carolina/11/566/4-828.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/data/tiles/south-carolina/11/566/4-828.png' 'https://raw.githubusercontent.com/openlayers/openlayers/57eaf69c1a037f83e35924c41d07ce3e83cd4aed/test/rendering/data/tiles/south-carolina/11/566/4-828.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/140408422-57c01614-d893-48f7-9664-70271842de15.png' 'https://user-images.githubusercontent.com/7988400/140408422-57c01614-d893-48f7-9664-70271842de15.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/140408509-050a203f-ec05-4491-b10a-931f86d4cea0.png' 'https://user-images.githubusercontent.com/7988400/140408509-050a203f-ec05-4491-b10a-931f86d4cea0.png' || true
-EOF_41194f50fe51
+EOF_e25b74daa711
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

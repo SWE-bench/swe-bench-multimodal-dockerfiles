@@ -136,4 +136,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-poin
 EOF_48216fa67154
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

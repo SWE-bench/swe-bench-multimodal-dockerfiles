@@ -128,15 +128,15 @@ chmod -R 777 /testbed
 EOF_b42b5a6e2ad8
 
 
-RUN <<EOF_f86e681ec33e
+RUN <<EOF_e7d6e5d9379b
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/source-raster-webgl-alpha/expected.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/source-raster-webgl-alpha/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/5475d3da3089ae3fb32f6b2f8e97507991ad9371/test/rendering/cases/source-raster-webgl-alpha/expected.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/209388190-7732c8b2-db84-454d-bbba-f1884af1edea.jpg' 'https://user-images.githubusercontent.com/46652311/209388190-7732c8b2-db84-454d-bbba-f1884af1edea.jpg' || true
-EOF_f86e681ec33e
+EOF_e7d6e5d9379b
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

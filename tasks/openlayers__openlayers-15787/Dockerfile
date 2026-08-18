@@ -136,4 +136,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/cog-palett
 EOF_c4197bd9ac2b
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

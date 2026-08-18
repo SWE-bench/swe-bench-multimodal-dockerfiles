@@ -140,15 +140,15 @@ chmod -R 777 /testbed
 EOF_d508b2c71d83
 
 
-RUN <<EOF_86f271121a01
+RUN <<EOF_d26bb294014d
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/d922d221ea46d4b240d0b08691d84cb465dbe9e4/test/fixtures/plugin.legend/legend-doughnut-right-center-mulitiline-labels.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/236559775-b3c7823e-816b-43cd-b6eb-c44d0ca8dc7b.gif' 'https://user-images.githubusercontent.com/12361341/236559775-b3c7823e-816b-43cd-b6eb-c44d0ca8dc7b.gif' || true
-EOF_86f271121a01
+EOF_d26bb294014d
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

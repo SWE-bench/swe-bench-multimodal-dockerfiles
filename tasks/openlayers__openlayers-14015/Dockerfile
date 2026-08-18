@@ -139,4 +139,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-tile
 EOF_9ee9d42ea02a
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

@@ -165,13 +165,6 @@ chmod -R 777 /testbed
 EOF_d5d484a5ff25
 
 
-RUN <<EOF_fe059fd826b0
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/koji-steak-1.jpg' 'http://assets.bonappetit.com/photos/57bf31396a6acdf3485df7f9/5:4/w_1028,c_limit/koji-steak-1.jpg' || true
-EOF_fe059fd826b0
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

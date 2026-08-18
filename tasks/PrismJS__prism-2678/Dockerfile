@@ -125,13 +125,13 @@ chmod -R 777 /testbed
 EOF_8ec04595c276
 
 
-RUN <<EOF_d22315b70812
+RUN <<EOF_c2befd32242c
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/1f44d.png' 'https://content.markdowner.net/emoji/g/64/1f44d.png' || true
-EOF_d22315b70812
+mkdir -p /problem_assets
+curl -fsSL -o '/problem_assets/0-1f44d.png' 'https://content.markdowner.net/emoji/g/64/1f44d.png' || true
+EOF_c2befd32242c
 
 
 WORKDIR /testbed

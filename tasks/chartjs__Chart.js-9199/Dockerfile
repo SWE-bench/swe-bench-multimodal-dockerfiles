@@ -146,4 +146,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/plugin.legend/lab
 EOF_89632c704668
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

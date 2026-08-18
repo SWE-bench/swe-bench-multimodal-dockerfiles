@@ -124,17 +124,15 @@ chmod -R 777 /testbed
 EOF_88613af1868e
 
 
-RUN <<EOF_6d82840bd5ca
+RUN <<EOF_b7070c3e327e
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/0.jpg' 'https://img.youtube.com/vi/s6bCmZmy9aQ/0.jpg' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/82298114-bd52f300-9a07-11ea-805b-854f69d2ecb0.png' 'https://user-images.githubusercontent.com/10571313/82298114-bd52f300-9a07-11ea-805b-854f69d2ecb0.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/?text=%23%20Expected%20result%0A%0A%5B!%5BManny%20Pacquiao%5D(https%3A%2F%2Fimg.youtube.com%2Fvi%2Fs6bCmZmy9aQ%2F0.jpg' 'https://marked.js.org/demo/?text=%23%20Expected%20result%0A%0A%5B!%5BManny%20Pacquiao%5D(https%3A%2F%2Fimg.youtube.com%2Fvi%2Fs6bCmZmy9aQ%2F0.jpg' || true
-EOF_6d82840bd5ca
+mkdir -p /problem_assets
+curl -fsSL -o '/problem_assets/2-demo' 'https://marked.js.org/demo/?text=%23%20Expected%20result%0A%0A%5B!%5BManny%20Pacquiao%5D(https%3A%2F%2Fimg.youtube.com%2Fvi%2Fs6bCmZmy9aQ%2F0.jpg' || true
+EOF_b7070c3e327e
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

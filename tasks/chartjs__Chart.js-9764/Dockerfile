@@ -146,4 +146,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/core.scale/border
 EOF_b0e231dc69bd
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

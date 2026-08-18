@@ -127,7 +127,7 @@ chmod -R 777 /testbed
 EOF_3f1ea5df1fef
 
 
-RUN <<EOF_ad45bd28ca8c
+RUN <<EOF_1f4193666de8
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -171,9 +171,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/controller.b
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.bar/horizontal-borders.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/266720899fad3f96dc948445e2ea0209eb743b2b/test/fixtures/controller.bar/horizontal-borders.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/scale.category/ticks-from-data.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/scale.category/ticks-from-data.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/266720899fad3f96dc948445e2ea0209eb743b2b/test/fixtures/scale.category/ticks-from-data.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/histogram-example-1.png' 'https://chartio.com/images/tutorials/charts/histograms/histogram-example-1.png' || true
-EOF_ad45bd28ca8c
+EOF_1f4193666de8
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

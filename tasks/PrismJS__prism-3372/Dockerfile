@@ -125,13 +125,6 @@ chmod -R 777 /testbed
 EOF_a52302454362
 
 
-RUN <<EOF_578e2cc2aa69
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/auto_update_demo.gif' 'https://raw.githubusercontent.com/qjebbs/vscode-plantuml/0af623302daf540dc0702bbf66d2efee15d7c5de/images/auto_update_demo.gif' || true
-EOF_578e2cc2aa69
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

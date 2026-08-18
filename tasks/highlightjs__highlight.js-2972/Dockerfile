@@ -125,13 +125,6 @@ chmod -R 777 /testbed
 EOF_1d334339d475
 
 
-RUN <<EOF_d939a446221f
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/example.png' 'https://magicstack.github.io/MagicPython/example.png' || true
-EOF_d939a446221f
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

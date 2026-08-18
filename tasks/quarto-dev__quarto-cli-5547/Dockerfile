@@ -165,13 +165,6 @@ chmod -R 777 /testbed
 EOF_3171156786eb
 
 
-RUN <<EOF_344cbc4c7aea
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/arthur-chauvineau-Dn7P1U26ZkE-unsplash.jpeg' 'https://quarto.org/docs/blog/posts/2023-04-26-1.3-release/arthur-chauvineau-Dn7P1U26ZkE-unsplash.jpeg' || true
-EOF_344cbc4c7aea
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

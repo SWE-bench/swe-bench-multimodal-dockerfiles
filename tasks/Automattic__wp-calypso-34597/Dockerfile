@@ -129,23 +129,6 @@ chmod -R 777 /testbed
 EOF_667c9c289cec
 
 
-RUN <<EOF_959f01873f17
-#!/bin/bash
-set -euxo pipefail
-mkdir -p /swebench/image_assets
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/61068779-b8461000-a402-11e9-9a04-762503953fe8.png' 'https://user-images.githubusercontent.com/43215253/61068779-b8461000-a402-11e9-9a04-762503953fe8.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/61068824-d6137500-a402-11e9-9eb1-4f64be224585.png' 'https://user-images.githubusercontent.com/43215253/61068824-d6137500-a402-11e9-9eb1-4f64be224585.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/61068851-ea577200-a402-11e9-88f1-af06860dc826.png' 'https://user-images.githubusercontent.com/43215253/61068851-ea577200-a402-11e9-88f1-af06860dc826.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/33277310-155312ba-d390-11e7-8b77-21de899376f2.png' 'https://user-images.githubusercontent.com/8658164/33277310-155312ba-d390-11e7-8b77-21de899376f2.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/33277311-1655ab28-d390-11e7-933f-c5050e50dd96.png' 'https://user-images.githubusercontent.com/8658164/33277311-1655ab28-d390-11e7-933f-c5050e50dd96.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/33277459-86d0d602-d390-11e7-916c-81556b74c3cf.png' 'https://user-images.githubusercontent.com/8658164/33277459-86d0d602-d390-11e7-916c-81556b74c3cf.png' || true
-EOF_959f01873f17
-
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

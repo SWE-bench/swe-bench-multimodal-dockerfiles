@@ -151,4 +151,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.doughn
 EOF_2866af1239f5
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

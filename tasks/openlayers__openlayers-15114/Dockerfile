@@ -136,4 +136,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-hole
 EOF_4060050e87d5
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

@@ -127,7 +127,7 @@ chmod -R 777 /testbed
 EOF_dc5eb721fd78
 
 
-RUN <<EOF_411a266a33ff
+RUN <<EOF_49af5ac9b9e8
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -137,9 +137,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/core.layouts
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/core.layouts/refit-vertical-boxes.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/15613ba048b1440f34032c8a5d9a0c8d1eb73e2e/test/fixtures/core.layouts/refit-vertical-boxes.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/fixtures/scale.time/invalid-data.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/scale.time/invalid-data.png' 'https://raw.githubusercontent.com/chartjs/Chart.js/15613ba048b1440f34032c8a5d9a0c8d1eb73e2e/test/fixtures/scale.time/invalid-data.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/74322233-88d1fa00-4d7b-11ea-825d-58ec7fae41b9.png' 'https://user-images.githubusercontent.com/2039538/74322233-88d1fa00-4d7b-11ea-825d-58ec7fae41b9.png' || true
-EOF_411a266a33ff
+EOF_49af5ac9b9e8
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

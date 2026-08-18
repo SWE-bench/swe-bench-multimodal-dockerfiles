@@ -128,7 +128,7 @@ chmod -R 777 /testbed
 EOF_11888052911d
 
 
-RUN <<EOF_cc0de96f5476
+RUN <<EOF_56249d667ed6
 #!/bin/bash
 set -euxo pipefail
 mkdir -p /swebench/image_assets
@@ -136,9 +136,9 @@ mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-data-tile-3-band/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/611d45570874dd7cc3361db6f6dd4d183e74f325/test/rendering/cases/webgl-data-tile-3-band/expected.png' || true
 mkdir -p $(dirname '/swebench/image_assets/test_patch/test/rendering/cases/webgl-data-tile-loosely-packed/expected.png')
 curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/webgl-data-tile-loosely-packed/expected.png' 'https://raw.githubusercontent.com/openlayers/openlayers/611d45570874dd7cc3361db6f6dd4d183e74f325/test/rendering/cases/webgl-data-tile-loosely-packed/expected.png' || true
-mkdir -p /swebench/image_assets/problem_statement
-curl -fsSL -o '/swebench/image_assets/problem_statement/141603391-ded521d5-04e8-4a7c-9f11-27ae60dc5b90.png' 'https://user-images.githubusercontent.com/6855297/141603391-ded521d5-04e8-4a7c-9f11-27ae60dc5b90.png' || true
-EOF_cc0de96f5476
+EOF_56249d667ed6
 
+
+COPY ["problem_assets", "/problem_assets"]
 
 WORKDIR /testbed

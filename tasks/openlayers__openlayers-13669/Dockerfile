@@ -141,4 +141,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/cog-i16-no
 EOF_431275926cb5
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

@@ -136,4 +136,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/fixtures/controller.line/s
 EOF_b40db4167901
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed

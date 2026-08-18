@@ -137,4 +137,6 @@ curl -fsSL -o '/swebench/image_assets/test_patch/test/rendering/cases/heatmap-la
 EOF_d0069dc612ce
 
 
+COPY ["problem_assets", "/problem_assets"]
+
 WORKDIR /testbed
