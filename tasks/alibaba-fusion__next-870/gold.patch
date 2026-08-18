@@ -553,19 +553,6 @@ index 0000000000..352862e076
 +ReactDOM.render(<Select label="size:" innerAfter={<span style={{color: '#999', marginRight: 4}}>GB</span>} dataSource={dataSource} onChange={handleChange} />, mountNode);
 +````
 +
-diff --git a/package.json b/package.json
-index d0b27eb851..e4ac26a788 100644
---- a/package.json
-+++ b/package.json
-@@ -89,7 +89,7 @@
-     "@octokit/rest": "^15.15.1",
-     "@types/react": "^16.8.13",
-     "autoprefixer": "^7.1.4",
--    "axe-core": "^3.2.0",
-+    "axe-core": "~3.2.0",
-     "babel-core": "^6.26.0",
-     "babel-eslint": "^8.2.3",
-     "babel-loader": "^7.0.0",
 diff --git a/src/badge/index.jsx b/src/badge/index.jsx
 index 67ba3e72cf..5c14a88ff7 100644
 --- a/src/badge/index.jsx

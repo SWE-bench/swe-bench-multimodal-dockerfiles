@@ -1684,3 +1684,15 @@ behaviour tests.
 **Not verified here.** The 2-pass/1-fail split is a reported measurement, not
 one re-run while making this change; no carbon image was built. Re-running the
 instance would confirm it now resolves.
+
+## Gold patches repaired so `git apply` succeeds
+
+Each of these aborted before its source hunks landed, so the gold run scored 0
+for reasons unrelated to the solution.
+
+- `GoogleChrome__lighthouse-1446` — dropped whitespace-only lighthouse-cli/bin.ts hunk
+- `alibaba-fusion__next-870` — dropped package.json axe-core version-range hunk
+- `carbon-design-system__carbon-12398` — dropped 9 .yarn/cache/*.zip binary stubs
+- `openlayers__openlayers-10694` — binary stub -> real GIT binary patch payload
+- `openlayers__openlayers-11401` — binary stub -> real GIT binary patch payload
+- `openlayers__openlayers-12172` — binary stub -> real GIT binary patch payload

@@ -1,16 +1,3 @@
-diff --git a/lighthouse-cli/bin.ts b/lighthouse-cli/bin.ts
-index edd44142fbf6..3b1a7824aa18 100755
---- a/lighthouse-cli/bin.ts
-+++ b/lighthouse-cli/bin.ts
-@@ -263,7 +263,7 @@ function runLighthouse(url: string,
-       // delete artifacts from result so reports won't include artifacts.
-       const artifacts = results.artifacts;
-       results.artifacts = undefined;
--      
-+
-       if (flags.saveArtifacts) {
-         assetSaver.saveArtifacts(artifacts);
-       }
 diff --git a/lighthouse-core/lib/asset-saver.js b/lighthouse-core/lib/asset-saver.js
 index b6f729863c34..349b69185cc1 100644
 --- a/lighthouse-core/lib/asset-saver.js
