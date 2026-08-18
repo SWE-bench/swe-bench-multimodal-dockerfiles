@@ -11,6 +11,7 @@ from .constants import (
     MAP_REPO_VERSION_TO_SPECS_JS,
     START_TEST_OUTPUT,
 )
+from .assets import PROBLEM_ASSETS_DIR
 from .utils import (
     git_clone_timesafe,
     make_heredoc_run_command,
@@ -212,7 +213,7 @@ def _strip_binary_diffs(patch_text: str) -> tuple[str, list[str]]:
     return "\n".join(cleaned), binary_files
 
 
-def _make_image_download_script(instance: dict) -> str:
+def _make_image_download_script(instance: dict, task_dir=None) -> str:
     """Generate a RUN block to download image_assets into staging dirs at build time."""
     image_assets = instance.get("image_assets")
     if not image_assets:
@@ -236,18 +237,12 @@ def _make_image_download_script(instance: dict) -> str:
             commands.append(f"mkdir -p $(dirname '{dest}')")
             commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
 
-    # problem_statement images → /swebench/image_assets/problem_statement/
-    ps_assets = image_assets.get("problem_statement", [])
-    if hasattr(ps_assets, "tolist"):
-        ps_assets = ps_assets.tolist()
-    seen_urls = set()
-    for url in ps_assets:
-        if not isinstance(url, str) or not url or url in seen_urls:
-            continue
-        seen_urls.add(url)
-        fname = url.rstrip("/").split("/")[-1]
-        dest = f"/swebench/image_assets/problem_statement/{fname}"
-        commands.append("mkdir -p /swebench/image_assets/problem_statement")
+    # problem_statement images land in /problem_assets via COPY. Only the handful
+    # with no archived copy are still fetched, into the same directory under the
+    # archive's own name, so everything a statement links to sits in one place.
+    for name, url in _unarchived_problem_images(instance, task_dir):
+        dest = f"/problem_assets/{name}"
+        commands.append("mkdir -p /problem_assets")
         commands.append(f"curl -fsSL -o '{dest}' '{url}' || true")
 
     if len(commands) <= 1:
@@ -255,7 +250,42 @@ def _make_image_download_script(instance: dict) -> str:
     return make_heredoc_run_command(commands)
 
 
-def _get_dockerfile(instance) -> str:
+def _problem_images(instance: dict, task_dir=None):
+    """Every problem-statement image, as (archive filename, url, is archived)."""
+    if task_dir is None:
+        return []
+    from .assets import _problem_image_targets
+
+    return [
+        (path.name, url, path.is_file())
+        for path, url in _problem_image_targets(task_dir, instance)
+    ]
+
+
+def _unarchived_problem_images(instance: dict, task_dir=None) -> list[tuple[str, str]]:
+    """The ones with no local copy, deduplicated by url as the download was."""
+    out, seen = [], set()
+    for name, url, archived in _problem_images(instance, task_dir):
+        if archived or url in seen:
+            continue
+        seen.add(url)
+        out.append((name, url))
+    return out
+
+
+def _make_problem_asset_copies(instance: dict, task_dir=None) -> str:
+    """COPY the task's archived assets to /problem_assets in the image.
+
+    The whole directory, under the names it is archived with: the index prefix keeps
+    images distinct where two of them share a filename, and a statement that links a
+    reproduction as well as a screenshot gets both.
+    """
+    if task_dir is None or not (task_dir / PROBLEM_ASSETS_DIR).is_dir():
+        return ""
+    return f'COPY ["{PROBLEM_ASSETS_DIR}", "/{PROBLEM_ASSETS_DIR}"]'
+
+
+def _get_dockerfile(instance, task_dir=None) -> str:
     repo = instance["repo"]
     version = instance.get("version") or None
     base_commit = instance["base_commit"]
@@ -283,9 +313,12 @@ def _get_dockerfile(instance) -> str:
     if repo_script:
         dockerfile += f"\n{repo_script}\n"
     # Download image_assets at build time
-    image_script = _make_image_download_script(instance)
+    image_script = _make_image_download_script(instance, task_dir)
     if image_script:
         dockerfile += f"\n{image_script}\n"
+    copies = _make_problem_asset_copies(instance, task_dir)
+    if copies:
+        dockerfile += f"\n{copies}\n"
     dockerfile += f"\nWORKDIR {CONTAINER_WORKDIR}\n"
     return dockerfile
 
@@ -709,7 +742,9 @@ def regenerate(instance_ids: list[str] | None = None) -> int:
         if wanted and task_dir.name not in wanted:
             continue
         instance = load_task(task_dir)
-        write_generated(task_dir, _get_dockerfile(instance), _get_eval_script(instance))
+        write_generated(
+            task_dir, _get_dockerfile(instance, task_dir), _get_eval_script(instance)
+        )
         count += 1
     return count
 

@@ -10,10 +10,10 @@ mirroring where they land in the repository under test.
 
 The images a problem statement links to are mirrored too, at
 ``tasks/<instance_id>/problem_assets/<n>-<name>``, where ``n`` is the entry's
-position in ``image_assets.problem_statement``. The harness never reads them:
-they are the pictures a model is shown, and issue hosts do not keep urls alive
-forever. The index prefix keeps them ordered and distinct, since 19 instances
-link to different images that share a filename.
+position in ``image_assets.problem_statement``. They are the pictures a model is
+shown, and the Dockerfile COPYs them into the image, so a rotted url cannot make
+one go missing. The index prefix keeps them ordered and distinct, since 19
+instances link to different images that share a filename.
 
     python -m dockerfile_gen.assets                 # fetch whatever is missing
     python -m dockerfile_gen.assets --force         # re-download everything
@@ -43,8 +43,8 @@ TEST_ASSETS_DIR = "test_assets"
 def _entries(instance: dict) -> list[dict]:
     """The assets staged at eval time: both test_patch and patch binaries.
 
-    problem_statement assets go to problem_assets/ instead; they are the pictures
-    a model is shown, never placed in the container.
+    problem_statement assets go to problem_assets/ instead, and reach the container
+    at build time via COPY rather than being staged here.
     """
     assets = instance.get("image_assets") or {}
     return [
