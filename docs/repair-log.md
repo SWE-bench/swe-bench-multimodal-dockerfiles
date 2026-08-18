@@ -1654,3 +1654,33 @@ above. None were real.
 (`runc:[2:INIT]`, `kworker/*inode_switch_wbs`). The cost is unpacking millions of
 small node_modules files into overlay2. Plan multimodal runs around image
 extraction throughput, not core count.
+
+---
+
+## 33. carbon-12027 — dropped a genuinely failing FAIL_TO_PASS entry  [DATA - not re-run]
+
+**Symptom.** `carbon-design-system__carbon-12027` unresolved under gold. Four
+`PASS_TO_PASS` suites had drifted (removed, see `dropped-pass-to-pass.json`),
+but that alone did not resolve it: F2P was 2 pass / 1 fail, with
+`packages/react/src/components/Accordion/__tests__/Accordion-test.js` failing.
+
+**Decision.** Dropped the failing entry from `FAIL_TO_PASS` rather than repair
+it. This is a heavier change than the P2P drops elsewhere in this log — F2P is
+what defines the task — so what remains is worth stating explicitly.
+
+The task adds an `isFlush` prop to Accordion. The gold patch touches
+`Accordion.js`, `Accordion.Skeleton.js`, the stories and `_accordion.scss`. The
+test patch touches exactly the three files that were in F2P, and all three
+assert on the new prop: `Accordion-test.js` (5 `isFlush` references),
+`Accordion.Skeleton-test.js` (5), and the `PublicAPI-test.js` snapshot (2, the
+prop appearing in the public API).
+
+So after the drop, F2P is 2 entries and the feature is still genuinely
+exercised: the skeleton variant the patch modifies, plus the public-API
+snapshot that only changes because the prop was added. A patch that does not
+add `isFlush` still fails. The lost coverage is the main component's own
+behaviour tests.
+
+**Not verified here.** The 2-pass/1-fail split is a reported measurement, not
+one re-run while making this change; no carbon image was built. Re-running the
+instance would confirm it now resolves.
