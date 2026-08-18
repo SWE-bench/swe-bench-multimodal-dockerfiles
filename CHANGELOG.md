@@ -1,5 +1,11 @@
 # Changelog
 
+- **[2026-08-18] Deprecate alibaba-fusion__next-870**: its eval script hangs
+  indefinitely and is not interrupted by the harness's 3600s grading timeout, so the
+  instance occupies a worker until the job is killed. An earlier run did produce a verdict
+  (`F2P=38/72`), so the hang is intermittent rather than inherent, but an instance that can
+  stall a sweep without timing out is not gradeable. `split: test` -> `split: deprecated`,
+  taking the test split from 481 to 480.
 - **[2026-08-14] Skip puppeteer's Chrome download**: puppeteer v20+ ignores
   `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` and runs `install.mjs`, which hung indefinitely
   fetching Chrome; added `PUPPETEER_SKIP_DOWNLOAD=true`. All openlayers 15xxx instances

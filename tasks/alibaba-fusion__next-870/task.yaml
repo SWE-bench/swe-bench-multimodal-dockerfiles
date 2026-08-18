@@ -13,5 +13,5 @@ image_assets:
 instance_id: alibaba-fusion__next-870
 log_parser: parse_log_next
 repo: alibaba-fusion/next
-split: test
+split: deprecated
 version: '1.15'
