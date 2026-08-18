@@ -82,7 +82,7 @@ set -euxo pipefail
 apt-get update
 apt-get install -y python3 python3-pip xvfb x11-xkb-utils xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps firefox libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc libsass-dev sassc
 rm -rf /var/lib/apt/lists/*
-export NODE_VERSION=14.11.0
+export NODE_VERSION=14.21.3
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 nvm alias default $NODE_VERSION

@@ -1038,6 +1038,13 @@ SPECS_NEXT['1.27']['install'].append(
     "chown -R chromeuser:chromeuser /home/chromeuser/.cache/Cypress"
 )
 
+# v1.21-1.26 pin puppeteer@19.11.1 above, and puppeteer-core reaches itself through the
+# `./internal/*` exports subpath pattern, which node only resolves from 14.13.0. On
+# 14.11.0 karma dies at require time with ERR_PACKAGE_PATH_NOT_EXPORTED before running a
+# single test. 14.21.3 is the newest 14.x, so the runtime era is unchanged.
+for v in ['1.21', '1.22', '1.23', '1.24', '1.25', '1.26']:
+    SPECS_NEXT[v]['docker_specs']['node_version'] = '14.21.3'
+
 SPECS_CYPRESS = {
     **{k: {
         "apt-pkgs": XVFB_DEPS,
