@@ -1,8 +1,11 @@
 {
   "_note": "PASS_TO_PASS assertions removed from SWE-bench_Multimodal because the check drifted after the task was written, not because the gold patch fails. Recorded here because the removal is baked into the published dataset and cannot be regenerated from this repo. Every affected instance had a fully passing FAIL_TO_PASS at the time of removal.",
+  "_exceptions": {
+    "carbon-design-system__carbon-12027": "Unlike every other entry here, this instance's FAIL_TO_PASS is not fully passing: packages/react/src/components/Accordion/__tests__/Accordion-test.js still fails under gold. Dropping these PASS_TO_PASS assertions does not make the instance resolve."
+  },
   "_totals": {
-    "instances": 31,
-    "assertions": 53
+    "instances": 32,
+    "assertions": 64
   },
   "dropped": {
     "alibaba-fusion__next-2919": [
@@ -33,7 +36,11 @@
       "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
     ],
     "carbon-design-system__carbon-12027": [
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
       "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12151": [
@@ -50,6 +57,15 @@
     "carbon-design-system__carbon-12332": [
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
       "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+    ],
+    "carbon-design-system__carbon-12398": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12402": [
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
