@@ -1,8 +1,8 @@
 {
   "_note": "PASS_TO_PASS assertions removed from SWE-bench_Multimodal because the check drifted after the task was written, not because the gold patch fails. Recorded here because the removal is baked into the published dataset and cannot be regenerated from this repo. Every affected instance had a fully passing FAIL_TO_PASS at the time of removal.",
   "_totals": {
-    "instances": 32,
-    "assertions": 64
+    "instances": 35,
+    "assertions": 206
   },
   "dropped": {
     "alibaba-fusion__next-2919": [
@@ -23,14 +23,34 @@
       "packages/react/src/components/Checkbox/Checkbox-test.js"
     ],
     "carbon-design-system__carbon-11613": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Loading/Loading-test.js",
       "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-11621": [
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Loading/Loading-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-11743": [
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Loading/Loading-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12027": [
       "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
@@ -41,19 +61,43 @@
       "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12151": [
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12262": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12329": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12332": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12398": [
       "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
@@ -65,58 +109,162 @@
       "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-12402": [
-      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
-    ],
-    "carbon-design-system__carbon-12412": [
-      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
-    ],
-    "carbon-design-system__carbon-12420": [
-      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
-    ],
-    "carbon-design-system__carbon-12430": [
       "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
-      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
-    ],
-    "carbon-design-system__carbon-12435": [
-      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
-    ],
-    "carbon-design-system__carbon-12442": [
-      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
-    ],
-    "carbon-design-system__carbon-12445": [
       "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-12412": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-12420": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-12430": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-12435": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-12442": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-12445": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-13196": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-13218": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-13224": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-13317": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-13527": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
       "packages/react/src/components/ContainedList/__tests__/ContainedList-test.js",
-      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js"
+      "packages/react/src/components/ContentSwitcher/ContentSwitcher-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-13851": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-14476": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
+    ],
+    "carbon-design-system__carbon-16237": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
+      "packages/react/src/components/CodeSnippet/__tests__/CodeSnippet.Skeleton-test.js",
+      "packages/react/src/components/FileUploader/__tests__/FileUploaderSkeleton-test.js",
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-16332": [
+      "packages/react/src/components/Accordion/__tests__/Accordion-test.js",
+      "packages/react/src/components/Breadcrumb/__tests__/Breadcrumb-test.js",
       "packages/react/src/components/DatePicker/DatePicker-test.js",
-      "packages/react/src/components/Select/__tests__/Select-test.js"
+      "packages/react/src/components/Link/Link-test.js",
+      "packages/react/src/components/Select/__tests__/Select-test.js",
+      "packages/react/src/components/Tag/Tag-test.js"
     ],
     "carbon-design-system__carbon-7350": [
       "packages/react/src/components/Accordion/__tests__/Accordion-test.js"
