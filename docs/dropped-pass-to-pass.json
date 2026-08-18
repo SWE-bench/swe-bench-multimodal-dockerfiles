@@ -1,10 +1,15 @@
 {
   "_note": "PASS_TO_PASS assertions removed from SWE-bench_Multimodal because the check drifted after the task was written, not because the gold patch fails. Recorded here because the removal is baked into the published dataset and cannot be regenerated from this repo. Every affected instance had a fully passing FAIL_TO_PASS at the time of removal.",
   "_totals": {
-    "instances": 30,
-    "assertions": 50
+    "instances": 31,
+    "assertions": 53
   },
   "dropped": {
+    "alibaba-fusion__next-2919": [
+      "Tab - animation sensitive tests - should adjust scroll length",
+      "Tab - animation sensitive tests - should auto scroll to active tab",
+      "Tab - rtl mode - should render extra content in left"
+    ],
     "carbon-design-system__carbon-10214": [
       "packages/react/src/components/Accordion/__tests__/Accordion-test.js"
     ],
